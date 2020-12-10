@@ -2,7 +2,7 @@
 Some classes that can be encoded in a binary plist but don't map into
 python's type hierarchy.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class timestamp(float):

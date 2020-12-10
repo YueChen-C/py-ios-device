@@ -39,7 +39,9 @@ class PlistService:
         try:
             if timeout > 0:
                 self.sock.settimeout(timeout)
-            return self.sock.recv(length)
+
+            buf = self.sock.recv(length)
+            return buf
         except Exception as E:
             print('socket close')
             return b''
@@ -56,6 +58,7 @@ class PlistService:
                 to_read -= received
             else:
                 break
+        # print("接收", buffer)
         return buffer
 
     def recv_plist(self) -> Optional[Dict[str, Any]]:
@@ -66,11 +69,13 @@ class PlistService:
             return None
 
         if payload.startswith(b'bplist00'):
-            return plistlib.loads(payload)
+            data = plistlib.loads(payload)
+            return data
         elif payload.startswith(b'<?xml'):
             # HAX lockdown HardwarePlatform with null bytes
             payload = HARDWARE_PLATFORM_SUB('', payload.decode('utf-8')).encode('utf-8')
-            return plistlib.loads(payload)
+            data = plistlib.loads(payload)
+            return data
         else:
             raise ValueError('Received invalid data: {}'.format(payload[:100].decode('hex')))
 

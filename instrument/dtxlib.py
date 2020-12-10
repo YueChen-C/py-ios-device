@@ -1,3 +1,8 @@
+
+"""
+dtx massage 协议头
+参考 https://github.com/troybowman/dtxmsg
+"""
 import struct
 from ctypes import Structure, \
     c_uint32, c_uint16, c_uint64, c_int64, sizeof

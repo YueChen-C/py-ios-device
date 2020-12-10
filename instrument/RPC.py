@@ -166,12 +166,6 @@ class InstrumentRPCResult:
             self.parsed = None
             return
         try:
-            self.xml = parse_plist_to_xml(sel).decode('utf-8')
-            # print(self.xml)
-        except:
-            # traceback.print_exc()
-            self.xml = InstrumentRPCParseError()
-        try:
             self.plist = load(sel)
         except:
             self.plist = InstrumentRPCParseError()
@@ -211,7 +205,10 @@ class InstrumentRPC:
             pass
 
         self.lockdown = self.lockdown if self.lockdown else LockdownClient(udid=self.udid)
-        self._cli = self.lockdown.start_service("com.apple.instruments.remoteserver")
+        if self.lockdown.ios_version.version[0] > 11:
+            self._cli = self.lockdown.start_service("com.apple.instruments.remoteserver.DVTSecureSocketProxy")
+        else:
+            self._cli = self.lockdown.start_service("com.apple.instruments.remoteserver")
         self._is = T()
         if self._cli is None:
             return False
