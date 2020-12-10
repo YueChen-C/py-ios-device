@@ -4,13 +4,13 @@ This file contains classes that know how to handle various different parts of
 a binary plist file.
 """
 
-from struct import pack, unpack
 from datetime import datetime
-from plistlib import Data
+from struct import pack, unpack
 from time import mktime
+
+from ._types import uid, Fill, FillType, unicode
 from .functions import find_with_type, get_byte_width
 from .functions import flatten_object_list, unflatten_reference_list
-from ._types import uid, Fill, FillType, unicode
 
 
 class BooleanHandler(object):
@@ -33,7 +33,7 @@ class BooleanHandler(object):
 
     def encode_body(self, string, object_length):
         """Return an empty string."""
-        return ''
+        return b''
 
     def decode_body(self, raw, object_length):
         """Return the decoded boolean value."""
@@ -142,7 +142,7 @@ class DataHander(object):
     def __init__(self):
         self.type_number = 4
         # this is ugly but maintains interop with plistlib.
-        self.types = type(Data(b''))
+        self.types = type(bytearray(b''))
 
     def get_object_length(self, data):
         """Get the length of the data stored inside the Data object."""
@@ -158,7 +158,7 @@ class DataHander(object):
 
     def decode_body(self, raw, object_length):
         """Store the binary data in a Data object."""
-        return Data(raw)
+        return bytearray(raw)
 
 
 class StringHandler(object):
@@ -370,6 +370,10 @@ class ObjectHandler(object):
         object_length = handler.get_object_length(object_)
         first_byte = self.encode_first_byte(handler.type_number, object_length)
         body = handler.encode_body(object_, object_length)
+        if isinstance(first_byte,str):
+            print(first_byte)
+        if isinstance(body, str):
+            print(body)
         return first_byte + body
 
     def decode(self, file_object, handler=None):

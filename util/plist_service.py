@@ -35,8 +35,14 @@ class PlistService:
     def ssl_start(self, keyfile, certfile):
         self.sock = ssl.wrap_socket(self.sock, keyfile, certfile, ssl_version=ssl.PROTOCOL_TLSv1)
 
-    def recv(self, length=4096):
-        return self.sock.recv(length)
+    def recv(self, length=4096, timeout=-1):
+        try:
+            if timeout > 0:
+                self.sock.settimeout(timeout)
+            return self.sock.recv(length)
+        except Exception as E:
+            print('socket close')
+            return b''
 
     def close(self):
         self.sock.close()

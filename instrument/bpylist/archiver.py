@@ -476,7 +476,6 @@ class Archive:
         d2['$archiver'] = d['$archiver']
         d2['$top'] = d['$top']
         d2['$objects'] = d['$objects']
-        c = write(d)
         return write(d)
 
 
