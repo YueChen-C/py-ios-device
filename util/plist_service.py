@@ -2,7 +2,7 @@
 Plist Service - handles parsing and formatting plist content
 """
 
-import logging
+from util import logging
 import plistlib
 import re
 import ssl
@@ -39,8 +39,8 @@ class PlistService:
         try:
             if timeout > 0:
                 self.sock.settimeout(timeout)
-
             buf = self.sock.recv(length)
+            print(buf)
             return buf
         except Exception as E:
             print('socket close')
@@ -53,34 +53,40 @@ class PlistService:
         buffer = bytearray(to_read)
         view = memoryview(buffer)
         while view:
-            if received := self.sock.recv_into(view, to_read):
+            received=self.sock.recv_into(view, to_read)
+            if received:
                 view = view[received:]
                 to_read -= received
             else:
                 break
-        # print("接收", buffer)
         return buffer
 
     def recv_plist(self) -> Optional[Dict[str, Any]]:
         resp = self.recv_exact(4)
         if not resp or len(resp) != 4:
             return None
-        if not (payload := self.recv_exact(struct.unpack('>L', resp)[0])):
+        payload = self.recv_exact(struct.unpack('>L', resp)[0])
+        if not payload:
             return None
-
+        log.debug(f'接收 Plist byte: {payload}')
         if payload.startswith(b'bplist00'):
             data = plistlib.loads(payload)
+            log.debug(f'接收 Plist: {data}')
+            # print("接收", data)
             return data
         elif payload.startswith(b'<?xml'):
             # HAX lockdown HardwarePlatform with null bytes
             payload = HARDWARE_PLATFORM_SUB('', payload.decode('utf-8')).encode('utf-8')
             data = plistlib.loads(payload)
+            log.debug(f'接收 Plist: {data}')
             return data
         else:
             raise ValueError('Received invalid data: {}'.format(payload[:100].decode('hex')))
 
-    def send_plist(self, d):
-        payload = plistlib.dumps(d)
+    def send_plist(self, data):
+        log.debug(f'发送 Plist: {data}')
+        payload = plistlib.dumps(data)
+        log.debug(f'发送 Plist byte: {payload}')
         payload_len = struct.pack('>L', len(payload))
         return self.sock.send(payload_len + payload)
 

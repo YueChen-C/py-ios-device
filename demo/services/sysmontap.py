@@ -33,10 +33,7 @@ def sysmontap(rpc):
         'sampleInterval': 1000000000})  # 改这个也没反应
     rpc.register_channel_callback("com.apple.instruments.server.services.sysmontap", on_sysmontap_message)
     print("start", rpc.call("com.apple.instruments.server.services.sysmontap", "start").parsed)
-    try:
-        while 1: time.sleep(10)
-    except:
-        pass
+    time.sleep(10)
     print("stop", rpc.call("com.apple.instruments.server.services.sysmontap", "stop").parsed)
     rpc.stop()
 

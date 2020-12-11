@@ -140,14 +140,14 @@ class USBMux:
             self.process(timeout)
             attempts += 1
 
-        if devices := self.devices:
+        if self.devices:
             if serial:
-                for device in devices:
+                for device in self.devices:
                     if device.serial == serial:
                         return device
-                raise NoMuxDeviceFound(f'Found {len(devices)} MuxDevice instances, but none with {serial=!r}')
+                raise NoMuxDeviceFound(f'Found {len(self.devices)} MuxDevice instances, but none with {serial}')
             else:
-                return devices[0]
+                return self.devices[0]
 
         raise NoMuxDeviceFound('No MuxDevice instances were found')
 

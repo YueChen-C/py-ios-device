@@ -60,11 +60,7 @@ def networking(rpc):
     rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
     print("replay", rpc.call("com.apple.instruments.server.services.networking", "replayLastRecordedSession").parsed)
     print("start", rpc.call("com.apple.instruments.server.services.networking", "startMonitoring").parsed)
-
-    try:
-        while 1: time.sleep(10)
-    except:
-        pass
+    time.sleep(10)
     print("stopMonitoring", rpc.call("com.apple.instruments.server.services.networking", "stopMonitoring").parsed)
     rpc.stop()
 

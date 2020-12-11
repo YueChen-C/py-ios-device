@@ -1,3 +1,6 @@
+"""
+获取单个应用 activity数据
+"""
 import time
 
 from instrument.RPC import pre_call, get_usb_rpc
@@ -13,10 +16,7 @@ def activity(rpc, pid):
 
     print("start", rpc.call("com.apple.instruments.server.services.activity", "startSamplingWithPid:", pid).parsed)
 
-    try:
-        while 1: time.sleep(10)
-    except:
-        pass
+    time.sleep(10)
     print("stop", rpc.call("com.apple.instruments.server.services.activity", "stopSampling").parsed)
     rpc.stop()
 

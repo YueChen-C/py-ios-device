@@ -3,13 +3,15 @@ import time
 import traceback
 from ctypes import sizeof
 from threading import Thread, Event
-
+from util import logging
 from instrument.bpylist import archiver
 from instrument.bpylist.bplistlib.readwrite import load
 from instrument.dtxlib import DTXMessage, DTXMessageHeader, \
     pyobject_to_auxiliary, \
     pyobject_to_selector, selector_to_pyobject
 from util.lockdown import LockdownClient
+
+log = logging.getLogger(__name__)
 
 
 def get_usb_rpc(device=None):
@@ -57,6 +59,7 @@ class DTXClientMixin:
 
     def send_dtx(self, client, dtx):
         buffer = dtx.to_bytes()
+        log.debug(f'发送 DTX: {buffer}')
         return self.send_all(client, buffer)
 
     def recv_dtx_fragment(self, client, timeout=-1):
@@ -77,6 +80,7 @@ class DTXClientMixin:
             buf = self.recv_dtx_fragment(client, timeout)
             if not buf:
                 return None
+            log.debug(f'接收 DTX: {buf}')
             fragment = DTXFragment(buf)
             if fragment.completed:
                 return fragment.message
@@ -387,3 +391,11 @@ def pre_call(rpc):
     rpc.start()
     if not done.wait(5):
         print("[WARN] timeout waiting capabilities")
+
+
+if __name__ == '__main__':
+    buf = b'y[=\x1f \x00\x00\x00\x00\x00\x01\x00d\x02\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\xa9\x01\x00\x00T\x02\x00\x00\x00\x00\x00\x00\xf0\x01\x00\x00\x00\x00\x00\x00\x99\x01\x00\x00\x00\x00\x00\x00\n\x00\x00\x00\x02\x00\x00\x00\x8d\x01\x00\x00bplist00\xd4\x01\x02\x03\x04\x05\x06\a\nX$versionY$archiverT$topX$objects\x12\x00\x01\x86\xa0_\x10\x0fNSKeyedArchiver\xd1\b\tTroot\x80\x01\xa7\v\f\x17\x18\x19\x1a\eU$null\xd3\r\x0e\x0f\x10\x13\x16WNS.keysZNS.objectsV$class\xa2\x11\x12\x80\x02\x80\x03\xa2\x14\x15\x80\x04\x80\x05\x80\x06_\x10\x1fcom.apple.private.DTXConnection_\x10%com.apple.private.DTXBlockCompression\x10\x01\x10\x02\xd2\x1c\x1d\x1e\x1fZ$classnameX$classes_\x10\x13NSMutableDictionary\xa3\x1e !\\NSDictionaryXNSObject\x00\b\x00\x11\x00\x1a\x00$\x00)\x002\x007\x00I\x00L\x00Q\x00S\x00[\x00a\x00h\x00p\x00{\x00\x82\x00\x85\x00\x87\x00\x89\x00\x8c\x00\x8e\x00\x90\x00\x92\x00\xb4\x00\xdc\x00\xde\x00\xe0\x00\xe5\x00\xf0\x00\xf9\x01\x0f\x01\x13\x01\x00\x00\x00\x00\x00\x00\x02\x01\x00\x00\x00\x00\x00\x00\x00\"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01)bplist00\xd4\x01\x02\x03\x04\x05\x06\a\nX$versionY$archiverT$topX$objects\x12\x00\x01\x86\xa0_\x10\x0fNSKeyedArchiver\xd1\b\tTroot\x80\x01\xa2\v\fU$null_\x10\x1f_notifyOfPublishedCapabilities:\b\x11\x1a$)27ILQSV\\\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00~'
+
+    dtx = DTXFragment(buf)
+
+    print(dtx.message)

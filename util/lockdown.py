@@ -3,9 +3,8 @@ import plistlib
 import sys
 import uuid
 import platform
-import logging
+from util import logging
 from distutils.version import LooseVersion
-from functools import cached_property
 from pathlib import Path
 from typing import Optional, Dict, Any, Mapping
 
@@ -27,10 +26,10 @@ class LockdownClient:
     ios_version = DictAttrProperty('device_info', 'ProductVersion', LooseVersion)
 
     def __init__(
-        self,
-        udid: Optional[str] = None,
-        device: Optional[MuxDevice] = None,
-        cache_dir: str = '.cache/pymobiledevice',
+            self,
+            udid: Optional[str] = None,
+            device: Optional[MuxDevice] = None,
+            cache_dir: str = '.cache/pymobiledevice',
     ):
         self.cache_dir = cache_dir
         self.record = None  # type: Optional[Dict[str, Any]]
@@ -45,9 +44,9 @@ class LockdownClient:
     def _verify_query_type(self):
         query_type = self.svc.plist_request({'Request': 'QueryType'}).get('Type')
         if query_type != 'com.apple.mobile.lockdown':
-            raise InitializationError(f'Unexpected {query_type=!r}')
+            raise InitializationError(f'Unexpected {query_type}')
 
-    @cached_property
+    # @cached_property
     def identifier(self):
         if self.udid:
             return self.udid
@@ -76,18 +75,22 @@ class LockdownClient:
         if self.ios_version > LooseVersion('13.0'):
             log.debug('Getting pair record from usbmuxd')
             return UsbmuxdClient().get_pair_record(self.udid)
-        elif record := read_home_file(self.cache_dir, f'{self.identifier}.plist'):
+        elif read_home_file(self.cache_dir, f'{self.identifier}.plist'):
             log.debug(f'Found pymobiledevice pairing record for device {self.udid}')
-            return plistlib.loads(record)
+            return plistlib.loads(read_home_file(self.cache_dir, f'{self.identifier}.plist'))
 
         log.debug(f'No pymobiledevice pairing record found for device {self.identifier}')
         return None
 
     def _validate_pairing(self):
-        if not (pair_record := self._get_pair_record()):
+        pair_record = self._get_pair_record()
+        if not pair_record:
             return False
 
         self.record = pair_record
+        """
+        
+        """
         if self.ios_version < LooseVersion('11.0'):
             resp = self._plist_request('ValidatePair', PairRecord=pair_record)
             if not resp or 'Error' in resp:
@@ -109,7 +112,8 @@ class LockdownClient:
         return True
 
     def _pair_full(self):
-        if not (device_public_key := self.get_value('', 'DevicePublicKey')):
+        device_public_key = self.get_value('', 'DevicePublicKey')
+        if not device_public_key:
             log.error('Unable to retrieve DevicePublicKey')
             return False
 
@@ -150,7 +154,8 @@ class LockdownClient:
     def get_value(self, domain=None, key=None):
         if isinstance(key, str) and self.record and key in self.record:
             return self.record[key]
-        if resp := self._plist_request('GetValue', Domain=domain, Key=key):
+        resp = self._plist_request('GetValue', Domain=domain, Key=key)
+        if resp:
             value = resp.get('Value')
             if hasattr(value, 'data'):
                 return value.data
@@ -169,12 +174,14 @@ class LockdownClient:
             raise ValueError('Name must be a valid string')
 
         escrow_bag = self.record['EscrowBag'] if escrow_bag is True else escrow_bag
-        if not (resp := self._plist_request('StartService', Service=name, EscrowBag=escrow_bag)):
+        resp = self._plist_request('StartService', Service=name, EscrowBag=escrow_bag)
+        if not resp:
             raise StartServiceError(f'Unable to start service={name!r}')
-        elif error := resp.get('Error'):
-            if error == 'PasswordProtected':
+        elif resp.get('Error'):
+            if resp.get('Error') == 'PasswordProtected':
                 raise StartServiceError(f'Unable to start service={name!r} - a password must be entered on the device')
-            raise StartServiceError(f'Unable to start service={name!r} - {error=!r}')
+            error = resp.get('Error')
+            raise StartServiceError(f'Unable to start service={name!r} - {error}')
 
         plist_service = PlistService(
             resp.get('Port'), self.udid, ssl_file=self.sslfile if resp.get('EnableServiceSSL', False) else None

@@ -1,3 +1,4 @@
+import struct
 import time
 
 from instrument.RPC import get_usb_rpc
@@ -28,10 +29,7 @@ def power(rpc):
     print("open", stream_num)
     print("start", rpc.call(channel, "startStreamTransfer:", float(stream_num)).parsed)
     print("[!] wait a few seconds, be patient...")
-    try:
-        while 1: time.sleep(10)
-    except:
-        pass
+    time.sleep(10)
     print("stop", rpc.call(channel, "endStreamTransfer:", float(stream_num)).parsed)
     rpc.stop()
 
