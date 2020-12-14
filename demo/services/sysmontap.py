@@ -1,6 +1,7 @@
 """
-获取系统所有信息，包含进程信息
+获取系统相关信息，类似 Android TOP，包含进程信息，需要 iOS > 11
 """
+import json
 import time
 from threading import Event
 
@@ -17,7 +18,8 @@ def sysmontap(rpc):
         print("[DROP]", res.parsed, res.raw.channel_code)
 
     def on_sysmontap_message(res):
-        print("[SYSMONTAP]", res.parsed)
+        if isinstance(res.parsed, list):
+            print(json.dumps(res.parsed, indent=4))
 
     rpc.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
     rpc.register_unhandled_callback(dropped_message)
@@ -25,12 +27,12 @@ def sysmontap(rpc):
     if not done.wait(5):
         print("[WARN] timeout waiting capabilities")
     rpc.call("com.apple.instruments.server.services.sysmontap", "setConfig:", {
-        'ur': 1000,
-        'procAttrs': ['memVirtualSize', 'cpuUsage', 'ctxSwitch', 'intWakeups', 'physFootprint', 'memResidentSize',
-                      'memAnon', 'pid', 'powerScore', 'diskBytesRead'],
-        'bm': 0,
+        'ur': 1000,  # 输出频率 ms
+        'procAttrs': ['pid', 'memVirtualSize', 'cpuUsage', 'ctxSwitch', 'intWakeups', 'physFootprint',
+                      'memResidentSize',
+                      'memAnon', 'powerScore', 'diskBytesRead'],  # 输出所有进程信息，字段顺序与自定义相同
         'cpuUsage': True,
-        'sampleInterval': 1000000000})  # 改这个也没反应
+        'sampleInterval': 1000000000})
     rpc.register_channel_callback("com.apple.instruments.server.services.sysmontap", on_sysmontap_message)
     print("start", rpc.call("com.apple.instruments.server.services.sysmontap", "start").parsed)
     time.sleep(10)

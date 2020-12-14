@@ -1,11 +1,20 @@
 """
 Utils
-
-:author: Doug Skrypa
 """
 
 __all__ = ['DictAttrProperty', 'DictAttrFieldNotFoundError']
 _NotSet = object()
+
+
+class cached_property(object):
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        value = obj.__dict__[self.func.__name__] = self.func(obj)
+        return value
 
 
 class DictAttrProperty:

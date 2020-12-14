@@ -13,7 +13,7 @@ from .exceptions import StartServiceError, InitializationError
 from .plist_service import PlistService
 from .ssl import make_certs_and_key
 from .usbmux import MuxDevice, UsbmuxdClient
-from .utils import DictAttrProperty
+from .utils import DictAttrProperty, cached_property
 
 __all__ = ['LockdownClient']
 log = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class LockdownClient:
         if query_type != 'com.apple.mobile.lockdown':
             raise InitializationError(f'Unexpected {query_type}')
 
-    # @cached_property
+    @cached_property
     def identifier(self):
         if self.udid:
             return self.udid
@@ -66,32 +66,30 @@ class LockdownClient:
     def _get_pair_record(self) -> Optional[Dict[str, Any]]:
         lockdown_path = _get_lockdown_dir()
         itunes_lockdown_path = lockdown_path.joinpath(f'{self.identifier}.plist')
-        if itunes_lockdown_path.exists():
-            log.debug(f'Using iTunes pair record: {itunes_lockdown_path}')
-            with itunes_lockdown_path.open('rb') as f:
-                return plistlib.load(f)
+        try:  # 如果没有 lockdown 权限，则使用自有缓存证书，建议开启 lockdown 权限，避免重复认证
+            if itunes_lockdown_path.exists():
+                log.debug(f'Using iTunes pair record: {itunes_lockdown_path}')
+                with itunes_lockdown_path.open('rb') as f:
+                    return plistlib.load(f)
+        except Exception as E:
+            log.error(f'{E}')
+            log.debug(f'No iTunes pairing record found for device {self.identifier}')
+            if self.ios_version > LooseVersion('13.0'):
+                log.debug('Getting pair record from usbmuxd')
+                return UsbmuxdClient().get_pair_record(self.udid)
+            elif read_home_file(self.cache_dir, f'{self.identifier}.plist'):
+                log.debug(f'Found pymobiledevice pairing record for device {self.udid}')
+                return plistlib.loads(read_home_file(self.cache_dir, f'{self.identifier}.plist'))
 
-        log.debug(f'No iTunes pairing record found for device {self.identifier}')
-        if self.ios_version > LooseVersion('13.0'):
-            log.debug('Getting pair record from usbmuxd')
-            return UsbmuxdClient().get_pair_record(self.udid)
-        elif read_home_file(self.cache_dir, f'{self.identifier}.plist'):
-            log.debug(f'Found pymobiledevice pairing record for device {self.udid}')
-            return plistlib.loads(read_home_file(self.cache_dir, f'{self.identifier}.plist'))
-
-        log.debug(f'No pymobiledevice pairing record found for device {self.identifier}')
-        return None
+            log.debug(f'No pymobiledevice pairing record found for device {self.identifier}')
+            return None
 
     def _validate_pairing(self):
         pair_record = self._get_pair_record()
         if not pair_record:
             return False
-
         self.record = pair_record
-        """
-        
-        """
-        if self.ios_version < LooseVersion('11.0'):
+        if self.ios_version < LooseVersion('11.0'):  # 11 以下需要双向认证
             resp = self._plist_request('ValidatePair', PairRecord=pair_record)
             if not resp or 'Error' in resp:
                 log.error(f'Failed to ValidatePair: {resp}')
