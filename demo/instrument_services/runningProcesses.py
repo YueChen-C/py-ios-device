@@ -6,7 +6,7 @@ from instrument.RPC import get_usb_rpc
 
 def runningProcesses(rpc):
     rpc.start()
-    running = rpc.call("com.apple.instruments.server.instrument_services.deviceinfo", "runningProcesses").parsed
+    running = rpc.call("com.apple.instruments.server.services.deviceinfo", "runningProcesses").parsed
     print("runningProcesses:")
     headers = '\t'.join(sorted(running[0].keys()))
     print(headers)

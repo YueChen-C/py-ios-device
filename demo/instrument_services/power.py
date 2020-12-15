@@ -23,7 +23,7 @@ def power(rpc):
         # print(res.raw.get_selector())
 
     rpc.start()
-    channel = "com.apple.instruments.server.instrument_services.power"
+    channel = "com.apple.instruments.server.services.power"
     rpc.register_channel_callback(channel, on_channel_message)
     stream_num = rpc.call(channel, "openStreamForPath:", "live/level.dat").parsed
     print("open", stream_num)

@@ -12,12 +12,12 @@ def activity(rpc, pid):
         print("\n")
 
     pre_call(rpc)
-    rpc.register_channel_callback("com.apple.instruments.server.instrument_services.activity", on_callback_message)
+    rpc.register_channel_callback("com.apple.instruments.server.services.activity", on_callback_message)
 
-    print("start", rpc.call("com.apple.instruments.server.instrument_services.activity", "startSamplingWithPid:", pid).parsed)
+    print("start", rpc.call("com.apple.instruments.server.services.activity", "startSamplingWithPid:", pid).parsed)
 
     time.sleep(10)
-    print("stop", rpc.call("com.apple.instruments.server.instrument_services.activity", "stopSampling").parsed)
+    print("stop", rpc.call("com.apple.instruments.server.services.activity", "stopSampling").parsed)
     rpc.stop()
 
 
