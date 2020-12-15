@@ -15,9 +15,9 @@ from util.lockdown import LockdownClient
 log = logging.getLogger(__name__)
 
 
-def get_usb_rpc(device=None):
-    rpc = InstrumentRPC(device)
-    if not rpc.init(DTXUSBTransport, device):
+def get_usb_rpc(udid=None):
+    rpc = InstrumentRPC(udid)
+    if not rpc.init(DTXUSBTransport):
         return None
     return rpc
 
@@ -124,15 +124,17 @@ class DTXUSBTransport:
         """
         从 instrument client 接收长度为 length 的 buffer
         成功时表示整块数据都被接收
+        :param timeout:
         :param client: instrument client(C对象）
         :param length: 数据长度
         :return: 长度为 length 的 buffer, 失败时返回 None
         """
         ret = b''
         while len(ret) < length:
-            l = length - len(ret)
-            if l > 8192: l = 8192
-            rb = client.recv(l, timeout)
+            L = length - len(ret)
+            if L > 8192:
+                L = 8192
+            rb = client.recv(L, timeout)
             if not rb:
                 return ret
             ret += rb
@@ -175,7 +177,6 @@ class InstrumentRPCResult:
             self.plist = load(sel)
         except:
             self.plist = InstrumentRPCParseError()
-            # print("--------", sel)
         try:
             self.parsed = archiver.unarchive(sel)
         except:
@@ -199,11 +200,9 @@ class InstrumentRPC:
         self.udid = udid
         self.lockdown = None
 
-    def init(self, transport, arg):
+    def init(self, transport):
         """
         初始化 instrument rpc 服务:
-        成功后必须调用 deinit 反初始化
-        :param device: 由DeviceService创建的device对象（C对象）
         :return: bool 是否成功
         """
 
@@ -292,7 +291,7 @@ class InstrumentRPC:
         channel_id = len(self._channels) + 1
         dtx = self._call(True, 0, "_requestChannelWithCode:identifier:", channel_id, channel)
         if dtx.get_selector():
-            print("Make Channel Error:", dtx.get_selector())
+            print("Make Channel Error:", load(dtx.get_selector()))
             raise RuntimeError("failed to make channel")
         self._channels[channel] = channel_id
         return channel_id
@@ -336,7 +335,7 @@ class InstrumentRPC:
         last_none = 0
         while self._running:
             dtx = self._is.recv_dtx(self._cli, 2)  # s
-            if dtx is None:
+            if dtx is None:  # 长时间没有回调则抛出错误
                 cur = time.time()
                 if cur - last_none < 0.1:
                     break
@@ -398,7 +397,7 @@ def pre_call(rpc):
 
 
 if __name__ == '__main__':
-    buf = b'y[=\x1f \x00\x00\x00\x00\x00\x01\x00\xa3\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\xe4\x00\x00\x00\x93\x01\x00\x00\x00\x00\x00\x00\xf0\x01\x00\x00\x00\x00\x00\x00\xd4\x00\x00\x00\x00\x00\x00\x00\n\x00\x00\x00\x03\x00\x00\x00\x01\x00\x00\x00\n\x00\x00\x00\x02\x00\x00\x00\xbc\x00\x00\x00bplist00\xd4\x01\x02\x03\x04\x05\x06\x07\nY$archiverX$versionX$objectsT$top_\x10\x0fNSKeyedArchiver\x12\x00\x01\x86\xa0\xa2\x08\tU$null_\x100com.apple.instruments.server.services.deviceinfo\xd1\x0b\x0cTroot\x80\x01\x08\x11\x1b$-2DILR\x85\x88\x8d\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x8fbplist00\xd4\x01\x02\x03\x04\x05\x06\x07\nY$archiverX$versionX$objectsT$top_\x10\x0fNSKeyedArchiver\x12\x00\x01\x86\xa0\xa2\x08\tU$null_\x10#_requestChannelWithCode:identifier:\xd1\x0b\x0cTroot\x80\x01\x08\x11\x1b$-2DILRx{\x80\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x82'
+    buf = b'y[=\x1f \x00\x00\x00\x00\x00\x01\x00\xa3\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\xe4\x00\x00\x00\x93\x01\x00\x00\x00\x00\x00\x00\xf0\x01\x00\x00\x00\x00\x00\x00\xd4\x00\x00\x00\x00\x00\x00\x00\n\x00\x00\x00\x03\x00\x00\x00\x01\x00\x00\x00\n\x00\x00\x00\x02\x00\x00\x00\xbc\x00\x00\x00bplist00\xd4\x01\x02\x03\x04\x05\x06\x07\nY$archiverX$versionX$objectsT$top_\x10\x0fNSKeyedArchiver\x12\x00\x01\x86\xa0\xa2\x08\tU$null_\x100com.apple.instruments.server.instrument_services.deviceinfo\xd1\x0b\x0cTroot\x80\x01\x08\x11\x1b$-2DILR\x85\x88\x8d\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x8fbplist00\xd4\x01\x02\x03\x04\x05\x06\x07\nY$archiverX$versionX$objectsT$top_\x10\x0fNSKeyedArchiver\x12\x00\x01\x86\xa0\xa2\x08\tU$null_\x10#_requestChannelWithCode:identifier:\xd1\x0b\x0cTroot\x80\x01\x08\x11\x1b$-2DILRx{\x80\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x82'
     dtx = DTXFragment(buf)
 
     print(dtx.message)

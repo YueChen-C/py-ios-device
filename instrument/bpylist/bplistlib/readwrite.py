@@ -51,7 +51,7 @@ def read_objects(file_object, offsets, reference_size, root):
     return object_handler.unflatten(root_object, objects)
 
 
-def write(root_object):
+def generate(root_object):
     """
     return bplist buf
     """

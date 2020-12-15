@@ -75,10 +75,8 @@ class PlistService:
         if payload.startswith(b'bplist00'):
             data = plistlib.loads(payload)
             log.debug(f'接收 Plist: {data}')
-            # print("接收", data)
             return data
         elif payload.startswith(b'<?xml'):
-            # HAX lockdown HardwarePlatform with null bytes
             payload = HARDWARE_PLATFORM_SUB('', payload.decode('utf-8')).encode('utf-8')
             data = plistlib.loads(payload)
             log.debug(f'接收 Plist: {data}')

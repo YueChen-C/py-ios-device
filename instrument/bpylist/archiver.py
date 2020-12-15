@@ -1,6 +1,6 @@
 from instrument.bpylist.bplistlib._types import timestamp, uid
 from instrument.bpylist.bplistlib.readwrite import load
-from instrument.bpylist.bplistlib.readwrite import write
+from instrument.bpylist.bplistlib.readwrite import generate
 
 from typing import Mapping
 from collections import OrderedDict
@@ -476,7 +476,7 @@ class Archive:
         d2['$archiver'] = d['$archiver']
         d2['$top'] = d['$top']
         d2['$objects'] = d['$objects']
-        return write(d)
+        return generate(d)
 
 
 UNARCHIVE_CLASS_MAP = {

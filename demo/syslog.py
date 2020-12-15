@@ -1,13 +1,36 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-import re
+#
+# $Id$
+#
+# Copyright (c) 2012-2014 "dark[-at-]gotohack.org"
+#
+# This file is part of pymobiledevice
+#
+# pymobiledevice is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+
 import logging
+import re
+import time
+from optparse import OptionParser
+from sys import exit
 
 from util.lockdown import LockdownClient
+
 from six import PY3
-from sys import exit
-from optparse import OptionParser
-import time
 
 TIME_FORMAT = '%H:%M:%S'
 
@@ -23,14 +46,14 @@ class Syslog(object):
         self.c = self.lockdown.start_service("com.apple.syslog_relay")
 
     def watch(self, watchtime=None, logFile=None, procName=None):
-        '''View log
+        """View log
         :param watchtime: time (seconds)
         :type watchtime: int
         :param logFile: full path to the log file
         :type logFile: str
         :param procName: process name
         :type proName: str
-        '''
+        """
         begin = time.strftime(TIME_FORMAT)
         while True:
             d = self.c.recv(4096)
@@ -41,6 +64,7 @@ class Syslog(object):
                 if len(d.split(" ")) > 4 and not procFilter.search(d):
                     continue
             s = d.strip("\n\x00\x00")
+            # self.logger.info(s)
             print(s)
             if logFile:
                 with open(logFile, 'a') as f:
@@ -53,9 +77,9 @@ class Syslog(object):
                         break
 
     def time_match(self, str_time):
-        '''
+        """
         Determine if the time format matches
-        '''
+        """
         pattern = re.compile(r'\d{2}:\d{2}:\d{2}')
         match = pattern.match(str_time)
         if match:
@@ -64,11 +88,9 @@ class Syslog(object):
             return False
 
     def time_caculate(self, a, b):
-        '''
+        """
         Calculate the time difference between two strings
-        '''
-        time_a = int(a[6:8]) + 60 * int(a[3:5]) + 3600 * int(a[0:2])
-        time_b = int(b[6:8]) + 60 * int(b[3:5]) + 3600 * int(b[0:2])
+        """
         time_a = int(a[6:8]) + 60 * int(a[3:5]) + 3600 * int(a[0:2])
         time_b = int(b[6:8]) + 60 * int(b[3:5]) + 3600 * int(b[0:2])
         return time_b - time_a

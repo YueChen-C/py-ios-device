@@ -57,11 +57,11 @@ def networking(rpc):
         # print("[data]", res.parsed)
 
     pre_call(rpc)
-    rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
-    print("replay", rpc.call("com.apple.instruments.server.services.networking", "replayLastRecordedSession").parsed)
-    print("start", rpc.call("com.apple.instruments.server.services.networking", "startMonitoring").parsed)
+    rpc.register_channel_callback("com.apple.instruments.server.instrument_services.networking", on_callback_message)
+    print("replay", rpc.call("com.apple.instruments.server.instrument_services.networking", "replayLastRecordedSession").parsed)
+    print("start", rpc.call("com.apple.instruments.server.instrument_services.networking", "startMonitoring").parsed)
     time.sleep(10)
-    print("stopMonitoring", rpc.call("com.apple.instruments.server.services.networking", "stopMonitoring").parsed)
+    print("stopMonitoring", rpc.call("com.apple.instruments.server.instrument_services.networking", "stopMonitoring").parsed)
     rpc.stop()
 
 

@@ -26,17 +26,16 @@ def sysmontap(rpc):
     rpc.start()
     if not done.wait(5):
         print("[WARN] timeout waiting capabilities")
-    rpc.call("com.apple.instruments.server.services.sysmontap", "setConfig:", {
+    rpc.call("com.apple.instruments.server.instrument_services.sysmontap", "setConfig:", {
         'ur': 1000,  # 输出频率 ms
-        'procAttrs': ['pid', 'memVirtualSize', 'cpuUsage', 'ctxSwitch', 'intWakeups', 'physFootprint',
-                      'memResidentSize',
+        'procAttrs': ['pid', 'memVirtualSize', 'memResidentSize','cpuUsage', 'ctxSwitch', 'intWakeups', 'physFootprint',
                       'memAnon', 'powerScore', 'diskBytesRead'],  # 输出所有进程信息，字段顺序与自定义相同
         'cpuUsage': True,
         'sampleInterval': 1000000000})
-    rpc.register_channel_callback("com.apple.instruments.server.services.sysmontap", on_sysmontap_message)
-    print("start", rpc.call("com.apple.instruments.server.services.sysmontap", "start").parsed)
+    rpc.register_channel_callback("com.apple.instruments.server.instrument_services.sysmontap", on_sysmontap_message)
+    print("start", rpc.call("com.apple.instruments.server.instrument_services.sysmontap", "start").parsed)
     time.sleep(10)
-    print("stop", rpc.call("com.apple.instruments.server.services.sysmontap", "stop").parsed)
+    print("stop", rpc.call("com.apple.instruments.server.instrument_services.sysmontap", "stop").parsed)
     rpc.stop()
 
 
