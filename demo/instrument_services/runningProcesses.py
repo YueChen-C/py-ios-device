@@ -1,6 +1,9 @@
 """
 查看所有正在运行的进程信息
 """
+import os
+import sys
+sys.path.append(os.getcwd())
 from instrument.RPC import get_usb_rpc
 
 

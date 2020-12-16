@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append(os.getcwd())
 import time
 from _ctypes import Structure
 from ctypes import c_byte, c_uint16, c_uint32

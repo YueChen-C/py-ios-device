@@ -1,11 +1,14 @@
 """
 获取系统相关信息，类似 Android TOP，包含进程信息，需要 iOS > 11
 """
+import os
+import sys
+sys.path.append(os.getcwd())
 import json
 import time
 from threading import Event
+from instrument import RPC
 
-from instrument.RPC import get_usb_rpc
 
 
 def sysmontap(rpc):
@@ -41,6 +44,6 @@ def sysmontap(rpc):
 
 
 if __name__ == '__main__':
-    rpc = get_usb_rpc()
+    rpc = RPC.get_usb_rpc()
     sysmontap(rpc)
     rpc.deinit()

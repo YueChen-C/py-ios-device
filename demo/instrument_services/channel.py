@@ -1,5 +1,7 @@
+import os
+import sys
+sys.path.append(os.getcwd())
 from threading import Event
-
 from instrument.RPC import get_usb_rpc
 from instrument.dtxlib import auxiliary_to_pyobject
 

@@ -2,7 +2,9 @@
 获取单个应用 activity数据
 """
 import time
-
+import os
+import sys
+sys.path.append(os.getcwd())
 from instrument.RPC import pre_call, get_usb_rpc
 
 

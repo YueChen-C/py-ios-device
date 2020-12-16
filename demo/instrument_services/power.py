@@ -1,6 +1,8 @@
 import struct
 import time
-
+import os
+import sys
+sys.path.append(os.getcwd())
 from instrument.RPC import get_usb_rpc
 
 
