@@ -301,7 +301,7 @@ class InstrumentRPC:
     def call(self, channel: str, selector: str, *auxiliaries):
         channel_id = self._make_channel(channel)
         ret = self._call(True, channel_id, selector, *auxiliaries)
-        log.debug("plist", ret)
+        log.debug("plist" + str(ret))
         return InstrumentRPCResult(ret)
 
     def call_noret(self, channel: str, selector: str, *auxiliaries):

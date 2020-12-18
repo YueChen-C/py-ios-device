@@ -11,6 +11,7 @@ from util import logging
 
 log = logging.getLogger(__name__)
 
+
 def networking(rpc, file_path: str = None):
     headers = {
         0: ['InterfaceIndex', "Name"],
@@ -65,22 +66,22 @@ def networking(rpc, file_path: str = None):
             temp_dict["msg_type"] = msg_type[data[0]]
             with open(file_path, 'a+') as file:
                 file.write(json.dumps(temp_dict) + os.linesep)
-        log.debug(msg_type[data[0]], dict(zip(headers[data[0]], data[1])))
+        log.debug(msg_type[data[0]] + json.dumps(dict(zip(headers[data[0]], data[1]))))
         # print("[data]", res.parsed)
 
     pre_call(rpc)
     rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
     var = rpc.call("com.apple.instruments.server.services.networking", "replayLastRecordedSession").parsed
-    log.debug("replay", var)
+    log.debug("replay" + str(var))
     var = rpc.call("com.apple.instruments.server.services.networking", "startMonitoring").parsed
-    log.debug("start", var)
+    log.debug("start", str(var))
     time.sleep(10)
     var = rpc.call("com.apple.instruments.server.services.networking", "stopMonitoring").parsed
-    log.debug("stopMonitoring", var)
+    log.debug("stopMonitoring", str(var))
     rpc.stop()
 
 
 if __name__ == '__main__':
     rpc = get_usb_rpc()
-    networking(rpc,"test2.txt")
+    networking(rpc, "test2.txt")
     rpc.deinit()

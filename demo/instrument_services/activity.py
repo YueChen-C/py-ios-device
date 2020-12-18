@@ -11,6 +11,7 @@ from util import logging
 
 log = logging.getLogger(__name__)
 
+
 def activity(rpc, pid):
     def on_callback_message(res):
         log.debug("[ACTIVITY]", res.parsed)
@@ -19,11 +20,11 @@ def activity(rpc, pid):
     pre_call(rpc)
     rpc.register_channel_callback("com.apple.instruments.server.services.activity", on_callback_message)
     var = rpc.call("com.apple.instruments.server.services.activity", "startSamplingWithPid:", pid).parsed
-    log.debug("start", var)
+    log.debug("start" + str(var))
 
     time.sleep(10)
     var = rpc.call("com.apple.instruments.server.services.activity", "stopSampling").parsed
-    log.debug("stop", var)
+    log.debug("stop" + str(var))
     rpc.stop()
 
 
