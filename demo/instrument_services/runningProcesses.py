@@ -3,20 +3,25 @@
 """
 import os
 import sys
+
 sys.path.append(os.getcwd())
 from instrument.RPC import get_usb_rpc
+from util import logging
+
+log = logging.getLogger(__name__)
 
 
 def runningProcesses(rpc):
     rpc.start()
     running = rpc.call("com.apple.instruments.server.services.deviceinfo", "runningProcesses").parsed
-    print("runningProcesses:")
+    log.debug("runningProcesses:")
     headers = '\t'.join(sorted(running[0].keys()))
-    print(headers)
+    log.debug(headers)
     for item in running:
         sorted_item = sorted(item.items())
-        print('\t'.join(map(str, [v for _, v in sorted_item])))
+        log.debug('\t'.join(map(str, [v for _, v in sorted_item])))
     rpc.stop()
+    return running
 
 
 if __name__ == '__main__':

@@ -1,8 +1,6 @@
 """
 Plist Service - handles parsing and formatting plist content
 """
-from _ssl import PROTO_TLSv1_3
-
 from util import logging
 import plistlib
 import re
@@ -43,7 +41,7 @@ class PlistService:
             buf = self.sock.recv(length)
             return buf
         except Exception as E:
-            print('sock: None ')
+            log.debug('sock: None ')
             return b''
 
     def close(self):
