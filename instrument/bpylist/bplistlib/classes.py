@@ -45,16 +45,20 @@ class IntegerHandler(object):
 
     def __init__(self):
         self.type_number = 1
-        self.formats = ('b', '>h', '>l', '>q')
+        self.formats = ('B', '>H', '>L', '>Q')
         self.types = int
 
     def get_object_length(self, integer):
-        """Return the object length for an integer."""
+        """Return the object length for an unsigned integer."""
         bit_lengths = [8 * 2 ** x for x in range(4)]
-        limits = [2 ** (bit_length - 1) for bit_length in bit_lengths]
+        limits = [2 ** bit_length for bit_length in bit_lengths]
         for index, limit in enumerate(limits):
-            if -limit <= integer < limit:
-                return index
+            if index == 0:
+                if 0 <= integer <= limit:
+                    return index
+            else:
+                if limits[index - 1] < integer <= limit:
+                    return index
         raise ValueError
 
     def get_byte_length(self, object_length):
@@ -370,10 +374,6 @@ class ObjectHandler(object):
         object_length = handler.get_object_length(object_)
         first_byte = self.encode_first_byte(handler.type_number, object_length)
         body = handler.encode_body(object_, object_length)
-        if isinstance(first_byte,str):
-            print(first_byte)
-        if isinstance(body, str):
-            print(body)
         return first_byte + body
 
     def decode(self, file_object, handler=None):
