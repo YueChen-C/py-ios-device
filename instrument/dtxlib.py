@@ -5,6 +5,7 @@ dtx massage 协议头
 import struct
 from ctypes import Structure, \
     c_uint32, c_uint16, c_uint64, c_int64, sizeof
+from instrument.bpylist.bplistlib.readwrite import load
 
 from instrument.bpylist import archiver
 
@@ -96,9 +97,10 @@ class DTXMessage:
     def from_bytes(self, buffer: bytes):
         cursor = 0
         ret = DTXMessage()
+        backup_buf = buffer
         ret._buf = buffer
         payload_buf = b''
-        ret._message_header = DTXMessageHeader.from_buffer_copy(buffer[cursor:cursor + sizeof(DTXMessageHeader)])  # 头长度
+        ret._message_header = DTXMessageHeader.from_buffer_copy(buffer[cursor:cursor + sizeof(DTXMessageHeader)])
         cursor = sizeof(DTXMessageHeader)
         has_payload = ret._message_header.length > 0
         if not has_payload:
@@ -118,12 +120,12 @@ class DTXMessage:
                 assert len(buffer[cursor: cursor + subhdr.length]) == subhdr.length
                 payload_buf += buffer[cursor: cursor + subhdr.length]
                 cursor += subhdr.length
+                # print(subhdr.magic, subhdr.fragmentCount, subhdr.fragmentId, subhdr.length)
                 assert subhdr.magic == ret._message_header.magic
             assert cursor == len(buffer)
         buffer = payload_buf
         cursor = 0
-        ret._payload_header = DTXMessagePayloadHeader.from_buffer_copy(
-            buffer[cursor:cursor + sizeof(DTXMessagePayloadHeader)])  # 包体长度
+        ret._payload_header = DTXMessagePayloadHeader.from_buffer_copy(buffer[cursor:cursor + sizeof(DTXMessagePayloadHeader)])
         cursor += sizeof(DTXMessagePayloadHeader)
         if ret._payload_header.totalLength == 0:
             return ret
@@ -133,8 +135,31 @@ class DTXMessage:
             ret._auxiliaries_header = DTXAuxiliariesHeader.from_buffer_copy(
                 buffer[cursor:cursor + sizeof(DTXAuxiliariesHeader)])
             cursor += sizeof(DTXAuxiliariesHeader)
+            i = 0
+            while i < ret._auxiliaries_header.length:
+                m, t = struct.unpack("<II", buffer[cursor + i: cursor + i + 8])
+                if m != 0xa:  # magic
+                    raise ValueError("incorrect auxiliary magic")
+                if t == 2:  # CFStringRef
+                    l, = struct.unpack("<I", buffer[cursor + i + 8: cursor + i + 12])
+                    ret._auxiliaries.append(buffer[cursor + i: cursor + i + 12 + l])
+                    i += 12 + l
+                elif t == 3:  # int32_t
+                    ret._auxiliaries.append(buffer[cursor + i: cursor + i + 12])
+                    i += 12
+                elif t == 4:  # int64_t
+                    ret._auxiliaries.append(buffer[cursor + i: cursor + i + 16])
+                    i += 16
+                elif t == 6:
+                    ret._auxiliaries.append(buffer[cursor + i: cursor + i + 16])
+                    i += 16
+                else:
+                    raise ValueError("unknown auxiliary type")
+            if i != ret._auxiliaries_header.length:
+                raise ValueError("incorrect DTXAuxiliariesHeader.length")
             cursor += ret._auxiliaries_header.length
         ret._selector = buffer[cursor:]
+        assert ret.to_bytes() == backup_buf, "correctness check"
         return ret
 
     def to_bytes(self) -> bytes:
@@ -305,8 +330,10 @@ if __name__ == '__main__':
     #     b'\fU$null_\x10#_requestChannelWithCode:identifier:\b\x11\x1a$)27ILQSV\\\x00\x00\x00\x00\x00\x00\x01\x01\x00' \
     #     b'\x00\x00\x00\x00\x00\x00\r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x82'
 
-    buf = b'y[=\x1f \x00\x00\x00\x00\x00\x01\x00\xa3\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\xe4\x00\x00\x00\x93\x01\x00\x00\x00\x00\x00\x00\xf0\x01\x00\x00\x00\x00\x00\x00\xd4\x00\x00\x00\x00\x00\x00\x00\n\x00\x00\x00\x03\x00\x00\x00\x01\x00\x00\x00\n\x00\x00\x00\x02\x00\x00\x00\xbc\x00\x00\x00bplist00\xd4\x01\x02\x03\x04\x05\x06\x07\nY$archiverX$versionX$objectsT$top_\x10\x0fNSKeyedArchiver\x12\x00\x01\x86\xa0\xa2\x08\tU$null_\x100com.apple.instruments.server.instrument_services.deviceinfo\xd1\x0b\x0cTroot\x80\x01\x08\x11\x1b$-2DILR\x85\x88\x8d\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x8fbplist00\xd4\x01\x02\x03\x04\x05\x06\x07\nY$archiverX$versionX$objectsT$top_\x10\x0fNSKeyedArchiver\x12\x00\x01\x86\xa0\xa2\x08\tU$null_\x10#_requestChannelWithCode:identifier:\xd1\x0b\x0cTroot\x80\x01\x08\x11\x1b$-2DILRx{\x80\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x82'
+    buf = b'y[=\x1f \x00\x00\x00\x00\x00\x01\x00\x9c\x00\x00\x00\x03\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x8c\x00\x00\x00\x00\x00\x00\x00bplist00\xd4\x01\x02\x03\x04\x05\x06\t\nX$versionX$objectsY$archiverT$top\x12\x00\x01\x86\xa0\xa2\x07\x08U$null\x11\xda\x92_\x10\x0fNSKeyedArchiver\xd1\x0b\x0cTroot\x80\x01\x08\x11\x1a#-27:@CUX]\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00_' \
 
-    # hexdump(buf[:100])
     # hexdump(buf[h1.length + sz + sz:][:100])
     p = DTXMessage.from_bytes(buf)
+
+    print(p)
+    print(load(p.get_selector()))
