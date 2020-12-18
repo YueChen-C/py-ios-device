@@ -12,7 +12,7 @@ from util import logging
 log = logging.getLogger(__name__)
 
 
-def networking(rpc, file_path: str = None):
+def networking(rpc, call_back):
     headers = {
         0: ['InterfaceIndex', "Name"],
         1: ['LocalAddress', 'RemoteAddress', 'InterfaceIndex', 'Pid', 'RecvBufferSize', 'RecvBufferUsed',
@@ -61,16 +61,13 @@ def networking(rpc, file_path: str = None):
             elif len(data[1][0]) == 28:
                 data[1][0] = str(SockAddr6.from_buffer_copy(data[1][0]))
                 data[1][1] = str(SockAddr6.from_buffer_copy(data[1][1]))
-        if file_path:
-            temp_dict = dict(zip(headers[data[0]], data[1]))
-            temp_dict["msg_type"] = msg_type[data[0]]
-            with open(file_path, 'a+') as file:
-                file.write(json.dumps(temp_dict) + os.linesep)
+
         log.debug(msg_type[data[0]] + json.dumps(dict(zip(headers[data[0]], data[1]))))
         # print("[data]", res.parsed)
 
     pre_call(rpc)
-    rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
+    # rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
+    rpc.register_channel_callback("com.apple.instruments.server.services.networking", call_back)
     var = rpc.call("com.apple.instruments.server.services.networking", "replayLastRecordedSession").parsed
     log.debug("replay" + str(var))
     var = rpc.call("com.apple.instruments.server.services.networking", "startMonitoring").parsed
