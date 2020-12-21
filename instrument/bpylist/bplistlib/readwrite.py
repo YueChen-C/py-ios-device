@@ -1,7 +1,6 @@
 # encoding: utf-8
 """This file contains private read/write functions for the bplistlib module."""
 import plistlib
-import tempfile
 
 from instrument.bpylist.bplistlib.classes import ObjectHandler, TableHandler
 from instrument.bpylist.bplistlib.classes import TrailerHandler

@@ -2,6 +2,8 @@ import os
 import sys
 from threading import Event
 
+from instrument.dtxlib import auxiliary_to_pyobject
+
 sys.path.append(os.getcwd())
 from instrument import RPC
 
@@ -9,7 +11,9 @@ from instrument import RPC
 def launch_app(rpc, bundleid):
 
     def on_channel_message(res):
-        print(res)
+        if res.raw._auxiliaries:
+            for buf in res.raw._auxiliaries:
+                print(auxiliary_to_pyobject(buf))
 
     rpc.start()
     channel = "com.apple.instruments.server.services.processcontrol"
