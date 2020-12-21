@@ -13,6 +13,7 @@ from util import logging
 
 log = logging.getLogger(__name__)
 
+
 def sysmontap(rpc):
     done = Event()
 
@@ -24,7 +25,7 @@ def sysmontap(rpc):
 
     def on_sysmontap_message(res):
         if isinstance(res.parsed, list):
-            log.debug(json.dumps(res.parsed, indent=4))
+            print(json.dumps(res.parsed, indent=4))
 
     rpc.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
     rpc.register_unhandled_callback(dropped_message)
@@ -33,9 +34,17 @@ def sysmontap(rpc):
         log.debug("[WARN] timeout waiting capabilities")
     rpc.call("com.apple.instruments.server.services.sysmontap", "setConfig:", {
         'ur': 1000,  # 输出频率 ms
-        'procAttrs': ['pid', 'memVirtualSize', 'cpuUsage', 'ctxSwitch', 'intWakeups', 'physFootprint',
-                      'memResidentSize',
-                      'memAnon', 'powerScore', 'diskBytesRead'],  # 输出所有进程信息，字段顺序与自定义相同
+        'bm': 0,
+        'procAttrs': ['memVirtualSize', 'cpuUsage', 'procStatus', 'appSleep', 'uid', 'vmPageIns', 'memRShrd',
+                      'ctxSwitch', 'memCompressed', 'intWakeups', 'cpuTotalSystem', 'responsiblePID', 'physFootprint',
+                      'cpuTotalUser', 'sysCallsUnix', 'memResidentSize', 'sysCallsMach', 'memPurgeable',
+                      'diskBytesRead', 'machPortCount', '__suddenTerm', '__arch', 'memRPrvt', 'msgSent', 'ppid',
+                      'threadCount', 'memAnon', 'diskBytesWritten', 'pgid', 'faults', 'msgRecv', '__restricted', 'pid',
+                      '__sandbox'],  # 输出所有进程信息字段，字段顺序与自定义相同（全量自字段，按需使用）
+        'sysAttrs': ['diskWriteOps', 'diskBytesRead', 'diskBytesWritten', 'threadCount', 'vmCompressorPageCount',
+                     'vmExtPageCount', 'vmFreeCount', 'vmIntPageCount', 'vmPurgeableCount', 'netPacketsIn',
+                     'vmWireCount', 'netBytesIn', 'netPacketsOut', 'diskReadOps', 'vmUsedCount', '__vmSwapUsage',
+                     'netBytesOut'],  # 系统信息字段
         'cpuUsage': True,
         'sampleInterval': 1000000000})
     rpc.register_channel_callback("com.apple.instruments.server.services.sysmontap", on_sysmontap_message)
