@@ -8,7 +8,7 @@ sys.path.append(os.getcwd())
 from instrument import RPC
 
 
-def launch_app(rpc, bundleid):
+def _launch_app(rpc, bundleid, callback):
 
     def on_channel_message(res):
         if res.raw._auxiliaries:
@@ -17,7 +17,8 @@ def launch_app(rpc, bundleid):
 
     rpc.start()
     channel = "com.apple.instruments.server.services.processcontrol"
-    rpc.register_channel_callback(channel, on_channel_message)
+    # rpc.register_channel_callback(channel, on_channel_message)
+    rpc.register_channel_callback(channel, callback)
     pid = rpc.call(channel, "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:", "",
                    bundleid, {}, [], {"StartSuspendedKey": 0, "KillExisting": 1}).parsed
     print("start", pid)
@@ -25,5 +26,5 @@ def launch_app(rpc, bundleid):
 
 if __name__ == '__main__':
     rpc = RPC.get_usb_rpc()
-    launch_app(rpc, 'cn.rongcloud.im')
+    _launch_app(rpc, 'cn.rongcloud.im')
     rpc.stop()
