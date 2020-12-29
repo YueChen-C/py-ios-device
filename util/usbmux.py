@@ -11,7 +11,7 @@ import sys
 import plistlib
 from typing import Dict, Union, Optional, Tuple, Any, Mapping, List
 
-from .exceptions import MuxError, MuxVersionError, NoMuxDeviceFound
+from util.exceptions import MuxError, MuxVersionError, NoMuxDeviceFound
 
 __all__ = ['USBMux', 'MuxConnection', 'MuxDevice', 'UsbmuxdClient']
 
@@ -57,6 +57,7 @@ class MuxConnection:
                 raise MuxError('Invalid packet type received: %d' % resp)
 
     def _processpacket(self):
+
         resp, tag, data = self.proto.getpacket()
         if resp == self.proto.TYPE_DEVICE_ADD:
             self.devices.append(
@@ -134,20 +135,23 @@ class USBMux:
     def process(self, timeout: float = 0.1):
         self.listener.process(timeout)
 
-    def find_device(self, serial=None, timeout=0.1, max_attempts=5) -> MuxDevice:
+    def find_device(self, serial=None, timeout=0.1, max_attempts=10) -> MuxDevice:
         attempts = 0
-        while not self.devices and attempts < max_attempts:
+        _dev = None
+
+        while not _dev and attempts < max_attempts:
             self.process(timeout)
             attempts += 1
-
-        if self.devices:
-            if serial:
-                for device in self.devices:
-                    if device.serial == serial:
-                        return device
-                raise NoMuxDeviceFound(f'Found {len(self.devices)} MuxDevice instances, but none with {serial}')
-            else:
-                return self.devices[0]
+            if self.devices:
+                if serial:
+                    for device in self.devices:
+                        if device.serial == serial:
+                            _dev = device
+                            return device
+                else:
+                    return self.devices[0]
+        if serial:
+            raise NoMuxDeviceFound(f'Found {len(self.devices)} MuxDevice instances, but none with {serial}')
 
         raise NoMuxDeviceFound('No MuxDevice instances were found')
 
@@ -236,7 +240,7 @@ class PlistProtocol(BinaryProtocol):
     TYPE_CONNECT = 'Connect'
     TYPE_LISTEN = 'Listen'
     TYPE_DEVICE_ADD = 'Attached'
-    TYPE_DEVICE_REMOVE = 'Detached'  #???
+    TYPE_DEVICE_REMOVE = 'Detached'  # ???
     TYPE_PLIST = 8
     VERSION = 1
 
