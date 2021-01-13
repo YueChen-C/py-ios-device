@@ -12,7 +12,7 @@ from util import logging
 log = logging.getLogger(__name__)
 
 
-def networking(rpc, call_back):
+def networking(rpc):
     headers = {
         0: ['InterfaceIndex', "Name"],
         1: ['LocalAddress', 'RemoteAddress', 'InterfaceIndex', 'Pid', 'RecvBufferSize', 'RecvBufferUsed',
@@ -62,23 +62,22 @@ def networking(rpc, call_back):
                 data[1][0] = str(SockAddr6.from_buffer_copy(data[1][0]))
                 data[1][1] = str(SockAddr6.from_buffer_copy(data[1][1]))
 
-        log.debug(msg_type[data[0]] + json.dumps(dict(zip(headers[data[0]], data[1]))))
+        print(msg_type[data[0]] + json.dumps(dict(zip(headers[data[0]], data[1]))))
         # print("[data]", res.parsed)
 
     pre_call(rpc)
-    # rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
-    rpc.register_channel_callback("com.apple.instruments.server.services.networking", call_back)
+    rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
     var = rpc.call("com.apple.instruments.server.services.networking", "replayLastRecordedSession").parsed
-    log.debug("replay" + str(var))
+    log.debug(f"replay {var}")
     var = rpc.call("com.apple.instruments.server.services.networking", "startMonitoring").parsed
-    log.debug("start", str(var))
+    log.debug(f"start {var}")
     time.sleep(10)
     var = rpc.call("com.apple.instruments.server.services.networking", "stopMonitoring").parsed
-    log.debug("stopMonitoring", str(var))
+    log.debug(f"stopMonitoring {var}")
     rpc.stop()
 
 
 if __name__ == '__main__':
     rpc = get_usb_rpc()
-    networking(rpc, "test2.txt")
+    networking(rpc)
     rpc.deinit()

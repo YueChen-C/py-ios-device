@@ -12,20 +12,20 @@ from util import logging
 log = logging.getLogger(__name__)
 
 
-def activity(rpc, pid, callback):
+def activity(rpc, pid):
     def on_callback_message(res):
-        log.debug("[ACTIVITY]", res.parsed)
-        log.debug("\n")
+        print(f"[ACTIVITY] {res.parsed}", )
+        print("\n")
 
     pre_call(rpc)
-    # rpc.register_channel_callback("com.apple.instruments.server.services.activity", on_callback_message)
-    rpc.register_channel_callback("com.apple.instruments.server.services.activity", callback)
+    rpc.register_channel_callback("com.apple.instruments.server.services.activity", on_callback_message)
+    # rpc.register_channel_callback("com.apple.instruments.server.services.activity", callback)
     var = rpc.call("com.apple.instruments.server.services.activity", "startSamplingWithPid:", pid).parsed
-    log.debug("start" + str(var))
+    log.debug(f"start {var}")
 
     time.sleep(10)
     var = rpc.call("com.apple.instruments.server.services.activity", "stopSampling").parsed
-    log.debug("stop" + str(var))
+    log.debug(f"stop {var}")
     rpc.stop()
 
 

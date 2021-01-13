@@ -17,7 +17,7 @@ def channels(rpc):
         done.set()
         log.debug("Published capabilities:")
         for k, v in auxiliary_to_pyobject(res.raw._auxiliaries[0]).items():
-            log.debug(k, v)
+            print(k, v)
 
     rpc.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
     rpc.start()

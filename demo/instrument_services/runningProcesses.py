@@ -19,7 +19,7 @@ def runningProcesses(rpc):
     log.debug(headers)
     for item in running:
         sorted_item = sorted(item.items())
-        log.debug('\t'.join(map(str, [v for _, v in sorted_item])))
+        print('\t'.join(map(str, [v for _, v in sorted_item])))
     rpc.stop()
     return running
 

@@ -21,7 +21,7 @@ def sysmontap(rpc):
         done.set()
 
     def dropped_message(res):
-        log.debug("[DROP]", res.parsed, res.raw.channel_code)
+        print("[DROP]", res.parsed, res.raw.channel_code)
 
     def on_sysmontap_message(res):
         if isinstance(res.parsed, list):
@@ -31,7 +31,7 @@ def sysmontap(rpc):
     rpc.register_unhandled_callback(dropped_message)
     rpc.start()
     if not done.wait(5):
-        log.debug("[WARN] timeout waiting capabilities")
+        print("[WARN] timeout waiting capabilities")
     rpc.call("com.apple.instruments.server.services.sysmontap", "setConfig:", {
         'ur': 1000,  # 输出频率 ms
         'bm': 0,
@@ -49,10 +49,10 @@ def sysmontap(rpc):
         'sampleInterval': 1000000000})
     rpc.register_channel_callback("com.apple.instruments.server.services.sysmontap", on_sysmontap_message)
     var = rpc.call("com.apple.instruments.server.services.sysmontap", "start").parsed
-    print("start" + str(var))
+    print(f"start {var}")
     time.sleep(10)
     var = rpc.call("com.apple.instruments.server.services.sysmontap", "stop").parsed
-    print("stop" + str(var))
+    print(f"stop {var}")
     rpc.stop()
 
 
