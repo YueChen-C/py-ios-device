@@ -51,7 +51,7 @@ class PlistService:
         buffer = bytearray(to_read)
         view = memoryview(buffer)
         while view:
-            received=self.sock.recv_into(view, to_read)
+            received = self.sock.recv_into(view, to_read)
             if received:
                 view = view[received:]
                 to_read -= received
@@ -66,15 +66,12 @@ class PlistService:
         payload = self.recv_exact(struct.unpack('>L', resp)[0])
         if not payload:
             return None
-        log.debug(f'接收 Plist byte: {payload}')
         if payload.startswith(b'bplist00'):
             data = plistlib.loads(payload)
-            log.debug(f'接收 Plist: {data}')
             return data
         elif payload.startswith(b'<?xml'):
             payload = HARDWARE_PLATFORM_SUB('', payload.decode('utf-8')).encode('utf-8')
             data = plistlib.loads(payload)
-            log.debug(f'接收 Plist: {data}')
             return data
         else:
             raise ValueError('Received invalid data: {}'.format(payload[:100].decode('hex')))

@@ -3,13 +3,14 @@ USBMux client that handles iDevice descovery via USB.
 
 :author: Doug Skrypa (original: Hector Martin "marcan" <hector@marcansoft.com>)
 """
-
+from util import logging
 import select
 import socket
 import struct
 import sys
 import plistlib
 from typing import Dict, Union, Optional, Tuple, Any, Mapping, List
+log = logging.getLogger(__name__)
 
 from util.exceptions import MuxError, MuxVersionError, NoMuxDeviceFound
 
@@ -257,14 +258,18 @@ class PlistProtocol(BinaryProtocol):
             req = [self.TYPE_CONNECT, self.TYPE_LISTEN][req - 2]
         payload['MessageType'] = req
         payload['ProgName'] = 'tcprelay'
+        log.debug(f'发送 Plist: {payload}')
         wrapped_payload = plistlib.dumps(payload)
+        log.debug(f'发送 Plist byte: {wrapped_payload}')
         super().sendpacket(self.TYPE_PLIST, tag, wrapped_payload)
 
     def getpacket(self):
         resp, tag, payload = super().getpacket()
+        log.debug(f'接收 Plist byte: {payload}')
         if resp != self.TYPE_PLIST:
             raise MuxError('Received non-plist type %d' % resp)
         payload = plistlib.loads(payload)
+        log.debug(f'接收 Plist: {payload}')
         return payload.get('MessageType', ''), tag, payload
 
 
