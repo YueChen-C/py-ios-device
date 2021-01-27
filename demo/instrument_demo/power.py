@@ -3,8 +3,10 @@ import time
 import os
 import sys
 
+from servers.Instrument import InstrumentServer
+
 sys.path.append(os.getcwd())
-from instrument.RPC import get_usb_rpc
+
 from util import logging
 
 log = logging.getLogger(__name__)
@@ -43,6 +45,6 @@ def power(rpc):
 
 
 if __name__ == '__main__':
-    rpc = get_usb_rpc()
+    rpc = InstrumentServer().init()
     power(rpc)
     rpc.deinit()

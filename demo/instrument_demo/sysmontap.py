@@ -4,11 +4,12 @@
 import os
 import sys
 
+from servers.Instrument import InstrumentServer
+
 sys.path.append(os.getcwd())
 import json
 import time
 from threading import Event
-from instrument import RPC
 from util import logging
 
 log = logging.getLogger(__name__)
@@ -57,6 +58,6 @@ def sysmontap(rpc):
 
 
 if __name__ == '__main__':
-    rpc = RPC.get_usb_rpc()
+    rpc = InstrumentServer().init()
     sysmontap(rpc)
     rpc.deinit()

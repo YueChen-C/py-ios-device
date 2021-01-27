@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/servers/env python
 # -*- coding: utf8 -*-
 #
 # $Id$

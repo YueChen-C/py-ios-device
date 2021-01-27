@@ -17,6 +17,9 @@ HARDWARE_PLATFORM_SUB = re.compile(r'[^\w<>/ \-_0-9\"\'\\=.?!+]+').sub
 
 
 class PlistService:
+    def __exit__(self, *args):
+        self.close()
+
     def __init__(
             self,
             port: int,
@@ -41,7 +44,6 @@ class PlistService:
             buf = self.sock.recv(length)
             return buf
         except Exception as E:
-            log.debug('sock: None ')
             return b''
 
     def close(self):
@@ -64,6 +66,8 @@ class PlistService:
         if not resp or len(resp) != 4:
             return None
         payload = self.recv_exact(struct.unpack('>L', resp)[0])
+        log.debug(f'接收 Plist byte: {payload}')
+
         if not payload:
             return None
         if payload.startswith(b'bplist00'):
@@ -72,6 +76,7 @@ class PlistService:
         elif payload.startswith(b'<?xml'):
             payload = HARDWARE_PLATFORM_SUB('', payload.decode('utf-8')).encode('utf-8')
             data = plistlib.loads(payload)
+            log.debug(f'接收 Plist data: {data}')
             return data
         else:
             raise ValueError('Received invalid data: {}'.format(payload[:100].decode('hex')))

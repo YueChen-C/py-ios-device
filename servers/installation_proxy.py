@@ -26,7 +26,7 @@ import os
 import logging
 
 from optparse import OptionParser
-from .afc import AFCClient
+from servers.afc import AFCClient
 
 from util.lockdown import LockdownClient
 
@@ -163,10 +163,15 @@ class installation_proxy(object):
 
     def print_apps(self, appType=["User"]):
         for app in self.get_apps(appType):
-            print(("%s : %s => %s" % (app.get("CFBundleDisplayName"),
-                                      app.get("CFBundleIdentifier"),
-                                      app.get("Path") if app.get("Path")
-                                      else app.get("Container"))).encode('utf-8'))
+            print((f"%s : %s => %s" % (app.get("CFBundleDisplayName"),
+                                       app.get("CFBundleIdentifier"),
+                                       app.get("Path") if app.get("Path")
+                                       else app.get("Container"))).encode('utf-8'))
+
+    def find_bundle_id(self, bundle_id):
+        for app in self.get_apps():
+            if app.get('CFBundleIdentifier') == bundle_id:
+                return app
 
     def get_apps_bid(self, appTypes=["User"]):
         return [app["CFBundleIdentifier"]
@@ -175,5 +180,3 @@ class installation_proxy(object):
 
     def close(self):
         self.service.close()
-
-

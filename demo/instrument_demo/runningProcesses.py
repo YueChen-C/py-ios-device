@@ -5,7 +5,7 @@ import os
 import sys
 
 sys.path.append(os.getcwd())
-from instrument.RPC import get_usb_rpc
+from servers.Instrument import InstrumentServer
 from util import logging
 
 log = logging.getLogger(__name__)
@@ -25,6 +25,6 @@ def runningProcesses(rpc):
 
 
 if __name__ == '__main__':
-    rpc = get_usb_rpc()
+    rpc = InstrumentServer().init()
     runningProcesses(rpc)
     rpc.deinit()

@@ -140,7 +140,7 @@ class DateHandler(FloatHandler):
         return datetime.fromtimestamp(seconds)
 
 
-class DataHander(object):
+class ByteArrayHander(object):
     """Handler class for arbitrary binary data. Uses plistlib.Data."""
 
     def __init__(self):
@@ -159,6 +159,31 @@ class DataHander(object):
     def encode_body(self, data, object_length):
         """Get the binary data from the Data object."""
         return data.data
+
+    def decode_body(self, raw, object_length):
+        """Store the binary data in a Data object."""
+        return bytearray(raw)
+
+
+class BytesHander(object):
+    """Handler class for arbitrary binary data. Uses plistlib.Data."""
+
+    def __init__(self):
+        self.type_number = 4
+        # this is ugly but maintains interop with plistlib.
+        self.types = bytes
+
+    def get_object_length(self, data):
+        """Get the length of the data stored inside the Data object."""
+        return len(data)
+
+    def get_byte_length(self, object_length):
+        """Return the object length."""
+        return object_length
+
+    def encode_body(self, data, object_length):
+        """Get the binary data from the Data object."""
+        return data
 
     def decode_body(self, raw, object_length):
         """Store the binary data in a Data object."""
@@ -344,7 +369,7 @@ class ObjectHandler(object):
     def __init__(self):
         """Intialize one of every (useful) handler class."""
         handlers = [BooleanHandler(), IntegerHandler(), FloatHandler(),
-                    DateHandler(), DataHander(), StringHandler(),
+                    DateHandler(), ByteArrayHander(),BytesHander(),StringHandler(),
                     UnicodeStringHandler(), ArrayHandler(self),
                     DictionaryHandler(self), UIDHandler()]
         self.size_handler = UIDHandler()

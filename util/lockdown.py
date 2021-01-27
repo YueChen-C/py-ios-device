@@ -180,7 +180,7 @@ class LockdownClient:
                 raise StartServiceError(f'Unable to start service={name!r} - a password must be entered on the device')
             error = resp.get('Error')
             raise StartServiceError(f'Unable to start service={name!r} - {error}')
-
+        logging.debug(f'connect port: {resp.get("Port")}')
         plist_service = PlistService(
             resp.get('Port'), self.udid, ssl_file=self.sslfile if resp.get('EnableServiceSSL', False) else None
         )

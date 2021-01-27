@@ -1,11 +1,10 @@
 import os
 import sys
-from threading import Event
 
-from instrument.dtxlib import auxiliary_to_pyobject
+from servers.Instrument import InstrumentServer
+from util.dtxlib import auxiliary_to_pyobject
 
 sys.path.append(os.getcwd())
-from instrument import RPC
 
 
 def _launch_app(rpc, bundleid):
@@ -24,6 +23,6 @@ def _launch_app(rpc, bundleid):
 
 
 if __name__ == '__main__':
-    rpc = RPC.get_usb_rpc()
+    rpc = InstrumentServer().init()
     _launch_app(rpc, 'cn.rongcloud.im')
     rpc.stop()

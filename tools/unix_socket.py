@@ -20,8 +20,8 @@ import socket
 import _thread
 from _ctypes import sizeof
 from time import sleep
-from instrument.bpylist.bplistlib.readwrite import load
-from instrument.dtxlib import DTXMessage, auxiliary_to_pyobject, DTXMessageHeader
+from servers.bpylist.bplistlib.readwrite import load
+from util.dtxlib import DTXMessage, auxiliary_to_pyobject, DTXMessageHeader
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s')
@@ -55,6 +55,20 @@ def check_buf(buf,direction):
                 logging.debug(f'PlistByte:{data}')
                 data = plistlib.loads(data)
                 print(direction,'PlistData:', data)
+
+        elif buf[4:].startswith(b'bplist00'):
+            cursor = buf[0:4]
+            if not cursor or len(cursor) != 4:
+                return None
+            cursor = struct.unpack('>L', cursor)[0]
+            payload = buf[4:4 + cursor]
+            cursor += 4
+            if not payload:
+                return None
+            logging.debug(f'PlistByte:{payload}')
+            data = plistlib.loads(payload)
+            print(direction,'PlistData', data)
+
         elif buf[:4] == b'y[=\x1f':
             try:
                 _message_header = DTXMessageHeader.from_buffer_copy(buf[0: sizeof(DTXMessageHeader)])

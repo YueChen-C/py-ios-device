@@ -3,8 +3,8 @@ import sys
 
 sys.path.append(os.getcwd())
 from threading import Event
-from instrument.RPC import get_usb_rpc
-from instrument.dtxlib import auxiliary_to_pyobject
+from servers.Instrument import InstrumentServer
+from util.dtxlib import auxiliary_to_pyobject
 from util import logging
 
 log = logging.getLogger(__name__)
@@ -27,6 +27,6 @@ def channels(rpc):
 
 
 if __name__ == '__main__':
-    rpc = get_usb_rpc()
+    rpc = InstrumentServer().init()
     channels(rpc)
     rpc.deinit()

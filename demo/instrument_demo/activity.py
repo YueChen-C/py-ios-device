@@ -5,8 +5,10 @@ import time
 import os
 import sys
 
+from servers.DTXSever import pre_call
+
 sys.path.append(os.getcwd())
-from instrument.RPC import pre_call, get_usb_rpc
+from servers.Instrument import  InstrumentServer
 from util import logging
 
 log = logging.getLogger(__name__)
@@ -30,6 +32,6 @@ def activity(rpc, pid):
 
 
 if __name__ == '__main__':
-    rpc = get_usb_rpc()
+    rpc = InstrumentServer().init()
     activity(rpc, 31630)
     rpc.deinit()

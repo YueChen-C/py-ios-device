@@ -10,6 +10,7 @@ import struct
 import sys
 import plistlib
 from typing import Dict, Union, Optional, Tuple, Any, Mapping, List
+
 log = logging.getLogger(__name__)
 
 from util.exceptions import MuxError, MuxVersionError, NoMuxDeviceFound
@@ -114,7 +115,11 @@ class MuxConnection:
         return self.socket.sock
 
     def close(self):
+        logging.debug("Socket %r closed", self)
         self.socket.sock.close()
+
+    def __exit__(self, *args):
+        self.close()
 
 
 class USBMux:
