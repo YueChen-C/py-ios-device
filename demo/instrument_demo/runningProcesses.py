@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 
 
 def runningProcesses(rpc):
-    rpc.start()
     running = rpc.call("com.apple.instruments.server.services.deviceinfo", "runningProcesses").parsed
     log.debug("runningProcesses:")
     headers = '\t'.join(sorted(running[0].keys()))

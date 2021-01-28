@@ -1,11 +1,12 @@
 import logging
+import os
 import threading
 from distutils.version import LooseVersion
 
 from servers.DTXSever import DTXServerRPCRawObj
 from servers.Instrument import InstrumentServer
 from servers.house_arrest import HouseArrestClient
-from servers.installation_proxy import installation_proxy
+from servers.InstallationProxy import InstallationProxy
 from servers.testmanagerd import TestManagerdLockdown
 from util.bpylist.archiver import archive
 from util.bpylist.bplistlib._types import XCTestConfiguration, NSURL, NSUUID
@@ -20,7 +21,7 @@ class RunXCUITest:
 
     def start(self):
         self.lockdown = LockdownClient(udid=self.udid)
-        installation = installation_proxy(lockdown=self.lockdown)
+        installation = InstallationProxy(lockdown=self.lockdown)
         app_info = installation.find_bundle_id(self.bundle_id)
         if not app_info:
             raise Exception("No app matches", self.bundle_id)
@@ -29,12 +30,11 @@ class RunXCUITest:
         sign_identity = app_info.get("SignerIdentity", "")
         logging.info("SignIdentity: %r", sign_identity)
         XCODE_VERSION = 29
-        session_identifier = NSUUID('96508379-4d3b-4010-87d1-6483300a7b76')
+        session_identifier = NSUUID(bytes=os.urandom(16), version=4)
         ManagerdLockdown1 = TestManagerdLockdown(self.lockdown).init()
         done = threading.Event()
 
         ManagerdLockdown1.register_callback("_notifyOfPublishedCapabilities:", lambda _: done.set())
-        ManagerdLockdown1.start()
         if not done.wait(5):
             logging.debug("[WARN] timeout waiting capabilities")
         quit_event = threading.Event()
@@ -50,7 +50,6 @@ class RunXCUITest:
         ManagerdLockdown2 = TestManagerdLockdown(self.lockdown).init()
         done = threading.Event()
         ManagerdLockdown2.register_callback("_notifyOfPublishedCapabilities:", lambda _: done.set())
-        ManagerdLockdown2.start()
         if not done.wait(5):
             logging.debug("[WARN] timeout waiting capabilities")
 
@@ -101,13 +100,12 @@ class RunXCUITest:
         for fname in fsync.read_directory("/tmp"):
             if fname.endswith(".xctestconfiguration"):
                 logging.debug("remove /tmp/%s", fname)
-                fsync.remove_directory("/tmp/" + fname)
+                fsync.file_remove("/tmp/" + fname)
         fsync.set_file_contents(xctest_path, xctest_content)
 
         conn = InstrumentServer(self.lockdown).init()
         done = threading.Event()
         conn.register_callback("_notifyOfPublishedCapabilities:", lambda _: done.set())
-        conn.start()
         if not done.wait(5):
             logging.debug("[WARN] timeout waiting capabilities")
         conn.call('com.apple.instruments.server.services.processcontrol', 'processIdentifierForBundleIdentifier:',
@@ -184,5 +182,5 @@ class RunXCUITest:
 
 
 if __name__ == '__main__':
-    bundle_id = 'com.facebook.wda.WebDriverAgent.Runner'
+    bundle_id = 'cn.rongcloud.rce.autotest.xctrunner'
     RunXCUITest(bundle_id).start()

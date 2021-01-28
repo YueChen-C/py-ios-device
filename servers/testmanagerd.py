@@ -1,3 +1,5 @@
+from distutils.version import LooseVersion
+
 from servers.DTXSever import DTXServerRPC, log
 from util.exceptions import StartServiceError
 
@@ -10,11 +12,15 @@ class TestManagerdLockdown(DTXServerRPC):
         :return: bool 是否成功
         """
         try:
-            self._cli = self.lockdown.start_service("com.apple.testmanagerd.lockdown")
-            if hasattr(self._cli.sock, '_sslobj'):
-                self._cli.sock._sslobj = None  # remoteserver 协议配对成功之后，需要关闭 ssl 协议通道，使用明文传输
+            if self.lockdown.ios_version > LooseVersion('14.0'):
+                self._cli = self.lockdown.start_service("com.apple.testmanagerd.lockdown.secure")
+            else:
+                self._cli = self.lockdown.start_service("com.apple.testmanagerd.lockdown")
+                if hasattr(self._cli.sock, '_sslobj'):
+                    self._cli.sock._sslobj = None  # remoteserver 协议配对成功之后，需要关闭 ssl 协议通道，使用明文传输
         except StartServiceError as E:
-            self._cli = self.lockdown.start_service("com.apple.testmanagerd.lockdown.secure")
+            raise E
         if self._cli is None:
             return False
+        self.start()
         return self

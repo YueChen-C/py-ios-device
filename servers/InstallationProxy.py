@@ -38,7 +38,7 @@ client_options = {
 }
 
 
-class installation_proxy(object):
+class InstallationProxy(object):
 
     def __init__(self, lockdown=None, udid=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)

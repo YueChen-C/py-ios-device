@@ -20,8 +20,9 @@ import socket
 import _thread
 from _ctypes import sizeof
 from time import sleep
-from servers.bpylist.bplistlib.readwrite import load
-from util.dtxlib import DTXMessage, auxiliary_to_pyobject, DTXMessageHeader
+from util.dtxlib import DTXMessage, DTXMessageHeader, \
+    get_auxiliary_text, \
+    selector_to_pyobject
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s')
@@ -77,12 +78,10 @@ def check_buf(buf,direction):
                 p = DTXMessage.from_bytes(buf[:cursor])
                 header = p.get_selector()
                 if header:
-                    print(direction,'DTX header:', load(header))
-                    for index, buf in enumerate(p._auxiliaries):
-                        print(direction,f'DTX body {index}:', auxiliary_to_pyobject(buf))
+                    print(f'接收 DTX Data: header:{selector_to_pyobject(p._selector)} body:{get_auxiliary_text(p)}')
                 else:
                     print(direction,'DTX buf:', buf[:cursor])
-            except:
+            except Exception as E:
                 print(direction,'ErrorBuf:', buf)
         else:
             print(direction,'EncryptBuf', buf)

@@ -30,7 +30,6 @@ def sysmontap(rpc):
 
     rpc.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
     rpc.register_unhandled_callback(dropped_message)
-    rpc.start()
     if not done.wait(5):
         print("[WARN] timeout waiting capabilities")
     rpc.call("com.apple.instruments.server.services.sysmontap", "setConfig:", {

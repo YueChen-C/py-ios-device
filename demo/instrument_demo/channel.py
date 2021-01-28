@@ -20,13 +20,13 @@ def channels(rpc):
             print(k, v)
 
     rpc.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
-    rpc.start()
+    rpc.init()
     if not done.wait(5):
         log.debug("[WARN] timeout waiting capabilities")
     rpc.stop()
 
 
 if __name__ == '__main__':
-    rpc = InstrumentServer().init()
+    rpc = InstrumentServer()
     channels(rpc)
     rpc.deinit()

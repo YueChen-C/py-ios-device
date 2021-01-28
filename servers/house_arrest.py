@@ -29,3 +29,7 @@ class HouseArrestClient(AFCClient):
         res = self.send_command(applicationId, cmd)
         if res:
             AFCShell(client=self).cmdloop()
+
+
+if __name__ == '__main__':
+    HouseArrestClient().shell('cn.rongcloud.rce.autotest.xctrunner')

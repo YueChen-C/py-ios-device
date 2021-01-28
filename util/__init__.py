@@ -23,3 +23,4 @@ if gettrace():
 else:
     logging.basicConfig(format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s',
                         level=logging.INFO)
+PROGRAM_NAME = "py_ios_device"

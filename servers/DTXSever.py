@@ -16,13 +16,6 @@ from util.lockdown import LockdownClient
 log = logging.getLogger(__name__)
 
 
-def get_usb_rpc(udid=None):
-    rpc = DTXServerRPC(udid)
-    if not rpc.init():
-        return None
-    return rpc
-
-
 class DTXFragment:
 
     def __init__(self, buf):
@@ -103,6 +96,7 @@ class DTXClientMixin(DTXUSBTransport):
 
     def recv_dtx_fragment(self, client, timeout=-1):
         header_buffer = self.recv_all(client, sizeof(DTXMessageHeader), timeout=timeout)
+
         if not header_buffer:
             return None
         header = DTXMessageHeader.from_buffer_copy(header_buffer)
@@ -118,13 +112,15 @@ class DTXClientMixin(DTXUSBTransport):
         while 1:
             buf = self.recv_dtx_fragment(client, timeout)
             log.debug(f'接收 DTX: {buf}')
-
             if not buf:
                 return None
             fragment = DTXFragment(buf)
             if fragment.completed:
                 message = fragment.message
-                log.debug(f'接收 DTX: {selector_to_pyobject(message._selector)} :{get_auxiliary_text(message)}')
+                try:
+                    log.debug(f'接收 DTX Data: {selector_to_pyobject(message._selector)} :{get_auxiliary_text(message)}')
+                except:
+                    log.debug(f'Decode DTX error: {message._buf}')
                 return message
             value = getattr(client, 'value', id(client))
             key = (value, fragment.key)
@@ -209,6 +205,11 @@ class DTXServerRPC:
         self.udid = udid
         self._is = DTXClientMixin()
         self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
+        self.done = Event()
+        self.register()
+
+    def register(self):
+        self.register_callback("_notifyOfPublishedCapabilities:", lambda _: self.done.set())
 
     def init(self):
         """ 继承类
@@ -216,6 +217,7 @@ class DTXServerRPC:
         :return: bool 是否成功
         """
         self._cli = None
+        self.start()
         return False
 
     def deinit(self):
@@ -223,6 +225,7 @@ class DTXServerRPC:
         反初始化 servers rpc 服务
         :return: 无返回值
         """
+        self.stop()
         if self._cli:
             self._cli.close()
             self._cli = None
@@ -232,7 +235,6 @@ class DTXServerRPC:
         启动 servers rpc 服务
         :return: bool 是否成功
         """
-
         if self._running:
             return True
         self._running = True
@@ -249,7 +251,6 @@ class DTXServerRPC:
         if self._recv_thread:
             self._recv_thread.join()
             self._recv_thread = None
-        pass
 
     def register_callback(self, selector, callback: typing.Callable):
         """
@@ -318,9 +319,9 @@ class DTXServerRPC:
         dtx.set_selector(pyobject_to_selector(selector))
         wait_key = (dtx.channel_code, dtx.identifier)
         for aux in auxiliaries:
-            if isinstance(aux,DTXServerRPCRawArg ):
+            if isinstance(aux, DTXServerRPCRawArg):
                 dtx.add_auxiliary(aux.data)
-            elif isinstance(aux,DTXServerRPCRawObj):
+            elif isinstance(aux, DTXServerRPCRawObj):
                 dtx.add_auxiliary(aux.to_bytes())
             else:
                 dtx.add_auxiliary(pyobject_to_auxiliary(aux))
@@ -401,4 +402,4 @@ def pre_call(rpc):
 
 
 if __name__ == '__main__':
-    print(DTXServerRPCRawObj(29,30).to_bytes())
+    print(DTXServerRPCRawObj(29, 30).to_bytes())
