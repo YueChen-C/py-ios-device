@@ -6,8 +6,8 @@ from ios_device.servers.DTXSever import DTXServerRPCRawObj
 from ios_device.servers.InstallationProxy import InstallationProxy
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.servers.testmanagerd import TestManagerdLockdown
-from ios_device.util.bpylist.archiver import archive
-from ios_device.util.bpylist._types import XCTestConfiguration, NSURL, NSUUID
+from ios_device.util.bpylist import archive
+from ios_device.util._types import XCTestConfiguration, NSURL, NSUUID
 from ios_device.util.dtxlib import get_auxiliary_text
 from ios_device.util.lockdown import LockdownClient
 

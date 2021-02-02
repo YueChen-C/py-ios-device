@@ -22,15 +22,16 @@
 #
 #
 
-import os
-import plistlib
 import logging
+import os
+import sys
+from optparse import OptionParser
+from time import gmtime, strftime
+sys.path.append(os.getcwd())
+
+from six import PY3
 
 from ios_device.util.lockdown import LockdownClient
-from six import PY3
-from pprint import pprint
-from time import gmtime, strftime
-from optparse import OptionParser
 
 
 class screenshotr(object):

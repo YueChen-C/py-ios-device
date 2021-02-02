@@ -23,7 +23,11 @@
 #
 
 import logging
+import os
 import plistlib
+import sys
+
+sys.path.append(os.getcwd())
 
 from ios_device.util import read_file
 

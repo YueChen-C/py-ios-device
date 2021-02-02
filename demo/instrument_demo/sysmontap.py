@@ -5,7 +5,6 @@ import os
 import sys
 
 from ios_device.servers.Instrument import InstrumentServer
-from ios_device.util.dtxlib import get_auxiliary_text, selector_to_pyobject
 
 sys.path.append(os.getcwd())
 import json

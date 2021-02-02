@@ -37,6 +37,9 @@ from construct import Const, Int64ul
 from cmd import Cmd
 from six import PY3
 from pprint import pprint
+import sys
+sys.path.append(os.getcwd())
+
 from ios_device.util import hexdump
 
 from ios_device.util.lockdown import LockdownClient

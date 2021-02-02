@@ -23,10 +23,13 @@
 #
 
 import logging
+import os
 import re
+import sys
 import time
 from optparse import OptionParser
 from sys import exit
+sys.path.append(os.getcwd())
 
 from ios_device.util.lockdown import LockdownClient
 

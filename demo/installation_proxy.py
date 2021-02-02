@@ -24,9 +24,10 @@
 
 import os
 import logging
-
+import sys
 
 from .afc import AFCClient
+sys.path.append(os.getcwd())
 
 from ios_device.util.lockdown import LockdownClient
 

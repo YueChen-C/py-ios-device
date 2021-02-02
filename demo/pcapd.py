@@ -22,15 +22,20 @@
 #
 #
 from __future__ import print_function
+
+import os
+
 from six import PY3
 import struct
 import time
 import sys
 import logging
+sys.path.append(os.getcwd())
 
 from ios_device.util.lockdown import LockdownClient
 from tempfile import mkstemp
 from optparse import OptionParser
+
 
 """
 struct pcap_hdr_s {

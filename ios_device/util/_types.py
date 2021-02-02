@@ -46,7 +46,7 @@ class DataclassArchiver:
         float_field: float = -1.1
         list_field: list = dataclasses.field(default_factory=list)
     and then register as usually:
-    archiver.update_class_map(
+    update_class_map(
             {'MyObjType': MyObjType }
     )
     If you are only interested in certain fields, you can ignore unmapped
@@ -111,7 +111,7 @@ class timestamp(float):
         archive.encode('NS.time', offset)
 
     def decode_archive(archive):
-        "Delegate for unpacking NSDate objects from an archiver.Archive"
+        "Delegate for unpacking NSDate objects from an Archive"
         offset = archive.decode('NS.time')
         return timestamp(timestamp.unix2apple_epoch_delta + offset)
 

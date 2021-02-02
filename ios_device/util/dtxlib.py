@@ -13,7 +13,7 @@ from ctypes import Structure, \
     c_uint32, c_uint16, c_uint64, c_int64, sizeof
 
 
-from .bpylist import archiver
+from .bpylist import unarchive, archive
 
 
 def div_ceil(p: int, q: int) -> int:
@@ -262,7 +262,7 @@ class DTXMessage:
 
 
 def ns_keyed_archiver(obj):
-    return archiver.archive(obj)
+    return archive(obj)
 
 
 def pyobject_to_auxiliary(var):
@@ -285,7 +285,7 @@ def auxiliary_to_pyobject(aux):
     if t == 2:  # CFTypeRef object
         l, = struct.unpack("<i", aux[8: 12])
         assert len(aux) == 12 + l, "bad auxiliary"
-        return archiver.unarchive(aux[12:])
+        return unarchive(aux[12:])
     elif t == 3:  # int32_t
         n, = struct.unpack("<i", aux[8:12])
         return n
@@ -308,10 +308,10 @@ def get_auxiliary_text(dtx):
 
 
 def pyobject_to_selector(s):
-    return archiver.archive(s)
+    return archive(s)
 
 
 def selector_to_pyobject(sel):
     if not sel:
         return None
-    return archiver.unarchive(sel)
+    return unarchive(sel)

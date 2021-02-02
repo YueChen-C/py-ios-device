@@ -6,8 +6,7 @@ from ctypes import sizeof
 from threading import Thread, Event
 
 from ..util import logging
-from ..util.bpylist import archiver
-from ..util.bpylist.bplistlib import load
+from ..util.bpylist import load, unarchive
 from ..util.dtxlib import DTXMessage, DTXMessageHeader, \
     pyobject_to_auxiliary, get_auxiliary_text, \
     pyobject_to_selector, selector_to_pyobject, ns_keyed_archiver
@@ -180,7 +179,7 @@ class DTXServerRPCResult:
         except:
             self.plist = InstrumentRPCParseError()
         try:
-            self.parsed = archiver.unarchive(sel)
+            self.parsed = unarchive(sel)
         except:
             self.parsed = InstrumentRPCParseError()
 
