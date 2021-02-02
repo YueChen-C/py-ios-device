@@ -9,17 +9,12 @@ from ios_device.servers.Instrument import InstrumentServer
 sys.path.append(os.getcwd())
 import json
 import time
-from threading import Event
 from ios_device.util import logging
 
 log = logging.getLogger(__name__)
 
 
 def sysmontap(rpc):
-    done = Event()
-
-    def _notifyOfPublishedCapabilities(res):
-        done.set()
 
     def dropped_message(res):
         print("[DROP]", res.parsed, res.raw.channel_code)
@@ -28,11 +23,7 @@ def sysmontap(rpc):
 
         if isinstance(res.parsed, list):
             print(json.dumps(res.parsed, indent=4))
-
-    rpc.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
     rpc.register_unhandled_callback(dropped_message)
-    if not done.wait(5):
-        print("[WARN] timeout waiting capabilities")
     rpc.call("com.apple.instruments.server.services.sysmontap", "setConfig:", {
         'ur': 1000,  # 输出频率 ms
         'bm': 0,

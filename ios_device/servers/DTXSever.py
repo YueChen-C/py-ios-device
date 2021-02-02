@@ -197,6 +197,7 @@ class DTXServerRPC:
         self._channels = {}
         self._receiver_exiting = False
         self._unhanled_callback = None
+        self._published_capabilities = None
         self._channel_callbacks = {}
         self.udid = udid
         self._is = DTXClientMixin()
@@ -205,7 +206,10 @@ class DTXServerRPC:
         self.register()
 
     def register(self):
-        self.register_callback("_notifyOfPublishedCapabilities:", lambda _: self.done.set())
+        def _notifyOfPublishedCapabilities(res):
+            self.done.set()
+            self._published_capabilities = get_auxiliary_text(res.raw)
+        self.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
 
     def init(self):
         """ 继承类
@@ -360,7 +364,7 @@ class DTXServerRPC:
                 except:
                     selector = None
                 try:
-                    if selector and isinstance(selector,str) and selector in self._callbacks:
+                    if selector and isinstance(selector, str) and selector in self._callbacks:
                         self._callbacks[selector](DTXServerRPCResult(dtx))
                     elif self._unhanled_callback:
                         self._unhanled_callback(DTXServerRPCResult(dtx))

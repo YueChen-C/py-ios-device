@@ -18,13 +18,9 @@ def activity(rpc, pid):
     def on_callback_message(res):
         print(f"[ACTIVITY] {res.parsed}", )
         print("\n")
-
-    pre_call(rpc)
     rpc.register_channel_callback("com.apple.instruments.server.services.activity", on_callback_message)
-    # rpc.register_channel_callback("com.apple.instruments.server.services.activity", callback)
     var = rpc.call("com.apple.instruments.server.services.activity", "startSamplingWithPid:", pid).parsed
     log.debug(f"start {var}")
-
     time.sleep(10)
     var = rpc.call("com.apple.instruments.server.services.activity", "stopSampling").parsed
     log.debug(f"stop {var}")
@@ -33,5 +29,5 @@ def activity(rpc, pid):
 
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
-    activity(rpc, 31630)
+    activity(rpc, 261)
     rpc.deinit()

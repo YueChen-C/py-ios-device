@@ -1,23 +1,29 @@
-import time
-from threading import Event
+"""
+graphics 计算 fps
+"""
 
+import time
 from ios_device.servers.Instrument import InstrumentServer
 
 
 def cmd_graphics(rpc):
+    last_timestamp = 0
+
     def dropped_message(res):
         print("[DROP]", res.parsed, res.raw.channel_code)
 
     def on_graphics_message(res):
-        print("[GRAPHICS]", res.parsed)
+        data = res.parsed
+        nonlocal last_timestamp
+        cost_time = data['XRVideoCardRunTimeStamp'] - last_timestamp
+        last_timestamp = data['XRVideoCardRunTimeStamp']
+        print(cost_time,'fps:', data['CoreAnimationFramesPerSecond'])
 
     rpc.register_unhandled_callback(dropped_message)
     rpc.register_channel_callback("com.apple.instruments.server.services.graphics.opengl", on_graphics_message)
-    print("set", rpc.call("com.apple.instruments.server.services.graphics.opengl", "setSamplingRate:",
-                          5.0).parsed)
-    print("start", rpc.call("com.apple.instruments.server.services.graphics.opengl",
-                            "startSamplingAtTimeInterval:processIdentifier:", 1, 0.0).parsed)
-    time.sleep(10)
+    print("start",
+          rpc.call("com.apple.instruments.server.services.graphics.opengl", "startSamplingAtTimeInterval:", 0.0).parsed)
+    time.sleep(100)
     print("stop", rpc.call("com.apple.instruments.server.services.graphics.opengl", "stopSampling").parsed)
     rpc.stop()
 

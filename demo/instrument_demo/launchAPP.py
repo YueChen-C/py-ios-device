@@ -1,3 +1,6 @@
+"""
+启动 app
+"""
 import os
 import sys
 
