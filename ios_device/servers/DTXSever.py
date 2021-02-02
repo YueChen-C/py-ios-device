@@ -359,19 +359,13 @@ class DTXServerRPC:
                     selector = selector_to_pyobject(dtx.get_selector())
                 except:
                     selector = None
-
-                if selector and type(selector) is str and selector in self._callbacks:
-                    try:
-                        ret = self._callbacks[selector](DTXServerRPCResult(dtx))
-
-                    except:
-                        traceback.print_exc()
-                else:
-                    if self._unhanled_callback:
-                        try:
-                            self._unhanled_callback(DTXServerRPCResult(dtx))
-                        except:
-                            traceback.print_exc()
+                try:
+                    if selector and type(selector) is str and selector in self._callbacks:
+                        self._callbacks[selector](DTXServerRPCResult(dtx))
+                    elif self._unhanled_callback:
+                        self._unhanled_callback(DTXServerRPCResult(dtx))
+                except:
+                    traceback.print_exc()
                 if dtx.expects_reply:
                     reply = dtx.new_reply()
                     reply.set_selector(b'\00' * 16)
@@ -397,4 +391,3 @@ def pre_call(rpc):
     rpc.start()
     if not done.wait(5):
         print("[WARN] timeout waiting capabilities")
-
