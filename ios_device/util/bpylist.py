@@ -1,4 +1,4 @@
-from ._types import timestamp, uid, NSMutableData, NSURL, XCTestConfiguration, NSUUID, XCActivityRecord
+from ._types import timestamp, uid, NSURL, XCTestConfiguration, NSUUID, XCActivityRecord
 from ._types import uid, Fill, FillType, unicode
 
 from typing import Mapping
@@ -1202,7 +1202,6 @@ ARCHIVE_CLASS_MAP = {
     list: 'NSArray',
     set: 'NSSet',
     timestamp: 'NSDate',
-    NSMutableData: 'NSMutableData',
     NSURL: 'NSURL',
     XCTestConfiguration: 'XCTestConfiguration',
     NSUUID: 'NSUUID'
