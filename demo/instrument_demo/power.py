@@ -3,11 +3,11 @@ import time
 import os
 import sys
 
-from servers.Instrument import InstrumentServer
+from ios_device.servers.Instrument import InstrumentServer
 
 sys.path.append(os.getcwd())
 
-from util import logging
+from ios_device.util import logging
 
 log = logging.getLogger(__name__)
 

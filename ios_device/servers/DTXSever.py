@@ -5,13 +5,13 @@ import typing
 from ctypes import sizeof
 from threading import Thread, Event
 
-from util import logging
-from util.bpylist import archiver
-from util.bpylist.bplistlib.readwrite import load
-from util.dtxlib import DTXMessage, DTXMessageHeader, \
+from ..util import logging
+from ..util.bpylist import archiver
+from ..util.bpylist.bplistlib import load
+from ..util.dtxlib import DTXMessage, DTXMessageHeader, \
     pyobject_to_auxiliary, get_auxiliary_text, \
     pyobject_to_selector, selector_to_pyobject, ns_keyed_archiver
-from util.lockdown import LockdownClient
+from ..util.lockdown import LockdownClient
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ class DTXUSBTransport:
             L = length - len(ret)
             if L > 8192:
                 L = 8192
-            rb = client.recv(L, timeout)
+            rb = client.recv(L)
             if not rb:
                 return ret
             ret += rb
@@ -111,7 +111,7 @@ class DTXClientMixin(DTXUSBTransport):
         self._setup_manager()
         while 1:
             buf = self.recv_dtx_fragment(client, timeout)
-            log.debug(f'接收 DTX: {buf}')
+            log.debug(f'{client.port} 接收 DTX: {buf}')
             if not buf:
                 return None
             fragment = DTXFragment(buf)
@@ -119,7 +119,7 @@ class DTXClientMixin(DTXUSBTransport):
                 message = fragment.message
                 try:
                     log.debug(f'接收 DTX Data: {selector_to_pyobject(message._selector)} :{get_auxiliary_text(message)}')
-                except:
+                except Exception as e:
                     log.debug(f'Decode DTX error: {message._buf}')
                 return message
             value = getattr(client, 'value', id(client))
@@ -165,19 +165,16 @@ class DTXServerRPCRawObj:
 
 
 class DTXServerRPCResult:
+
     def __init__(self, dtx):
         self.raw = dtx
-        if self.raw is None:
-            self.xml = None
-            self.parsed = None
-            self.plist = None
-            return
+        self.parsed = None
+        self.plist = None
+        self.auxiliary = None
         sel = dtx.get_selector()
         if not sel:
-            self.xml = ""
-            self.plist = ""
-            self.parsed = None
             return
+        self.auxiliary = get_auxiliary_text(dtx)
         try:
             self.plist = load(sel)
         except:
@@ -240,6 +237,8 @@ class DTXServerRPC:
         self._running = True
         self._recv_thread = Thread(target=self._receiver, name="InstrumentRecevier")
         self._recv_thread.start()
+        while not self.done.wait(5):
+            logging.debug("[WARN] timeout waiting capabilities")
         return True
 
     def stop(self):
@@ -249,7 +248,6 @@ class DTXServerRPC:
         """
         self._running = False
         if self._recv_thread:
-            self._recv_thread.join()
             self._recv_thread = None
 
     def register_callback(self, selector, callback: typing.Callable):
@@ -366,11 +364,7 @@ class DTXServerRPC:
                 if selector and type(selector) is str and selector in self._callbacks:
                     try:
                         ret = self._callbacks[selector](DTXServerRPCResult(dtx))
-                        if dtx.expects_reply:
-                            reply = dtx.new_reply()
-                            reply.set_selector(pyobject_to_selector(ret))
-                            reply._payload_header.flags = 0x3
-                            self._is.send_dtx(self._cli, reply)
+
                     except:
                         traceback.print_exc()
                 else:
@@ -379,6 +373,11 @@ class DTXServerRPC:
                             self._unhanled_callback(DTXServerRPCResult(dtx))
                         except:
                             traceback.print_exc()
+                if dtx.expects_reply:
+                    reply = dtx.new_reply()
+                    reply.set_selector(b'\00' * 16)
+                    reply._payload_header.flags = 0x3
+                    self._is.send_dtx(self._cli, reply)
         self._receiver_exiting = True  # to block incoming calls
         for wait_key in self._sync_waits:
             self._sync_waits[wait_key]['result'] = InstrumentServiceConnectionLost
@@ -400,6 +399,3 @@ def pre_call(rpc):
     if not done.wait(5):
         print("[WARN] timeout waiting capabilities")
 
-
-if __name__ == '__main__':
-    print(DTXServerRPCRawObj(29, 30).to_bytes())

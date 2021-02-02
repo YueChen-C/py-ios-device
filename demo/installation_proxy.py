@@ -25,10 +25,10 @@
 import os
 import logging
 
-from optparse import OptionParser
+
 from .afc import AFCClient
 
-from util.lockdown import LockdownClient
+from ios_device.util.lockdown import LockdownClient
 
 client_options = {
     "SkipUninstall": False,
@@ -177,3 +177,5 @@ class installation_proxy(object):
         self.service.close()
 
 
+if __name__ == '__main__':
+    installation_proxy().get_apps()

@@ -6,7 +6,7 @@ import typing
 class MobileImageMounter(object):
 
     def __init__(self, lockdown=None, udid=None, logger=None):
-        from util.lockdown import LockdownClient
+        from ..util.lockdown import LockdownClient
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
 

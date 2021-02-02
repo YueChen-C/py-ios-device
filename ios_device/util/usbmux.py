@@ -3,7 +3,7 @@ USBMux client that handles iDevice descovery via USB.
 
 :author: Doug Skrypa (original: Hector Martin "marcan" <hector@marcansoft.com>)
 """
-from util import logging
+from ..util import logging
 import select
 import socket
 import struct
@@ -13,7 +13,7 @@ from typing import Dict, Union, Optional, Tuple, Any, Mapping, List
 
 log = logging.getLogger(__name__)
 
-from util.exceptions import MuxError, MuxVersionError, NoMuxDeviceFound
+from ..util.exceptions import MuxError, MuxVersionError, NoMuxDeviceFound
 
 __all__ = ['USBMux', 'MuxConnection', 'MuxDevice', 'UsbmuxdClient']
 

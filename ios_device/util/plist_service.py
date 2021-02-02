@@ -1,7 +1,7 @@
 """
 Plist Service - handles parsing and formatting plist content
 """
-from util import logging
+from ..util import logging
 import plistlib
 import re
 import ssl

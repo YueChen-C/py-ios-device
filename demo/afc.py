@@ -37,9 +37,9 @@ from construct import Const, Int64ul
 from cmd import Cmd
 from six import PY3
 from pprint import pprint
-from util import hexdump
+from ios_device.util import hexdump
 
-from util.lockdown import LockdownClient
+from ios_device.util.lockdown import LockdownClient
 
 
 MODEMASK =  0o0000777

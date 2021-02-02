@@ -1,8 +1,8 @@
 import os
 import sys
 
-from servers.Instrument import InstrumentServer
-from util.dtxlib import auxiliary_to_pyobject
+from ios_device.servers.Instrument import InstrumentServer
+from ios_device.util.dtxlib import auxiliary_to_pyobject
 
 sys.path.append(os.getcwd())
 

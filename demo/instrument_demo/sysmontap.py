@@ -4,13 +4,14 @@
 import os
 import sys
 
-from servers.Instrument import InstrumentServer
+from ios_device.servers.Instrument import InstrumentServer
+from ios_device.util.dtxlib import get_auxiliary_text, selector_to_pyobject
 
 sys.path.append(os.getcwd())
 import json
 import time
 from threading import Event
-from util import logging
+from ios_device.util import logging
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ def sysmontap(rpc):
         print("[DROP]", res.parsed, res.raw.channel_code)
 
     def on_sysmontap_message(res):
+
         if isinstance(res.parsed, list):
             print(json.dumps(res.parsed, indent=4))
 

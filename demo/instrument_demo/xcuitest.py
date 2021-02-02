@@ -1,17 +1,15 @@
 import logging
-import os
 import threading
 from distutils.version import LooseVersion
 
-from servers.DTXSever import DTXServerRPCRawObj
-from servers.Instrument import InstrumentServer
-from servers.house_arrest import HouseArrestClient
-from servers.InstallationProxy import InstallationProxy
-from servers.testmanagerd import TestManagerdLockdown
-from util.bpylist.archiver import archive
-from util.bpylist.bplistlib._types import XCTestConfiguration, NSURL, NSUUID
-from util.dtxlib import get_auxiliary_text
-from util.lockdown import LockdownClient
+from ios_device.servers.DTXSever import DTXServerRPCRawObj
+from ios_device.servers.InstallationProxy import InstallationProxy
+from ios_device.servers.Instrument import InstrumentServer
+from ios_device.servers.testmanagerd import TestManagerdLockdown
+from ios_device.util.bpylist.archiver import archive
+from ios_device.util.bpylist._types import XCTestConfiguration, NSURL, NSUUID
+from ios_device.util.dtxlib import get_auxiliary_text
+from ios_device.util.lockdown import LockdownClient
 
 
 class RunXCUITest:
@@ -20,6 +18,9 @@ class RunXCUITest:
         self.bundle_id = bundle_id
 
     def start(self):
+        def _callback(res):
+            logging.info(f" {res.parsed} : {get_auxiliary_text(res.raw)}")
+
         self.lockdown = LockdownClient(udid=self.udid)
         installation = InstallationProxy(lockdown=self.lockdown)
         app_info = installation.find_bundle_id(self.bundle_id)
@@ -30,15 +31,9 @@ class RunXCUITest:
         sign_identity = app_info.get("SignerIdentity", "")
         logging.info("SignIdentity: %r", sign_identity)
         XCODE_VERSION = 29
-        session_identifier = NSUUID(bytes=os.urandom(16), version=4)
+        session_identifier = NSUUID('96508379-4d3b-4010-87d1-6483300a7b76')
         ManagerdLockdown1 = TestManagerdLockdown(self.lockdown).init()
-        done = threading.Event()
-
-        ManagerdLockdown1.register_callback("_notifyOfPublishedCapabilities:", lambda _: done.set())
-        if not done.wait(5):
-            logging.debug("[WARN] timeout waiting capabilities")
         quit_event = threading.Event()
-
         ManagerdLockdown1._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
         if self.lockdown.ios_version > LooseVersion('11.0'):
             result = ManagerdLockdown1.call(
@@ -46,16 +41,12 @@ class RunXCUITest:
                 "_IDE_initiateControlSessionWithProtocolVersion:", DTXServerRPCRawObj(XCODE_VERSION)).parsed
             logging.info("result: %s", result)
         ManagerdLockdown1.register_callback(":finished:", lambda _: quit_event.set())
+        ManagerdLockdown1.register_unhandled_callback(_callback)
 
         ManagerdLockdown2 = TestManagerdLockdown(self.lockdown).init()
-        done = threading.Event()
-        ManagerdLockdown2.register_callback("_notifyOfPublishedCapabilities:", lambda _: done.set())
-        if not done.wait(5):
-            logging.debug("[WARN] timeout waiting capabilities")
-
         ManagerdLockdown2._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
-
         ManagerdLockdown2.register_callback(":finished:", lambda _: quit_event.set())
+        ManagerdLockdown2.register_unhandled_callback(_callback)
 
         _start_flag = threading.Event()
 
@@ -72,7 +63,7 @@ class RunXCUITest:
         def _show_log_message(res):
             logging.info(f"{res.parsed} : {get_auxiliary_text(res.raw)}")
             if 'Received test runner ready reply with error: (null' in ''.join(
-                    res.parsed):
+                    get_auxiliary_text(res.raw)):
                 logging.info("Test runner ready detected")
                 _start_executing()
 
@@ -86,7 +77,7 @@ class RunXCUITest:
                                             str(session_identifier) + '-6722-000247F15966B083',
                                             '/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild',
                                             XCODE_VERSION
-                                            )).parsed
+                                        )).parsed
         logging.info("result: %s", result)
         # launch_wda
         xctest_path = "/tmp/WebDriverAgentRunner-" + str(session_identifier).upper() + ".xctestconfiguration"
@@ -95,28 +86,25 @@ class RunXCUITest:
             "sessionIdentifier": session_identifier,
         }))
 
-        fsync = HouseArrestClient()
-        fsync.send_command(self.bundle_id)
-        for fname in fsync.read_directory("/tmp"):
-            if fname.endswith(".xctestconfiguration"):
-                logging.debug("remove /tmp/%s", fname)
-                fsync.file_remove("/tmp/" + fname)
-        fsync.set_file_contents(xctest_path, xctest_content)
+        # fsync = HouseArrestClient()
+        # fsync.send_command(self.bundle_id)
+        # for fname in fsync.read_directory("/tmp"):
+        #     if fname.endswith(".xctestconfiguration"):
+        #         logging.debug("remove /tmp/%s", fname)
+        #         fsync.file_remove("/tmp/" + fname)
+        # fsync.set_file_contents(xctest_path, xctest_content)
 
         conn = InstrumentServer(self.lockdown).init()
-        done = threading.Event()
-        conn.register_callback("_notifyOfPublishedCapabilities:", lambda _: done.set())
-        if not done.wait(5):
-            logging.debug("[WARN] timeout waiting capabilities")
         conn.call('com.apple.instruments.server.services.processcontrol', 'processIdentifierForBundleIdentifier:',
                   self.bundle_id)
 
+        conn.register_unhandled_callback(_callback)
         app_path = app_info['Path']
         app_container = app_info['Container']
 
         xctestconfiguration_path = app_container + xctest_path
-        logging.debug("AppPath: %s", app_path)
-        logging.debug("AppContainer: %s", app_container)
+        logging.info("AppPath: %s", app_path)
+        logging.info("AppContainer: %s", app_container)
 
         app_env = {
             'CA_ASSERT_MAIN_THREAD_TRANSACTIONS': '0',
@@ -137,6 +125,7 @@ class RunXCUITest:
         app_options = {'StartSuspendedKey': False}
         if self.lockdown.ios_version > LooseVersion('12.0'):
             app_options['ActivateSuspended'] = True
+
         app_args = [
             '-NSTreatUnknownArgumentsAsOpen', 'NO',
             '-ApplePersistenceIgnoreState', 'YES'
@@ -154,10 +143,6 @@ class RunXCUITest:
 
         conn.call('com.apple.instruments.server.services.processcontrol', "startObservingPid:", DTXServerRPCRawObj(pid))
 
-        def _callback(res):
-            logging.info(f" {res.parsed} : {get_auxiliary_text(res.raw)}")
-
-        conn.register_callback('outputReceived:fromProcess:atTime:', _callback)
         if quit_event:
             conn.register_callback(':finished:', lambda _: quit_event.set())
 
@@ -182,5 +167,5 @@ class RunXCUITest:
 
 
 if __name__ == '__main__':
-    bundle_id = 'cn.rongcloud.rce.autotest.xctrunner'
+    bundle_id = 'cn.rongcloud.autotest.xctrunner'
     RunXCUITest(bundle_id).start()

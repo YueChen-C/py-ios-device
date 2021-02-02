@@ -20,7 +20,7 @@ import socket
 import _thread
 from _ctypes import sizeof
 from time import sleep
-from util.dtxlib import DTXMessage, DTXMessageHeader, \
+from ios_device.util.dtxlib import DTXMessage, DTXMessageHeader, \
     get_auxiliary_text, \
     selector_to_pyobject
 

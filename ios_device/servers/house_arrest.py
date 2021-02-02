@@ -1,7 +1,7 @@
 import logging
 
-from servers.afc import AFCClient, AFCShell
-from util.lockdown import LockdownClient
+from ..servers.afc import AFCClient, AFCShell
+from ..util.lockdown import LockdownClient
 
 
 class HouseArrestClient(AFCClient):

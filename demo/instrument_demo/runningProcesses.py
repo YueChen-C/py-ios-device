@@ -5,8 +5,8 @@ import os
 import sys
 
 sys.path.append(os.getcwd())
-from servers.Instrument import InstrumentServer
-from util import logging
+from ios_device.servers.Instrument import InstrumentServer
+from ios_device.util import logging
 
 log = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from distutils.version import LooseVersion
 
-from servers.DTXSever import DTXServerRPC, log
-from util.exceptions import StartServiceError
+from ..servers.DTXSever import DTXServerRPC, log
+from ..util.exceptions import StartServiceError
 
 
 class InstrumentServer(DTXServerRPC):

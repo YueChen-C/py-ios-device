@@ -1,16 +1,14 @@
 # encoding: utf-8
-"""
-This file contains classes that know how to handle various different parts of
-a binary plist file.
-"""
+"""This file contains private read/write functions for the bplistlib module."""
+import plistlib
 
+# encoding: utf-8
+"""This file contains private functions for the bplistlib module."""
 from datetime import datetime
 from struct import pack, unpack
 from time import mktime
 
 from ._types import uid, Fill, FillType, unicode
-from .functions import find_with_type, get_byte_width
-from .functions import flatten_object_list, unflatten_reference_list
 
 
 class BooleanHandler(object):
@@ -541,3 +539,148 @@ class TrailerHandler(object):
         root_object = 0
         return pack(self.format, offset_size, reference_size,
                     number_of_objects, root_object, table_offset)
+
+def get_byte_width(value_to_store, max_byte_width):
+    """
+    Return the minimum number of bytes needed to store a given value as an
+    unsigned integer. If the byte width needed exceeds max_byte_width, raise
+    ValueError."""
+    for byte_width in range(max_byte_width):
+        if 0x100 ** byte_width <= value_to_store < 0x100 ** (byte_width + 1):
+            return byte_width + 1
+    raise ValueError
+
+
+def find_with_type(value, list_):
+    """
+    Find value in list_, matching both for equality and type, and
+    return the index it was found at. If not found, raise ValueError.
+    """
+    for index, comparison_value in enumerate(list_):
+        if (type(value) == type(comparison_value) and
+                value == comparison_value):
+            return index
+    raise ValueError
+
+
+def flatten_object_list(object_list, objects):
+    """Convert a list of objects to a list of references."""
+    reference_list = []
+    for object_ in object_list:
+        reference = find_with_type(object_, objects)
+        reference_list.append(reference)
+    return reference_list
+
+
+def unflatten_reference_list(references, objects, object_handler):
+    """Convert a list of references to a list of objects."""
+    object_list = []
+    for reference in references:
+        item = objects[reference]
+        if isinstance(item, bytes):
+            item = item.decode()
+        item = object_handler.unflatten(item, objects)
+        object_list.append(item)
+    return object_list
+
+
+def read(file_object):
+    """
+    Read a binary plist from an open file object that supports seeking.
+    Return the root object.
+    """
+    trailer = read_trailer(file_object)
+    offset_size, reference_size, length, root, table_offset = trailer
+    offsets = read_table(file_object, offset_size, length, table_offset)
+    root_object = read_objects(file_object, offsets, reference_size, root)
+    return root_object
+
+
+def read_trailer(file_object):
+    """Read and return the final, "trailer", section of an open file object."""
+    trailer_handler = TrailerHandler()
+    trailer = trailer_handler.decode(file_object)
+    return trailer
+
+
+def read_table(file_object, offset_size, length, table_offset):
+    """
+    Read an offset table from an open file object and return the decoded
+    offsets.
+    """
+    table_handler = TableHandler()
+    offsets = table_handler.decode(file_object, offset_size,
+                                   length, table_offset)
+    return offsets
+
+
+def read_objects(file_object, offsets, reference_size, root):
+    """Read from an open file_object and return the decoded root object."""
+    object_handler = ObjectHandler()
+    object_handler.set_reference_size(reference_size)
+    objects = []
+    for offset in offsets:
+        buf = file_object[offset:]
+        object_ = object_handler.decode(buf)
+        objects.append(object_)
+    root_object = objects[root]
+    return object_handler.unflatten(root_object, objects)
+
+
+def generate(root_object):
+    """
+    return bplist buf
+    """
+    buf = b'bplist00'
+    buf, offsets = write_objects(buf, root_object)
+    buf, table_offset = write_table(buf, offsets)
+    return write_trailer(buf, offsets, table_offset)
+
+
+def write_objects(buf, root_object):
+    """
+    Flatten all objects, encode, and write the encoded objects to file_object.
+    """
+    objects = []
+    object_handler = ObjectHandler()
+    object_handler.collect_objects(root_object, objects)
+    object_handler.flatten_objects(objects)
+    reference_size = get_byte_width(len(objects), 2)
+    object_handler.set_reference_size(reference_size)
+    offsets = []
+    for object_ in objects:
+        offsets.append(len(buf))
+        encoded_object = object_handler.encode(object_)
+        buf += encoded_object
+    return buf, offsets
+
+
+def write_table(buf, offsets):
+    """Encode the offsets and write to file_object."""
+    table_handler = TableHandler()
+    table_offset = len(buf)
+    table = table_handler.encode(offsets, table_offset)
+    buf += table
+    return buf, table_offset
+
+
+def write_trailer(buf, offsets, table_offset):
+    """Encode the trailer section and write to file_object."""
+    trailer_handler = TrailerHandler()
+    trailer = trailer_handler.encode(offsets, table_offset)
+    buf += trailer
+    return buf
+
+
+def load(fp, binary=None):
+    if binary is None:
+        if fp[:8] == b'bplist00':
+            binary = True
+        else:
+            fp.seek(0)
+            binary = False
+    if binary is True:
+        root_object = read(fp)
+    elif binary is False:
+        root_object = plistlib.loads(fp)
+    return root_object

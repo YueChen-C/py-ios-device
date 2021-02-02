@@ -1,7 +1,7 @@
 import logging
 import os
 
-from util.lockdown import LockdownClient
+from ..util.lockdown import LockdownClient
 
 
 class installation_proxy(object):

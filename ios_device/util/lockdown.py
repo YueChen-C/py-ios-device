@@ -12,18 +12,18 @@ import zipfile
 
 import requests
 
-from servers.imageMounter import MobileImageMounter
-from util import logging, PROGRAM_NAME
+
 from distutils.version import LooseVersion
 from pathlib import Path
 from typing import Optional, Dict, Any, Mapping
-
 from .exceptions import PairingError, NotTrustedError, FatalPairingError, NotPairedError, CannotStopSessionError
 from .exceptions import StartServiceError, InitializationError
 from .plist_service import PlistService
 from .ssl import make_certs_and_key
 from .usbmux import MuxDevice, UsbmuxdClient
 from .utils import DictAttrProperty, cached_property
+from ..servers.imageMounter import MobileImageMounter
+from ..util import logging, PROGRAM_NAME
 
 __all__ = ['LockdownClient']
 log = logging.getLogger(__name__)
@@ -232,7 +232,7 @@ class LockdownClient:
 
     @contextlib.contextmanager
     def _request_developer_image_dir(self):
-        product_version = self.get_value("ProductVersion")
+        product_version = self.get_value('',"ProductVersion")
         logging.info("ProductVersion: %s", product_version)
         major, minor = product_version.split(".")[:2]
         version = major + "." + minor
@@ -295,7 +295,7 @@ class LockdownClient:
         try:
             return self._start_service(name, escrow_bag)
         except StartServiceError:
-            MobileImageMounter(self)
+            self.mount_developer_image()
             time.sleep(.5)
             return self._start_service(name, escrow_bag)
 

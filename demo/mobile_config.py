@@ -25,9 +25,9 @@
 import logging
 import plistlib
 
-from util import read_file
+from ios_device.util import read_file
 
-from util.lockdown import LockdownClient
+from ios_device.util.lockdown import LockdownClient
 from optparse import OptionParser
 from pprint import pprint
 

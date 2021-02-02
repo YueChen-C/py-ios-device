@@ -26,7 +26,7 @@ import os
 import plistlib
 import logging
 
-from util.lockdown import LockdownClient
+from ios_device.util.lockdown import LockdownClient
 from six import PY3
 from pprint import pprint
 from time import gmtime, strftime

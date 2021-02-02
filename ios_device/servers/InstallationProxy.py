@@ -26,9 +26,9 @@ import os
 import logging
 
 from optparse import OptionParser
-from servers.afc import AFCClient
+from ..servers.afc import AFCClient
 
-from util.lockdown import LockdownClient
+from ..util.lockdown import LockdownClient
 
 client_options = {
     "SkipUninstall": False,

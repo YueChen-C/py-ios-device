@@ -3,9 +3,9 @@ import sys
 
 sys.path.append(os.getcwd())
 from threading import Event
-from servers.Instrument import InstrumentServer
-from util.dtxlib import auxiliary_to_pyobject
-from util import logging
+from ios_device.servers.Instrument import InstrumentServer
+from ios_device.util.dtxlib import auxiliary_to_pyobject
+from ios_device.util import logging
 
 log = logging.getLogger(__name__)
 

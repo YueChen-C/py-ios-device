@@ -2,14 +2,14 @@ import json
 import os
 import sys
 
-from servers.DTXSever import pre_call
+from ios_device.servers.DTXSever import pre_call
 
 sys.path.append(os.getcwd())
 import time
 from _ctypes import Structure
 from ctypes import c_byte, c_uint16, c_uint32
-from servers.Instrument import  InstrumentServer
-from util import logging
+from ios_device.servers.Instrument import  InstrumentServer
+from ios_device.util import logging
 
 log = logging.getLogger(__name__)
 

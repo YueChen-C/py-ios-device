@@ -28,7 +28,7 @@ import time
 from optparse import OptionParser
 from sys import exit
 
-from util.lockdown import LockdownClient
+from ios_device.util.lockdown import LockdownClient
 
 from six import PY3
 

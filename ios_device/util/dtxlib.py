@@ -13,8 +13,7 @@ from ctypes import Structure, \
     c_uint32, c_uint16, c_uint64, c_int64, sizeof
 
 
-from util.bpylist import archiver
-from util.bpylist.bplistlib.readwrite import load
+from .bpylist import archiver
 
 
 def div_ceil(p: int, q: int) -> int:
@@ -316,9 +315,3 @@ def selector_to_pyobject(sel):
     if not sel:
         return None
     return archiver.unarchive(sel)
-
-
-if __name__ == '__main__':
-    buf = ns_keyed_archiver(29)
-
-    print(struct.pack('<iii', 0xa, 2, len(buf)) + buf)
