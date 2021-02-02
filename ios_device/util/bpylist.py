@@ -374,7 +374,7 @@ class ObjectHandler(object):
     def __init__(self):
         """Intialize one of every (useful) handler class."""
         handlers = [BooleanHandler(), IntegerHandler(), FloatHandler(),
-                    DateHandler(), ByteArrayHander(),BytesHander(),StringHandler(),
+                    DateHandler(), ByteArrayHander(), BytesHander(), StringHandler(),
                     UnicodeStringHandler(), ArrayHandler(self),
                     DictionaryHandler(self), UIDHandler()]
         self.size_handler = UIDHandler()
@@ -546,6 +546,7 @@ class TrailerHandler(object):
         root_object = 0
         return pack(self.format, offset_size, reference_size,
                     number_of_objects, root_object, table_offset)
+
 
 def get_byte_width(value_to_store, max_byte_width):
     """
@@ -838,9 +839,11 @@ class NullArchive:
     def decode_archive(archive):
         return None
 
+
 class XCTCapabilities:
     def decode_archive(archive):
         return archive.decode('capabilities-dictionary')
+
 
 class TODOArchive:
 
@@ -1190,7 +1193,7 @@ UNARCHIVE_CLASS_MAP = {
     "XCTestConfiguration": XCTestConfiguration,
     'XCActivityRecord': XCActivityRecord,
     'DTKTraceTapMessage': DTKTraceTapMessage,
-    'XCTCapabilities':NullArchive
+    'XCTCapabilities': XCTCapabilities
 
 }
 

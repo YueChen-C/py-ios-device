@@ -360,7 +360,7 @@ class DTXServerRPC:
                 except:
                     selector = None
                 try:
-                    if selector and type(selector) is str and selector in self._callbacks:
+                    if selector and isinstance(selector,str) and selector in self._callbacks:
                         self._callbacks[selector](DTXServerRPCResult(dtx))
                     elif self._unhanled_callback:
                         self._unhanled_callback(DTXServerRPCResult(dtx))

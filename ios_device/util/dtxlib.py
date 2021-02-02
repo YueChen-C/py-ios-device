@@ -266,7 +266,7 @@ def ns_keyed_archiver(obj):
 
 
 def pyobject_to_auxiliary(var):
-    if type(var) is int:
+    if isinstance(var,int):
         if abs(var) < 2 ** 32:
             return struct.pack('<iii', 0xa, 3, var)
         elif abs(var) < 2 ** 64:
