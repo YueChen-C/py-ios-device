@@ -5,6 +5,7 @@ from distutils.version import LooseVersion
 from ios_device.servers.DTXSever import DTXServerRPCRawObj
 from ios_device.servers.InstallationProxy import InstallationProxy
 from ios_device.servers.Instrument import InstrumentServer
+from ios_device.servers.house_arrest import HouseArrestClient
 from ios_device.servers.testmanagerd import TestManagerdLockdown
 from ios_device.util.bpylist import archive
 from ios_device.util._types import XCTestConfiguration, NSURL, NSUUID
@@ -86,13 +87,13 @@ class RunXCUITest:
             "sessionIdentifier": session_identifier,
         }))
 
-        # fsync = HouseArrestClient()
-        # fsync.send_command(self.bundle_id)
-        # for fname in fsync.read_directory("/tmp"):
-        #     if fname.endswith(".xctestconfiguration"):
-        #         logging.debug("remove /tmp/%s", fname)
-        #         fsync.file_remove("/tmp/" + fname)
-        # fsync.set_file_contents(xctest_path, xctest_content)
+        fsync = HouseArrestClient()
+        fsync.send_command(self.bundle_id)
+        for fname in fsync.read_directory("/tmp"):
+            if fname.endswith(".xctestconfiguration"):
+                logging.debug("remove /tmp/%s", fname)
+                fsync.file_remove("/tmp/" + fname)
+        fsync.set_file_contents(xctest_path, xctest_content)
 
         conn = InstrumentServer(self.lockdown).init()
         conn.call('com.apple.instruments.server.services.processcontrol', 'processIdentifierForBundleIdentifier:',
