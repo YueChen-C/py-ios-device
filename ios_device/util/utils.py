@@ -3,6 +3,9 @@ Utils
 """
 
 __all__ = ['DictAttrProperty', 'DictAttrFieldNotFoundError']
+
+import struct
+
 _NotSet = object()
 
 
@@ -97,3 +100,13 @@ class DictAttrFieldNotFoundError(Exception):
     def __str__(self):
         fmt = '{!r} object has no attribute {!r} ({} not found in {!r}.{})'
         return fmt.format(type(self.obj).__name__, self.prop_name, self.path_repr, self.obj, self.attr)
+
+
+def kperf_data(messages):
+    _list = []
+    p_record = 0
+    m_len = len(messages)
+    while p_record < m_len:
+        _list.append(struct.unpack('<QLLQQQQLLQ', messages[p_record:p_record + 64]))
+        p_record += 64
+    return _list
