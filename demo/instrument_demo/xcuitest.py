@@ -2,7 +2,7 @@ import logging
 import threading
 from distutils.version import LooseVersion
 
-from ios_device.servers.DTXSever import DTXServerRPCRawObj
+from ios_device.servers.DTXSever import DTXServerRPCRawObj, DTXEnum
 from ios_device.servers.InstallationProxy import InstallationProxy
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.servers.house_arrest import HouseArrestClient
@@ -41,12 +41,12 @@ class RunXCUITest:
                 "dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface",
                 "_IDE_initiateControlSessionWithProtocolVersion:", DTXServerRPCRawObj(XCODE_VERSION)).parsed
             logging.info("result: %s", result)
-        ManagerdLockdown1.register_callback(":finished:", lambda _: quit_event.set())
+        ManagerdLockdown1.register_callback("DTXEnum.FINISHED", lambda _: quit_event.set())
         ManagerdLockdown1.register_unhandled_callback(_callback)
 
         ManagerdLockdown2 = TestManagerdLockdown(self.lockdown).init()
         ManagerdLockdown2._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
-        ManagerdLockdown2.register_callback(":finished:", lambda _: quit_event.set())
+        ManagerdLockdown2.register_callback("DTXEnum.FINISHED", lambda _: quit_event.set())
         ManagerdLockdown2.register_unhandled_callback(_callback)
 
         _start_flag = threading.Event()
@@ -70,6 +70,7 @@ class RunXCUITest:
 
         ManagerdLockdown2.register_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:', _start_executing)
         ManagerdLockdown2.register_callback('_XCT_logDebugMessage:', _show_log_message)
+        ManagerdLockdown2.register_callback('_XCT_didFinishExecutingTestPlan', lambda _: quit_event.set())
 
         result = ManagerdLockdown2.call('dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                                         '_IDE_initiateSessionWithIdentifier:forClient:atPath:protocolVersion:',
@@ -145,7 +146,7 @@ class RunXCUITest:
         conn.call('com.apple.instruments.server.services.processcontrol', "startObservingPid:", DTXServerRPCRawObj(pid))
 
         if quit_event:
-            conn.register_callback(':finished:', lambda _: quit_event.set())
+            conn.register_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
 
         if self.lockdown.ios_version > LooseVersion('12.0'):
             identifier = '_IDE_authorizeTestSessionWithProcessID:'
@@ -165,6 +166,9 @@ class RunXCUITest:
         while not quit_event.wait(.1):
             pass
         logging.warning("xctrunner quited")
+        conn.deinit()
+        ManagerdLockdown2.deinit()
+        ManagerdLockdown1.deinit()
 
 
 if __name__ == '__main__':

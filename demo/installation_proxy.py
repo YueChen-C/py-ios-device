@@ -26,7 +26,7 @@ import os
 import logging
 import sys
 
-from .afc import AFCClient
+from ios_device.servers.afc import AFCClient
 sys.path.append(os.getcwd())
 
 from ios_device.util.lockdown import LockdownClient
@@ -65,8 +65,9 @@ class installation_proxy(object):
                     handler(completion, *args)
                 self.logger.info("%s %% Complete", z.get("PercentComplete"))
             if z.get("Status") == "Complete":
+                self.logger.info("Success")
                 return z.get("Status")
-        return "Error"
+        return Exception("Install Error")
 
     def send_cmd_for_bid(self, bid, cmd="Archive", options=None, handler=None, *args):
         cmd = {"Command": cmd,
@@ -179,4 +180,4 @@ class installation_proxy(object):
 
 
 if __name__ == '__main__':
-    installation_proxy().get_apps()
+    installation_proxy().install('/Users/chenpeijie/Library/Developer/Xcode/DerivedData/WebDriverAgent-aiaejbhejflmruhkhsmeebmhbaia/Build/Products/Debug-iphoneos/Payload.ipa')

@@ -1,3 +1,4 @@
+import enum
 import struct
 import time
 import traceback
@@ -13,6 +14,12 @@ from ..util.dtxlib import DTXMessage, DTXMessageHeader, \
 from ..util.lockdown import LockdownClient
 
 log = logging.getLogger(__name__)
+
+
+class DTXEnum(str, enum.Enum):
+    NOTIFICATION = "notification:"
+    FINISHED = "finished:"
+    OTHER = "other:"
 
 
 class DTXFragment:
@@ -253,6 +260,16 @@ class DTXServerRPC:
         if self._recv_thread:
             self._recv_thread = None
 
+    def _run_callbacks(self, event_name, data):
+        """
+        Returns:
+            if called
+        """
+        func = self._callbacks.get(event_name)
+        if func:
+            func(data)
+            return True
+
     def register_callback(self, selector, callback: typing.Callable):
         """
         注册回调, 接受 servers server 到 client 的远程调用
@@ -339,46 +356,52 @@ class DTXServerRPC:
 
     def _receiver(self):
         last_none = 0
-        while self._running:
-            dtx = self._is.recv_dtx(self._cli, 2)  # s
-            if dtx is None:  # 长时间没有回调则抛出错误
-                cur = time.time()
-                if cur - last_none < 0.1:
-                    break
-                last_none = cur
-                continue
-            self._next_identifier = max(self._next_identifier, dtx.identifier + 1)
-            wait_key = (dtx.channel_code, dtx.identifier)
-            if wait_key in self._sync_waits:
-                param = self._sync_waits[wait_key]
-                param['result'] = dtx
-                param['event'].set()
-            elif 2 ** 32 - dtx.channel_code in self._channel_callbacks:
-                try:
-                    self._channel_callbacks[2 ** 32 - dtx.channel_code](DTXServerRPCResult(dtx))
-                except:
-                    traceback.print_exc()
-            else:
-                try:
-                    selector = selector_to_pyobject(dtx.get_selector())
-                except:
-                    selector = None
-                try:
-                    if selector and isinstance(selector, str) and selector in self._callbacks:
-                        self._callbacks[selector](DTXServerRPCResult(dtx))
-                    elif self._unhanled_callback:
-                        self._unhanled_callback(DTXServerRPCResult(dtx))
-                except:
-                    traceback.print_exc()
-                if dtx.expects_reply:
-                    reply = dtx.new_reply()
-                    reply.set_selector(b'\00' * 16)
-                    reply._payload_header.flags = 0x3
-                    self._is.send_dtx(self._cli, reply)
-        self._receiver_exiting = True  # to block incoming calls
-        for wait_key in self._sync_waits:
-            self._sync_waits[wait_key]['result'] = InstrumentServiceConnectionLost
-            self._sync_waits[wait_key]['event'].set()
+        try:
+            while self._running:
+                dtx = self._is.recv_dtx(self._cli, 2)  # s
+                if dtx is None:  # 长时间没有回调则抛出错误
+                    cur = time.time()
+                    if cur - last_none < 0.1:
+                        raise Exception('dtx socket close')
+                    last_none = cur
+                    continue
+                self._next_identifier = max(self._next_identifier, dtx.identifier + 1)
+                wait_key = (dtx.channel_code, dtx.identifier)
+                if wait_key in self._sync_waits:
+                    param = self._sync_waits[wait_key]
+                    param['result'] = dtx
+                    param['event'].set()
+                elif 2 ** 32 - dtx.channel_code in self._channel_callbacks:
+                    try:
+                        self._channel_callbacks[2 ** 32 - dtx.channel_code](DTXServerRPCResult(dtx))
+                    except:
+                        traceback.print_exc()
+                else:
+                    try:
+                        selector = selector_to_pyobject(dtx.get_selector())
+                    except:
+                        selector = None
+                    try:
+                        if selector and isinstance(selector, str) and selector in self._callbacks:
+                            self._callbacks[selector](DTXServerRPCResult(dtx))
+                        elif self._unhanled_callback:
+                            self._unhanled_callback(DTXServerRPCResult(dtx))
+                    except:
+                        traceback.print_exc()
+                    if dtx.expects_reply:
+                        reply = dtx.new_reply()
+                        reply.set_selector(b'\00' * 16)
+                        reply._payload_header.flags = 0x3
+                        self._is.send_dtx(self._cli, reply)
+            self._receiver_exiting = True  # to block incoming calls
+            for wait_key in self._sync_waits:
+                self._sync_waits[wait_key]['result'] = InstrumentServiceConnectionLost
+                self._sync_waits[wait_key]['event'].set()
+        except Exception as E:
+            log.error(E)
+            self._run_callbacks(DTXEnum.NOTIFICATION, None)
+            self._run_callbacks(DTXEnum.FINISHED, None)
+
 
 
 def pre_call(rpc):

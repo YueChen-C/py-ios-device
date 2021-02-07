@@ -72,6 +72,7 @@ class PlistService:
             return None
         if payload.startswith(b'bplist00'):
             data = plistlib.loads(payload)
+            log.debug(f'接收 Plist data: {data}')
             return data
         elif payload.startswith(b'<?xml'):
             payload = HARDWARE_PLATFORM_SUB('', payload.decode('utf-8')).encode('utf-8')
