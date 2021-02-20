@@ -1,5 +1,6 @@
 import logging
 import threading
+import time
 from distutils.version import LooseVersion
 
 from ios_device.servers.DTXSever import DTXServerRPCRawObj, DTXEnum
@@ -13,12 +14,17 @@ from ios_device.util.dtxlib import get_auxiliary_text
 from ios_device.util.lockdown import LockdownClient
 
 
-class RunXCUITest:
+class RunXCUITest(threading.Thread):
     def __init__(self, bundle_id, udid=None):
+        super().__init__()
         self.udid = udid
         self.bundle_id = bundle_id
+        self.quit_event = threading.Event()
 
-    def start(self):
+    def close(self):
+        self.quit_event.set()
+
+    def run(self) -> None:
         def _callback(res):
             logging.info(f" {res.parsed} : {get_auxiliary_text(res.raw)}")
 
@@ -34,19 +40,19 @@ class RunXCUITest:
         XCODE_VERSION = 29
         session_identifier = NSUUID('96508379-4d3b-4010-87d1-6483300a7b76')
         ManagerdLockdown1 = TestManagerdLockdown(self.lockdown).init()
-        quit_event = threading.Event()
+
         ManagerdLockdown1._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
         if self.lockdown.ios_version > LooseVersion('11.0'):
             result = ManagerdLockdown1.call(
                 "dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface",
                 "_IDE_initiateControlSessionWithProtocolVersion:", DTXServerRPCRawObj(XCODE_VERSION)).parsed
             logging.info("result: %s", result)
-        ManagerdLockdown1.register_callback("DTXEnum.FINISHED", lambda _: quit_event.set())
+        ManagerdLockdown1.register_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
         ManagerdLockdown1.register_unhandled_callback(_callback)
 
         ManagerdLockdown2 = TestManagerdLockdown(self.lockdown).init()
         ManagerdLockdown2._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
-        ManagerdLockdown2.register_callback("DTXEnum.FINISHED", lambda _: quit_event.set())
+        ManagerdLockdown2.register_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
         ManagerdLockdown2.register_unhandled_callback(_callback)
 
         _start_flag = threading.Event()
@@ -70,7 +76,7 @@ class RunXCUITest:
 
         ManagerdLockdown2.register_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:', _start_executing)
         ManagerdLockdown2.register_callback('_XCT_logDebugMessage:', _show_log_message)
-        ManagerdLockdown2.register_callback('_XCT_didFinishExecutingTestPlan', lambda _: quit_event.set())
+        ManagerdLockdown2.register_callback('_XCT_didFinishExecutingTestPlan', lambda _: self.quit_event.set())
 
         result = ManagerdLockdown2.call('dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                                         '_IDE_initiateSessionWithIdentifier:forClient:atPath:protocolVersion:',
@@ -145,8 +151,8 @@ class RunXCUITest:
 
         conn.call('com.apple.instruments.server.services.processcontrol', "startObservingPid:", DTXServerRPCRawObj(pid))
 
-        if quit_event:
-            conn.register_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
+        if self.quit_event:
+            conn.register_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
 
         if self.lockdown.ios_version > LooseVersion('12.0'):
             identifier = '_IDE_authorizeTestSessionWithProcessID:'
@@ -163,7 +169,7 @@ class RunXCUITest:
                 DTXServerRPCRawObj(pid, XCODE_VERSION)).parsed
             logging.info("_IDE_authorizeTestSessionWithProcessID: %s", result)
 
-        while not quit_event.wait(.1):
+        while not self.quit_event.wait(.1):
             pass
         logging.warning("xctrunner quited")
         conn.deinit()
@@ -172,5 +178,8 @@ class RunXCUITest:
 
 
 if __name__ == '__main__':
-    bundle_id = 'cn.rongcloud.autotest.xctrunner'
-    RunXCUITest(bundle_id).start()
+    bundle_id = 'cn.rongcloud.rce.autotest.xctrunner'
+    xcuitest = RunXCUITest(bundle_id)
+    xcuitest.start()
+    time.sleep(20)
+    xcuitest.close()
