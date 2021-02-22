@@ -1,6 +1,6 @@
 cffi==1.14.4
 construct==2.10.56
-cryptography==3.3
+cryptography==3.3.2
 pyasn1==0.4.8
 pycparser==2.20
 pyOpenSSL==20.0.0
