@@ -401,20 +401,3 @@ class DTXServerRPC:
             log.error(E)
             self._run_callbacks(DTXEnum.NOTIFICATION, None)
             self._run_callbacks(DTXEnum.FINISHED, None)
-
-
-
-def pre_call(rpc):
-    done = Event()
-
-    def _notifyOfPublishedCapabilities(res):
-        done.set()
-
-    def dropped_message(res):
-        print("[DROP]", res.parsed, res.raw.channel_code)
-
-    rpc.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
-    rpc.register_unhandled_callback(dropped_message)
-    rpc.start()
-    if not done.wait(5):
-        print("[WARN] timeout waiting capabilities")

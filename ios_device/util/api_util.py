@@ -17,7 +17,7 @@ from ios_device.servers.testmanagerd import TestManagerdLockdown
 
 from ios_device.util._types import NSUUID, XCTestConfiguration, NSURL
 
-from ios_device.servers.InstallationProxy import InstallationProxy
+from ios_device.servers.Installation import InstallationProxy
 
 from ios_device.util.lockdown import LockdownClient
 

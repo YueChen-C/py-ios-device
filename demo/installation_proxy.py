@@ -66,7 +66,11 @@ class installation_proxy(object):
                 self.logger.info("%s %% Complete", z.get("PercentComplete"))
             if z.get("Status") == "Complete":
                 self.logger.info("Success")
-                return z.get("Status")
+                return z.get("Status"),True
+            if z.get('Error'):
+                self.logger.info(z.get('ErrorDescription'))
+                return z.get("Error"),False
+
         return Exception("Install Error")
 
     def send_cmd_for_bid(self, bid, cmd="Archive", options=None, handler=None, *args):
@@ -177,7 +181,3 @@ class installation_proxy(object):
 
     def close(self):
         self.service.close()
-
-
-if __name__ == '__main__':
-    installation_proxy().install('/Users/chenpeijie/Library/Developer/Xcode/DerivedData/WebDriverAgent-aiaejbhejflmruhkhsmeebmhbaia/Build/Products/Debug-iphoneos/Payload.ipa')

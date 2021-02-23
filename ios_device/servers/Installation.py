@@ -64,8 +64,13 @@ class InstallationProxy(object):
                     handler(completion, *args)
                 self.logger.info("%s %% Complete", z.get("PercentComplete"))
             if z.get("Status") == "Complete":
-                return z.get("Status")
-        return "Error"
+                self.logger.info("Success")
+                return z.get("Status"),True
+            if z.get('Error'):
+                self.logger.info(z.get('ErrorDescription'))
+                return z.get("Error"),False
+
+        return Exception("Install Error")
 
     def send_cmd_for_bid(self, bid, cmd="Archive", options=None, handler=None, *args):
         cmd = {"Command": cmd,
@@ -163,10 +168,10 @@ class InstallationProxy(object):
 
     def print_apps(self, appType=["User"]):
         for app in self.get_apps(appType):
-            print((f"%s : %s => %s" % (app.get("CFBundleDisplayName"),
-                                       app.get("CFBundleIdentifier"),
-                                       app.get("Path") if app.get("Path")
-                                       else app.get("Container"))).encode('utf-8'))
+            print(("%s : %s => %s" % (app.get("CFBundleDisplayName"),
+                                      app.get("CFBundleIdentifier"),
+                                      app.get("Path") if app.get("Path")
+                                      else app.get("Container"))).encode('utf-8'))
 
     def find_bundle_id(self, bundle_id):
         for app in self.get_apps():

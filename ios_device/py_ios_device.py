@@ -2,30 +2,10 @@
 @Date    : 2021-01-28
 @Author  : liyachao
 """
-import json
-import os
-import threading
-import time
-from distutils.version import LooseVersion
 
-from ios_device.servers.house_arrest import HouseArrestClient
-
-from ios_device.util.bpylist import archive
-
-from ios_device.util.dtxlib import get_auxiliary_text
-
-from ios_device.servers.DTXSever import DTXServerRPCRawObj
-
-from ios_device.servers.testmanagerd import TestManagerdLockdown
-
-from ios_device.util._types import NSUUID, XCTestConfiguration, NSURL
-
-from ios_device.servers.InstallationProxy import InstallationProxy
-
-from ios_device.util.lockdown import LockdownClient
+from ios_device.servers.Installation import InstallationProxy
 
 from ios_device.servers.Instrument import InstrumentServer
-from ios_device.servers.image_mounter import installation_proxy
 from ios_device.util import api_util
 from ios_device.util.api_util import channel_validate, PyIOSDeviceException, RunXCUITest
 
@@ -253,45 +233,6 @@ def stop_get_network(rpc_channel: InstrumentServer):
     rpc_channel.call("com.apple.instruments.server.services.networking", "stopMonitoring")
 
 
-# def start_get_power_data(device_id: str = None, rpc_channel: InstrumentServer = None, callback: object = None):
-#     """
-#     开始获取电量数据
-#     :param device_id:
-#     :param rpc_channel:
-#     :param callback:
-#     :return:
-#     """
-#     if not callback:
-#         raise PyIOSDeviceException("callback can not be None")
-#
-#     if not rpc_channel:
-#         _rpc_channel = init(device_id)
-#     else:
-#         _rpc_channel = rpc_channel
-#
-#     def _callback(res):
-#         api_util.power_caller(res, callback)
-#
-#     channel_name = "com.apple.instruments.server.services.power"
-#     _rpc_channel.register_channel_callback(channel_name, _callback)
-#     stream_num = _rpc_channel.call(channel_name, "openStreamForPath:", "live/level.dat").parsed
-#     _rpc_channel.call(channel_name, "startStreamTransfer:", float(stream_num))
-#     return _rpc_channel,stream_num
-
-# def stop_get_power_data(rpc_channel: InstrumentServer = None, stream_num: float = None):
-#     """
-#     结束获取电量数据
-#     :param stream_num:
-#     :param rpc_channel:
-#     :return:
-#     """
-#     if not stream_num:
-#         raise PyIOSDeviceException("stream_num can not be None")
-#     if not rpc_channel:
-#         raise PyIOSDeviceException("rpc_channel can not be None")
-#     rpc_channel.call(channel, "endStreamTransfer:", float(stream_num))
-
-
 def start_get_system(device_id: str = None, rpc_channel: InstrumentServer = None, callback: object = None):
     """
     开始获取系统数据
@@ -350,7 +291,7 @@ def get_device(device_id: str = None, rpc_channel: InstrumentServer = None):
     :param rpc_channel:
     :return:
     """
-    current_device = installation_proxy(udid=device_id, lockdown=rpc_channel)
+    current_device = InstallationProxy(udid=device_id, lockdown=rpc_channel)
     return current_device
 
 
@@ -385,7 +326,7 @@ def stop_xcuitest(xcuitest):
 
 
 def te1st(res):
-    print(res[0]["PerCPUUsage"])
+    # print(res[0]["PerCPUUsage"])
     print(res)
 
 
@@ -394,9 +335,10 @@ if __name__ == "__main__":
     # time.sleep(10)
     # stop_xcuitest(x)
 
-    system = start_get_system(callback=te1st)
-    time.sleep(10)
-    stop_get_system(system)
+
+    # system = start_get_system(callback=te1st)
+    # time.sleep(10)
+    # stop_get_system(system)
     # processes = channel.start_get_gpu_data(callba)
     # print(processes)
     # channel.stop_channel()
@@ -423,7 +365,6 @@ if __name__ == "__main__":
 
     # device = get_device()
     # print(device.get_apps_bid())
-    import dataclasses
 
     pass
 
