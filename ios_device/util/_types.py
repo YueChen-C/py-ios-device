@@ -5,8 +5,6 @@ python's type hierarchy.
 import copy
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
-import dataclasses
 
 
 class Error(Exception):
