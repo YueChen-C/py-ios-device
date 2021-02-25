@@ -107,7 +107,7 @@ class MuxConnection:
 
     def connect(self, device, port) -> socket.socket:
         ret = self._exchange(
-            self.proto.TYPE_CONNECT, {'DeviceID': device.devid, 'PortNumber': ((port << 8) & 0xFF00) | (port >> 8)}
+            self.proto.TYPE_CONNECT, {'DeviceID': device.devid, 'PortNumber': ((port & 0xFF) << 8) | (port >> 8)}
         )
         if ret != 0:
             raise MuxError('Connect failed: error %d' % ret)

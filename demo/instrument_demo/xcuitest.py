@@ -4,7 +4,7 @@ import time
 from distutils.version import LooseVersion
 
 from ios_device.servers.DTXSever import DTXServerRPCRawObj, DTXEnum
-from ios_device.servers.InstallationProxy import InstallationProxy
+from ios_device.servers.Installation import InstallationProxy
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.servers.house_arrest import HouseArrestClient
 from ios_device.servers.testmanagerd import TestManagerdLockdown
@@ -178,7 +178,7 @@ class RunXCUITest(threading.Thread):
 
 
 if __name__ == '__main__':
-    bundle_id = 'cn.rongcloud.rce.autotest.xctrunner'
+    bundle_id = 'cn.rongcloud.autotest.xctrunner'
     xcuitest = RunXCUITest(bundle_id)
     xcuitest.start()
     time.sleep(20)
