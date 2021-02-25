@@ -6,6 +6,10 @@ win，mac 跨平台方案，通过 Instruments 私有协议获取 iOS 相关性�
 
 相关文章链接:https://testerhome.com/topics/27159
 
+## pip 仓库:
+    pip install py_ios_device
+
+使用文档: [查看文档](./doc/使用文档.md)
 
 ### demo 演示 sysmontap.py 
 ```

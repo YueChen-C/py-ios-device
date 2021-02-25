@@ -9,7 +9,7 @@ from setuptools import setup
 requires = [
     "cffi==1.14.4",
     "construct==2.10.56",
-    "cryptography==3.3",
+    "cryptography==3.3.2",
     "pyasn1==0.4.8",
     "pycparser==2.20",
     "pyOpenSSL==20.0.0",
@@ -18,7 +18,7 @@ requires = [
     "numpy==1.15.1"
 ]
 setup(name='py_ios_device',
-      version="0.25",
+      version="1.0",
       description='Get ios data and operate ios devices',
       author='chenpeijie & liyachao',
       author_email='me@aaronsw.com',
