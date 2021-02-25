@@ -1,10 +1,9 @@
+import json
 import os
 import sys
 
 sys.path.append(os.getcwd())
-from threading import Event
 from ios_device.servers.Instrument import InstrumentServer
-from ios_device.util.dtxlib import get_auxiliary_text
 from ios_device.util import logging
 
 log = logging.getLogger(__name__)
@@ -12,7 +11,7 @@ log = logging.getLogger(__name__)
 
 def channels(rpc):
     rpc.init()
-    print(rpc._published_capabilities)
+    print(json.dumps(rpc._published_capabilities[0], indent=4))
     rpc.stop()
 
 

@@ -2,7 +2,6 @@ import json
 import os
 import sys
 
-from ios_device.servers.DTXSever import pre_call
 
 sys.path.append(os.getcwd())
 import time
@@ -66,8 +65,6 @@ def networking(rpc):
 
         print(msg_type[data[0]] + json.dumps(dict(zip(headers[data[0]], data[1]))))
         # print("[data]", res.parsed)
-
-    pre_call(rpc)
     rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
     var = rpc.call("com.apple.instruments.server.services.networking", "replayLastRecordedSession").parsed
     log.debug(f"replay {var}")

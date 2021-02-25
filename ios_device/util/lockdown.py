@@ -10,9 +10,6 @@ import platform
 
 import zipfile
 
-import requests
-
-
 from distutils.version import LooseVersion
 from pathlib import Path
 from typing import Optional, Dict, Any, Mapping
@@ -22,7 +19,7 @@ from .plist_service import PlistService
 from .ssl import make_certs_and_key
 from .usbmux import MuxDevice, UsbmuxdClient
 from .utils import DictAttrProperty, cached_property
-from ..servers.imageMounter import MobileImageMounter
+from ..servers.image_mounter import MobileImageMounter
 from ..util import logging, PROGRAM_NAME
 
 __all__ = ['LockdownClient']
@@ -91,7 +88,7 @@ class LockdownClient:
                 with itunes_lockdown_path.open('rb') as f:
                     return plistlib.load(f)
         except Exception as E:
-            log.error(f'{E}')
+            log.warning(f'{E}')
             log.debug(f'No iTunes pairing record found for device {self.identifier}')
             if self.ios_version > LooseVersion('13.0'):
                 log.debug('Getting pair record from usbmuxd')
@@ -232,7 +229,7 @@ class LockdownClient:
 
     @contextlib.contextmanager
     def _request_developer_image_dir(self):
-        product_version = self.get_value('',"ProductVersion")
+        product_version = self.get_value('', "ProductVersion")
         logging.info("ProductVersion: %s", product_version)
         major, minor = product_version.split(".")[:2]
         version = major + "." + minor

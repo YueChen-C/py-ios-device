@@ -11,7 +11,7 @@ sys.path.append(os.getcwd())
 
 
 def _launch_app(rpc, bundleid):
-    rpc.start()
+    rpc._start()
 
     def on_channel_message(res):
         if res.raw._auxiliaries:

@@ -7,19 +7,6 @@ win，mac 跨平台方案，通过 Instruments 私有协议获取 iOS 相关性�
 相关文章链接:https://testerhome.com/topics/27159
 
 
-### unix 模拟 socat 测试代理工具，debug 时使用
-unix_socket.py 该工具可以模拟类似 socat 的一个简单的 unix socket 代理工具，用于中间人劫持获取数据包， iOS 与 usbmuxd 交互过程中，将数据包自动转换成明文数据。
-使用方式：
-```
-1.sudo chmod 777 /var/run/
-2.sudo  mv /var/run/usbmuxd /var/run/usbmuxx
-3.python /tools/unix_socket.py
-4.恢复  sudo  mv /var/run/usbmuxx /var/run/usbmuxd
-
-```
-
-
-
 ### demo 演示 sysmontap.py 
 ```
 [

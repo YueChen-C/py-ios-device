@@ -12,7 +12,7 @@ class TestManagerdLockdown(DTXServerRPC):
         :return: bool 是否成功
         """
         try:
-            if self.lockdown.ios_version > LooseVersion('14.0'):
+            if self.lockdown.ios_version >= LooseVersion('14.0'):
                 self._cli = self.lockdown.start_service("com.apple.testmanagerd.lockdown.secure")
             else:
                 self._cli = self.lockdown.start_service("com.apple.testmanagerd.lockdown")
@@ -22,5 +22,5 @@ class TestManagerdLockdown(DTXServerRPC):
             raise E
         if self._cli is None:
             return False
-        self.start()
+        self._start()
         return self

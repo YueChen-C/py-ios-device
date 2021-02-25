@@ -30,19 +30,20 @@ def graphics_display(rpc):
     frame_count = 0
     time_count = 0
     last_time = datetime.now().timestamp()
+    count_time = datetime.now().timestamp()
     _list = []
 
     def on_graphics_message(res):
         nonlocal frame_count, last_frame, last_1_frame_cost, last_2_frame_cost, last_3_frame_cost, time_count, mach_time_factor, last_time, \
-            jank_count, big_jank_count, jank_time_count, _list
+            jank_count, big_jank_count, jank_time_count, _list, count_time
         if type(res.plist) is InstrumentRPCParseError:
             for args in kperf_data(res.raw.get_selector()):
-                time, code = args[0], args[7]
+                _time, code = args[0], args[7]
                 if code == 830472984:
                     if not last_frame:
-                        last_frame = long(time)
+                        last_frame = long(_time)
                     else:
-                        this_frame_cost = (long(time) - last_frame) * mach_time_factor
+                        this_frame_cost = (long(_time) - last_frame) * mach_time_factor
                         if all([last_3_frame_cost != 0, last_2_frame_cost != 0, last_1_frame_cost != 0]):
                             if this_frame_cost > mean([last_3_frame_cost, last_2_frame_cost, last_1_frame_cost]) * 2 \
                                     and this_frame_cost > MOVIE_FRAME_COST * NANO_SECOND * 2:
@@ -55,8 +56,10 @@ def graphics_display(rpc):
 
                         last_3_frame_cost, last_2_frame_cost, last_1_frame_cost = last_2_frame_cost, last_1_frame_cost, this_frame_cost
                         time_count += this_frame_cost
-                        last_frame = long(time)
+                        last_frame = long(_time)
                         frame_count += 1
+                else:
+                    time_count = (datetime.now().timestamp() - count_time) * NANO_SECOND
                 if time_count > NANO_SECOND:
                     print(
                         f"{datetime.now().timestamp() - last_time} FPS: {frame_count / time_count * NANO_SECOND} jank: {jank_count} big_jank: {big_jank_count} stutter: {jank_time_count / time_count}")
@@ -65,6 +68,10 @@ def graphics_display(rpc):
                     jank_time_count = 0
                     frame_count = 0
                     time_count = 0
+                    count_time = datetime.now().timestamp()
+
+                # else:
+                #     last_time = datetime.now().timestamp()
 
     rpc.register_unhandled_callback(dropped_message)
     rpc.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap", on_graphics_message)

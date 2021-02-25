@@ -107,7 +107,7 @@ class MuxConnection:
 
     def connect(self, device, port) -> socket.socket:
         ret = self._exchange(
-            self.proto.TYPE_CONNECT, {'DeviceID': device.devid, 'PortNumber': ((port << 8) & 0xFF00) | (port >> 8)}
+            self.proto.TYPE_CONNECT, {'DeviceID': device.devid, 'PortNumber': ((port & 0xFF) << 8) | (port >> 8)}
         )
         if ret != 0:
             raise MuxError('Connect failed: error %d' % ret)
@@ -141,11 +141,9 @@ class USBMux:
     def process(self, timeout: float = 0.1):
         self.listener.process(timeout)
 
-    def find_device(self, serial=None, timeout=0.1, max_attempts=10) -> MuxDevice:
+    def find_device(self, serial=None, timeout=0.01, max_attempts=10) -> MuxDevice:
         attempts = 0
-        _dev = None
-
-        while not _dev and attempts < max_attempts:
+        while attempts < max_attempts:
             self.process(timeout)
             attempts += 1
             if self.devices:
@@ -158,8 +156,14 @@ class USBMux:
                     return self.devices[0]
         if serial:
             raise NoMuxDeviceFound(f'Found {len(self.devices)} MuxDevice instances, but none with {serial}')
-
         raise NoMuxDeviceFound('No MuxDevice instances were found')
+
+    def get_devices(self, timeout=0.01, max_attempts=10):
+        attempts = 0
+        while attempts < max_attempts:
+            self.process(timeout)
+            attempts += 1
+        return [i.serial for i in self.devices]
 
 
 class UsbmuxdClient(MuxConnection):
@@ -300,3 +304,4 @@ class SafeStreamSocket:
                 raise MuxError('socket connection broken')
             msg = msg + chunk
         return msg
+

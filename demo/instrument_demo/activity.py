@@ -5,7 +5,6 @@ import time
 import os
 import sys
 
-from ios_device.servers.DTXSever import pre_call
 
 sys.path.append(os.getcwd())
 from ios_device.servers.Instrument import  InstrumentServer
