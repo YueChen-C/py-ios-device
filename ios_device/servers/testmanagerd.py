@@ -22,5 +22,5 @@ class TestManagerdLockdown(DTXServerRPC):
             raise E
         if self._cli is None:
             return False
-        self.start()
+        self._start()
         return self

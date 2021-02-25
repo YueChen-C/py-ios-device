@@ -13,7 +13,9 @@ requires = [
     "pyasn1==0.4.8",
     "pycparser==2.20",
     "pyOpenSSL==20.0.0",
-    "six==1.15.0"
+    "six==1.15.0",
+    "dataclasses==0.8",
+    "numpy==1.15.1"
 ]
 setup(name='py_ios_device',
       version="0.25",

@@ -13,10 +13,16 @@ from ios_device.util.dtxlib import get_auxiliary_text
 def MobileNotifications(rpc: DTXServerRPC):
     def dropped_message(res):
         print("[DROP]", res.parsed, get_auxiliary_text(res.raw))
+    rpc.register_unhandled_callback(dropped_message)
+
     rpc.call(
         "com.apple.instruments.server.services.mobilenotifications",
         'setApplicationStateNotificationsEnabled:', str(True))
-    rpc.register_unhandled_callback(dropped_message)
+    sleep(5)
+    rpc.call(
+        "com.apple.instruments.server.services.mobilenotifications",
+        'setApplicationStateNotificationsEnabled:', str(False))
+    print("aaaaa")
     sleep(10)
     rpc.stop()
 
@@ -24,4 +30,4 @@ def MobileNotifications(rpc: DTXServerRPC):
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
     MobileNotifications(rpc)
-    rpc.deinit()
+    rpc.stop()

@@ -22,7 +22,7 @@ class InstrumentServer(DTXServerRPC):
                     self._cli.sock._sslobj = None  # remoteserver 协议配对成功之后，需要关闭 ssl 协议通道，使用明文传输
         except StartServiceError as E:
             raise E
-        self.start()
+        self._start()
         if self._cli is None:
             return False
         return self
