@@ -7,7 +7,10 @@ import struct
 import threading
 from _ctypes import Structure
 from ctypes import c_byte, c_uint16, c_uint32
+from datetime import datetime
 from distutils.version import LooseVersion
+
+from numpy import long, mean
 
 from ios_device.servers.house_arrest import HouseArrestClient
 
@@ -21,9 +24,10 @@ from ios_device.servers.Installation import InstallationProxy
 
 from ios_device.util.lockdown import LockdownClient
 
-from ios_device.servers.DTXSever import DTXServerRPCResult, DTXServerRPCRawObj, DTXEnum
+from ios_device.servers.DTXSever import DTXServerRPCResult, DTXServerRPCRawObj, DTXEnum, InstrumentRPCParseError
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util.dtxlib import selector_to_pyobject, get_auxiliary_text
+from ios_device.util.utils import kperf_data
 
 
 def channel_validate(channel: InstrumentServer):
@@ -155,7 +159,7 @@ class RunXCUITest(threading.Thread):
         self.callback = callback
         self.app_env = app_env
 
-    def close(self):
+    def stop(self):
         self.quit_event.set()
 
     def run(self) -> None:
@@ -262,7 +266,8 @@ class RunXCUITest(threading.Thread):
             'MJPEG_SERVER_PORT': '',
             'USE_PORT': '',
         }
-        app_env.update(self.app_env)
+        if self.app_env:
+            app_env.update(self.app_env)
         if lock_down.ios_version > LooseVersion('11.0'):
             app_env['DYLD_INSERT_LIBRARIES'] = '/Developer/usr/lib/libMainThreadChecker.dylib'
             app_env['OS_ACTIVITY_DT_MODE'] = 'YES'
@@ -308,6 +313,6 @@ class RunXCUITest(threading.Thread):
         while not self.quit_event.wait(.1):
             pass
         logging.warning("xctrunner quited")
-        conn.deinit()
-        manager_lock_down_2.deinit()
-        manager_lock_down_1.deinit()
+        conn.stop()
+        manager_lock_down_2.stop()
+        manager_lock_down_1.stop()

@@ -224,22 +224,22 @@ class DTXServerRPC:
         :return: bool 是否成功
         """
         self._cli = None
-        self.start()
+        self._start()
         return False
 
-    def deinit(self):
-        """
-        反初始化 servers rpc 服务
-        :return: 无返回值
-        """
-        self.stop()
-        if self._cli:
-            self._cli.close()
-            self._cli = None
+    # def deinit(self):
+    #     """
+    #     反初始化 servers rpc 服务
+    #     :return: 无返回值
+    #     """
+    #     self.stop()
+    #     if self._cli:
+    #         self._cli.close()
+    #         self._cli = None
 
-    def start(self):
+    def _start(self):
         """
-        启动 servers rpc 服务
+        启动 servers rpc 服务, 此接口用户无需调用, 用户使用 init 接口
         :return: bool 是否成功
         """
         if self._running:
@@ -259,6 +259,9 @@ class DTXServerRPC:
         self._running = False
         if self._recv_thread:
             self._recv_thread = None
+        if self._cli:
+            self._cli.close()
+            self._cli = None
 
     def _run_callbacks(self, event_name, data):
         """

@@ -6,7 +6,7 @@ from ios_device.servers.Instrument import InstrumentServer
 
 
 def netstat(rpc, pid):
-    rpc.start()
+    rpc._start()
     channel = "com.apple.xcode.debug-gauge-data-providers.NetworkStatistics"
     attr = {}
     print("start", rpc.call(channel, "startSamplingForPIDs:", {pid}).parsed)
@@ -18,4 +18,4 @@ def netstat(rpc, pid):
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
     netstat(rpc, 261)
-    rpc.deinit()
+    rpc.stop()

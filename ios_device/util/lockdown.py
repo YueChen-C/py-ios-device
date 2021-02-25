@@ -10,9 +10,6 @@ import platform
 
 import zipfile
 
-import requests
-
-
 from distutils.version import LooseVersion
 from pathlib import Path
 from typing import Optional, Dict, Any, Mapping
@@ -232,7 +229,7 @@ class LockdownClient:
 
     @contextlib.contextmanager
     def _request_developer_image_dir(self):
-        product_version = self.get_value('',"ProductVersion")
+        product_version = self.get_value('', "ProductVersion")
         logging.info("ProductVersion: %s", product_version)
         major, minor = product_version.split(".")[:2]
         version = major + "." + minor
