@@ -8,8 +8,12 @@ win，mac 跨平台方案，通过 Instruments 私有协议获取 iOS 相关性�
 
 ## pip 仓库:
     pip install py_ios_device
+    
+python 版本: 3.6+
 
 使用文档: [查看文档](./doc/使用文档.md)
+
+使用demo: [查看demo](./test/test.py)
 
 ### demo 演示 sysmontap.py 
 ```
