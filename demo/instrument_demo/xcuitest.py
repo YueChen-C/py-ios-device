@@ -1,3 +1,5 @@
+## run xcuitest
+## https://github.com/alibaba/taobao-iphone-device/blob/main/tidevice/_device.py#L921
 import logging
 import threading
 import time
@@ -94,7 +96,7 @@ class RunXCUITest(threading.Thread):
             "sessionIdentifier": session_identifier,
         }))
 
-        fsync = HouseArrestClient()
+        fsync = HouseArrestClient(self.lockdown)
         fsync.send_command(self.bundle_id)
         for fname in fsync.read_directory("/tmp"):
             if fname.endswith(".xctestconfiguration"):
