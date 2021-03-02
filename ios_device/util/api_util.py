@@ -233,7 +233,7 @@ class RunXCUITest(threading.Thread):
             "sessionIdentifier": session_identifier,
         }))
 
-        fsync = HouseArrestClient()
+        fsync = HouseArrestClient(udid=self.device_id)
         fsync.send_command(self.bundle_id)
         for fname in fsync.read_directory("/tmp"):
             if fname.endswith(".xctestconfiguration"):
