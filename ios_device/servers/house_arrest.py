@@ -1,3 +1,6 @@
+"""
+
+"""
 import logging
 
 from ..servers.afc import AFCClient, AFCShell
@@ -6,9 +9,9 @@ from ..util.lockdown import LockdownClient
 
 class HouseArrestClient(AFCClient):
 
-    def __init__(self, udid=None,logger=None):
+    def __init__(self,lockdown=None, udid=None,logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        lockdownClient = LockdownClient(udid)
+        lockdownClient = lockdown if lockdown else LockdownClient(udid=udid)
         serviceName = "com.apple.mobile.house_arrest"
         super(HouseArrestClient, self).__init__(lockdownClient, serviceName)
 
