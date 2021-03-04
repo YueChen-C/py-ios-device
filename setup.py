@@ -14,10 +14,10 @@ requires = [
     "pycparser==2.20",
     "pyOpenSSL==20.0.0",
     "six==1.15.0",
-    "numpy==1.15.1"
+    "numpy>=1.15.1"
 ]
 setup(name='py_ios_device',
-      version="1.0.2",
+      version="1.0.4",
       description='Get ios data and operate ios devices',
       author='chenpeijie & liyachao',
       author_email='me@aaronsw.com',

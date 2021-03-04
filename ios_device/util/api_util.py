@@ -206,7 +206,7 @@ class RunXCUITest(threading.Thread):
                                       DTXServerRPCRawObj(xcode_version))
 
         def _show_log_message(res):
-            logging.info(f"{res.parsed} : {get_auxiliary_text(res.raw)}")
+            # logging.info(f"{res.parsed} : {get_auxiliary_text(res.raw)}")
             if 'Received test runner ready reply with error: (null' in ''.join(
                     get_auxiliary_text(res.raw)):
                 logging.info("_start_executing Test runner ready detected")
