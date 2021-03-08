@@ -13,6 +13,9 @@ import zipfile
 from distutils.version import LooseVersion
 from pathlib import Path
 from typing import Optional, Dict, Any, Mapping
+
+import requests
+
 from .exceptions import PairingError, NotTrustedError, FatalPairingError, NotPairedError, CannotStopSessionError
 from .exceptions import StartServiceError, InitializationError
 from .plist_service import PlistService
@@ -178,8 +181,24 @@ class LockdownClient:
 
     def set_value(self, value, domain=None, key=None):
         resp = self._plist_request('SetValue', {'Value': value}, Domain=domain, Key=key)
-        log.debug(resp)
+        log.debug(f'set_value {resp}')
         return resp
+
+    def remove_value(self, domain=None, key=None):
+        resp = self._plist_request('RemoveValue', Domain=domain, Key=key)
+        log.debug(f'remove_value {resp}')
+        return resp
+
+    def enable_wireless(self, enable, wireless_id, buddy_id):
+
+        self.set_value(domain='com.apple.mobile.wireless_lockdown', key='EnableWifiConnections', value=enable)
+        self.set_value(domain='com.apple.mobile.wireless_lockdown', key='EnableWifiDebugging', value=enable)
+        self.set_value(domain='com.apple.mobile.wireless_lockdown', key='WirelessBuddyID', value=buddy_id)
+        if enable:
+            if wireless_id is not None:
+                self.set_value(domain='com.apple.xcode.developerdomain', key='WirelessHosts', value=[wireless_id])
+        else:
+            self.remove_value(domain='com.apple.xcode.developerdomain', key='WirelessHosts')
 
     def _start_service(self, name: str, escrow_bag=None) -> PlistService:
         if not self.paired:

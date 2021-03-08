@@ -4,7 +4,11 @@ Utils
 
 __all__ = ['DictAttrProperty', 'DictAttrFieldNotFoundError']
 
+import socket
 import struct
+import threading
+
+from zeroconf import Zeroconf, ServiceBrowser
 
 _NotSet = object()
 
@@ -110,3 +114,31 @@ def kperf_data(messages):
         _list.append(struct.unpack('<QLLQQQQLLQ', messages[p_record:p_record + 64]))
         p_record += 64
     return _list
+
+
+def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, port)
+    expecting_name = f"perfcat_{name}._{service_name}._tcp.local."
+    print(f"[WIRELESS] expecting {expecting_name}")
+    done = threading.Event()
+    ctx = {}
+
+    class MyListener:
+        def add_service(self, zeroconf, type, name):
+            info = zeroconf.get_service_info(type, name)
+            print(f"[Service] `{name}` added, service info: `{info}`")
+            if name == expecting_name:
+                ctx['addresses'] = list(map(socket.inet_ntoa, info.addresses))
+                ctx['port'] = info.port
+                print(f"[Service] `{name}` found, `{ctx}`")
+                done.set()
+
+    zero_conf = Zeroconf()
+    listener = MyListener()
+    browser = ServiceBrowser(zero_conf, f"_{service_name}._tcp.local.", listener)
+    if not done.wait(timeout):
+        ctx['addresses'] = []
+        ctx['port'] = 0
+    browser.cancel()
+    zero_conf.close()
+
+    return ctx['addresses'], ctx['port']

@@ -18,4 +18,4 @@ def channels(rpc):
 if __name__ == '__main__':
     rpc = InstrumentServer()
     channels(rpc)
-    rpc.deinit()
+    rpc.stop()

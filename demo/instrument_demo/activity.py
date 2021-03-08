@@ -29,4 +29,4 @@ def activity(rpc, pid):
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
     activity(rpc, 261)
-    rpc.deinit()
+    rpc.stop()

@@ -56,4 +56,4 @@ def traceCodesFile(rpc):
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
     runningProcesses(rpc)
-    rpc.deinit()
+    rpc.stop()

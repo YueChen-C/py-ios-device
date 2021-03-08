@@ -90,21 +90,12 @@ class FloatHandler(IntegerHandler):
 
     def get_object_length(self, float_):
         """Return the object length for a float."""
-        single_max = (2 - 2 ** (-23)) * (2 ** 127)
-        single_min = 2 ** -126
-        double_max = (2 - 2 ** (-52)) * (2 ** 1023)
-        double_min = 2 ** -1022
-        if (-single_max < float_ < single_min or
-                single_min < float_ < single_max):
-            return 2
-        elif (-double_max < float_ < double_min or
-              double_min < float_ < double_max):
-            return 3
-        raise ValueError
+        return 3
+
 
     def encode_body(self, float_, object_length):
         body = IntegerHandler.encode_body(self, float_, object_length)
-        return body[::-1]
+        return body
 
     def decode_body(self, raw, object_length):
         return IntegerHandler.decode_body(self, raw, object_length)

@@ -1,5 +1,7 @@
 import enum
+import socket
 import struct
+import threading
 import time
 import traceback
 import typing
@@ -10,8 +12,9 @@ from ..util import logging
 from ..util.bpylist import load, unarchive
 from ..util.dtxlib import DTXMessage, DTXMessageHeader, \
     pyobject_to_auxiliary, get_auxiliary_text, \
-    pyobject_to_selector, selector_to_pyobject, ns_keyed_archiver
-from ..util.lockdown import LockdownClient
+    pyobject_to_selector, selector_to_pyobject, ns_keyed_archiver, auxiliary_to_pyobject
+from ..util.plist_service import PlistService
+from ..util.ssl import AESCrypto
 
 log = logging.getLogger(__name__)
 
@@ -69,7 +72,8 @@ class DTXUSBTransport:
         :param buffer: 数据
         :return: bool 是否成功
         """
-        client.sock.sendall(buffer)
+
+        client.send(buffer)
         return True
 
     def recv_all(self, client, length, timeout=-1) -> bytes:
@@ -82,11 +86,20 @@ class DTXUSBTransport:
         :return: 长度为 length 的 buffer, 失败时返回 None
         """
         ret = b''
+        rb = None
         while len(ret) < length:
             L = length - len(ret)
             if L > 8192:
                 L = 8192
-            rb = client.recv(L)
+            if isinstance(client, PlistService):
+                rb = client.recv(L)
+            else:
+                try:
+                    client.settimeout(1)  # 毫秒, 需要转成秒
+                    rb = client.recv(L)
+                    client.settimeout(None)
+                except socket.timeout:
+                    pass
             if not rb:
                 return ret
             ret += rb
@@ -117,7 +130,7 @@ class DTXClientMixin(DTXUSBTransport):
         self._setup_manager()
         while 1:
             buf = self.recv_dtx_fragment(client, timeout)
-            log.debug(f'{client.port} 接收 DTX: {buf}')
+            log.debug(f'接收 DTX: {buf}')
             if not buf:
                 return None
             fragment = DTXFragment(buf)
@@ -193,7 +206,7 @@ class DTXServerRPCResult:
 
 class DTXServerRPC:
 
-    def __init__(self, lockdown=None, udid=None):
+    def __init__(self,lockdown=None,udid=None):
         self._cli = None
         self._is = None
         self._recv_thread = None
@@ -207,8 +220,9 @@ class DTXServerRPC:
         self._published_capabilities = None
         self._channel_callbacks = {}
         self.udid = udid
+        self.lockdown = lockdown
         self._is = DTXClientMixin()
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
+
         self.done = Event()
         self.register()
 
@@ -216,26 +230,44 @@ class DTXServerRPC:
         def _notifyOfPublishedCapabilities(res):
             self.done.set()
             self._published_capabilities = get_auxiliary_text(res.raw)
+
         self.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
 
-    def init(self):
+    def init(self,_cli=None):
         """ 继承类
         初始化 servers rpc 服务:
         :return: bool 是否成功
         """
-        self._cli = None
+        self._cli = _cli
         self._start()
-        return False
+        return self
 
-    # def deinit(self):
-    #     """
-    #     反初始化 servers rpc 服务
-    #     :return: 无返回值
-    #     """
-    #     self.stop()
-    #     if self._cli:
-    #         self._cli.close()
-    #         self._cli = None
+    @classmethod
+    def init_wireless(self,addresses, port,psk):
+        _cli = None
+        try:
+            for address in addresses:
+                _cli = socket.create_connection((address, int(port)), timeout=3)
+                break
+        except Exception:
+            pass
+        logging.info(f'等待连接 IP 地址回调数据: {addresses}:{port}')
+        if not _cli:
+            raise Exception(f'wifi连接失败: addresses:{addresses},port:{port} ')
+        DTXServer = DTXServerRPC()
+        _done = threading.Event()
+
+        def challenge(res):
+            val = auxiliary_to_pyobject(res.raw.get_auxiliary_at(0))
+            val = bytes(val)
+            d_val = AESCrypto.cbc_decrypt(val, bytes(psk, encoding='utf8'))
+            out = AESCrypto.cbc_encrypt(d_val[:-1] + b'ack\x00', bytes(psk, encoding='utf8'))
+            _done.set()
+            return out
+        DTXServer.register_callback("challenge:", challenge)
+        DTXServer.init(_cli)
+        print("[WIRELESS] challange callback registered")
+        return DTXServer
 
     def _start(self):
         """
@@ -249,6 +281,7 @@ class DTXServerRPC:
         self._recv_thread.start()
         while not self.done.wait(5):
             logging.debug("[WARN] timeout waiting capabilities")
+            return False
         return True
 
     def stop(self):
@@ -361,7 +394,8 @@ class DTXServerRPC:
         last_none = 0
         try:
             while self._running:
-                dtx = self._is.recv_dtx(self._cli, 2)  # s
+                expects_reply = False
+                dtx = self._is.recv_dtx(self._cli, 1000)  # s
                 if dtx is None:  # 长时间没有回调则抛出错误
                     cur = time.time()
                     if cur - last_none < 0.1:
@@ -386,12 +420,18 @@ class DTXServerRPC:
                         selector = None
                     try:
                         if selector and isinstance(selector, str) and selector in self._callbacks:
-                            self._callbacks[selector](DTXServerRPCResult(dtx))
+                            ret = self._callbacks[selector](DTXServerRPCResult(dtx))
+                            expects_reply = True
+                            if dtx.expects_reply:
+                                reply = dtx.new_reply()
+                                reply.set_selector(pyobject_to_selector(ret))
+                                reply._payload_header.flags = 0x3
+                                self._is.send_dtx(self._cli, reply)
                         elif self._unhanled_callback:
                             self._unhanled_callback(DTXServerRPCResult(dtx))
                     except:
                         traceback.print_exc()
-                    if dtx.expects_reply:
+                    if dtx.expects_reply and not expects_reply:
                         reply = dtx.new_reply()
                         reply.set_selector(b'\00' * 16)
                         reply._payload_header.flags = 0x3

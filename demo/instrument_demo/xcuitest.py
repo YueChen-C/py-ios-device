@@ -174,9 +174,9 @@ class RunXCUITest(threading.Thread):
         while not self.quit_event.wait(.1):
             pass
         logging.warning("xctrunner quited")
-        conn.deinit()
-        ManagerdLockdown2.deinit()
-        ManagerdLockdown1.deinit()
+        conn.stop()
+        ManagerdLockdown2.stop()
+        ManagerdLockdown1.stop()
 
 
 if __name__ == '__main__':

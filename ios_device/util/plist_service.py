@@ -1,6 +1,7 @@
 """
 Plist Service - handles parsing and formatting plist content
 """
+from .exceptions import MuxError
 from ..util import logging
 import plistlib
 import re
@@ -36,6 +37,14 @@ class PlistService:
 
     def ssl_start(self, keyfile, certfile):
         self.sock = ssl.wrap_socket(self.sock, keyfile, certfile)
+
+    def send(self, msg):
+        totalsent = 0
+        while totalsent < len(msg):
+            sent = self.sock.send(msg[totalsent:])
+            if sent == 0:
+                raise MuxError('socket connection broken')
+            totalsent = totalsent + sent
 
     def recv(self, length=4096, timeout=-1):
         try:

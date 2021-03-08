@@ -79,4 +79,4 @@ def networking(rpc):
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
     networking(rpc)
-    rpc.deinit()
+    rpc.stop()

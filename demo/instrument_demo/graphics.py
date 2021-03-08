@@ -31,4 +31,4 @@ def cmd_graphics(rpc):
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
     cmd_graphics(rpc)
-    rpc.deinit()
+    rpc.stop()

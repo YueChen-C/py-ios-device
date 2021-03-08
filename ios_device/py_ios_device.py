@@ -2,23 +2,19 @@
 @Date    : 2021-01-28
 @Author  : liyachao
 """
-import json
 import time
 import uuid
 from datetime import datetime
 
-from ios_device.util.forward import ForwardPorts
-
-from ios_device.util.dtxlib import get_auxiliary_text
 from numpy import long, mean
 
 from ios_device.servers.DTXSever import InstrumentRPCParseError
-
 from ios_device.servers.Installation import InstallationProxy
-
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util import api_util
 from ios_device.util.api_util import PyIOSDeviceException, RunXCUITest
+from ios_device.util.dtxlib import get_auxiliary_text
+from ios_device.util.forward import ForwardPorts
 from ios_device.util.utils import kperf_data
 
 
@@ -207,6 +203,22 @@ class PyiOSDevice:
 def init(device_id: str = None):
     rpc_channel = InstrumentServer(udid=device_id)
     rpc_channel.init()
+    return rpc_channel
+
+
+def init_wireless(device_id: str = None, *args):
+    """ 局域网使用 wifi 连接 iOS version < 14.0
+        com.apple.instruments.server.services.wireless 在 iOS 14 以上版本没有了
+    :param device_id:
+    :return:
+    """
+    rpc = InstrumentServer(udid=device_id)
+    if not args:
+        addresses, port, psk = rpc.start_wireless()
+    else:
+        addresses, port, psk = args
+    print('start wireless', addresses, port, psk)
+    rpc_channel = rpc.init_wireless(addresses, port, psk)
     return rpc_channel
 
 
@@ -715,10 +727,10 @@ if __name__ == "__main__":
     # x = start_xcuitest("cn.rongcloud.rce.autotest.xctrunner", te1st,app_env={'USE_PORT': '8111'})
     # time.sleep(10)
     # stop_xcuitest(x)
-
-    # system = start_get_system(callback=te1st)
-    # time.sleep(10)
-    # stop_get_system(system)
+    rpc_channel = init_wireless()
+    system = start_get_system(callback=te1st, rpc_channel=rpc_channel)
+    time.sleep(100)
+    stop_get_system(system)
     # processes = channel.start_get_gpu_data(callba)
     # print(processes)
     # channel.stop_channel()
@@ -740,15 +752,15 @@ if __name__ == "__main__":
 
     # channel = start_get_power_data(callback=test)
     # # time.sleep(10)
-    # # stop_get_system_data(channel)
+    # stop_get_system_data(channel)
     # channel.stop()
 
     # device = get_device()
     # print(device.get_apps_bid())
 
-    f = start_forward(["8200:8200"])
-    time.sleep(30)
-    stop_forward(f)
+    # f = start_forward(["8200:8200"])
+    # time.sleep(30)
+    # stop_forward(f)
     pass
 
     # channel.register_unhandled_callback(test)

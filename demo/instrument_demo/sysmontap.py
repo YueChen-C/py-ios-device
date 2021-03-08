@@ -42,13 +42,17 @@ def sysmontap(rpc):
     rpc.register_channel_callback("com.apple.instruments.server.services.sysmontap", on_sysmontap_message)
     var = rpc.call("com.apple.instruments.server.services.sysmontap", "start").parsed
     print(f"start {var}")
-    time.sleep(10)
+    time.sleep(1000)
     var = rpc.call("com.apple.instruments.server.services.sysmontap", "stop").parsed
     print(f"stop {var}")
     rpc.stop()
 
 
 if __name__ == '__main__':
-    rpc = InstrumentServer().init()
+    rpc = InstrumentServer()
+    addresses, port, psk = rpc.start_wireless()
+    print('start wireless', addresses, port, psk)
+    rpc = rpc.init_wireless(addresses, port, psk)
+    # rpc = InstrumentServer().init()
     sysmontap(rpc)
-    rpc.deinit()
+    rpc.stop()

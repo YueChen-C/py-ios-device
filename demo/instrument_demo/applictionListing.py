@@ -19,4 +19,4 @@ def applictionListing(rpc: DTXServerRPC):
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
     applictionListing(rpc)
-    rpc.deinit()
+    rpc.stop()
