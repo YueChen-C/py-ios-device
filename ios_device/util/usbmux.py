@@ -165,6 +165,10 @@ class USBMux:
             attempts += 1
         return [i.serial for i in self.devices]
 
+    def connect(self, dev, port):
+        connector = MuxConnection(self.socketpath, self.protoclass)
+        return connector.connect(dev, port)
+
 
 class UsbmuxdClient(MuxConnection):
     def __init__(self):
@@ -304,4 +308,3 @@ class SafeStreamSocket:
                 raise MuxError('socket connection broken')
             msg = msg + chunk
         return msg
-

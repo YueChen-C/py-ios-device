@@ -7,6 +7,8 @@ import time
 import uuid
 from datetime import datetime
 
+from ios_device.util.forward import ForwardPorts
+
 from ios_device.util.dtxlib import get_auxiliary_text
 from numpy import long, mean
 
@@ -16,7 +18,7 @@ from ios_device.servers.Installation import InstallationProxy
 
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util import api_util
-from ios_device.util.api_util import channel_validate, PyIOSDeviceException, RunXCUITest
+from ios_device.util.api_util import PyIOSDeviceException, RunXCUITest
 from ios_device.util.utils import kperf_data
 
 
@@ -115,16 +117,19 @@ class PyiOSDevice:
         """
         return get_applications(device_id=self.device_id, rpc_channel=self.rpc_channel)
 
-    def start_xcuitest(self, bundle_id, callback: callable, app_env: dict = None):
+    def start_xcuitest(self, bundle_id, callback: callable, app_env: dict = None, forward: bool = False,
+                       pair_ports=None):
         """
         启动 xcuittest
+        :param pair_ports: 端口对的数组，每对端口中前一个代表远程端口，后一个代表本地端口，例如：["8100:8100", "8200:8200"]
+        :param forward: 是否进行端口转发
         :param bundle_id:
         :param callback:
         :param app_env:
         :return:
         """
 
-        self.xcuitest = start_xcuitest(bundle_id, callback, self.device_id, app_env)
+        self.xcuitest = start_xcuitest(bundle_id, callback, self.device_id, app_env, forward, pair_ports)
         return self.xcuitest
 
     def stop_xcuitest(self, xcuitest=None):
@@ -184,6 +189,19 @@ class PyiOSDevice:
         :return:
         """
         return get_netstat(pid=pid, device_id=self.device_id, rpc_channel=self.rpc_channel)
+
+    def start_forward(self, pair_ports=None):
+        """
+        iOS真机设备的端口转发
+        :param pair_ports: list 端口对的数组，每对端口中前一个代表远程端口，后一个代表本地端口，例如：["8100:8100", "8200:8200"]
+        :param udid:
+        :param threaded:
+        :param bufsize:
+        """
+        return start_forward(pair_ports=pair_ports, device_id=self.device_id)
+
+    def stop_forward(self, forward: ForwardPorts):
+        stop_forward(forward)
 
 
 def init(device_id: str = None):
@@ -403,9 +421,12 @@ def get_applications(device_id: str = None, rpc_channel: InstrumentServer = None
     return application_list
 
 
-def start_xcuitest(bundle_id: str, callback: callable, device_id: str = None, app_env: dict = None):
+def start_xcuitest(bundle_id: str, callback: callable, device_id: str = None, app_env: dict = None,
+                   forward: bool = False, pair_ports=None):
     """
     启动 xcuittest
+    :param pair_ports: 端口对的数组，每对端口中前一个代表远程端口，后一个代表本地端口，例如：["8100:8100", "8200:8200"]
+    :param forward: 是否进行端口转发
     :param bundle_id:
     :param callback:
     :param device_id:
@@ -424,7 +445,12 @@ def start_xcuitest(bundle_id: str, callback: callable, device_id: str = None, ap
         }
     :return: 返回 xcuitest 对象,用于停止 xcuitest
     """
-    xcuitest = RunXCUITest(bundle_id=bundle_id, callback=callback, device_id=device_id, app_env=app_env)
+
+    if pair_ports is None:
+        pair_ports = ["8100:8100"]
+    xcuitest = RunXCUITest(bundle_id=bundle_id, callback=callback, device_id=device_id, app_env=app_env,
+                           forward=forward, pair_ports=pair_ports)
+
     xcuitest.start()
     return xcuitest
 
@@ -646,16 +672,34 @@ def get_netstat(pid: int, device_id: str = None, rpc_channel: InstrumentServer =
     return ret
 
 
+def start_forward(pair_ports=None, device_id: str = None):
+    """
+    iOS真机设备的端口转发
+        :param pair_ports: list 端口对的数组，每对端口中前一个代表远程端口，后一个代表本地端口，例如：["8100:8100", "8200:8200"]
+        :param device_id:
+    :return:
+    """
+    if not pair_ports:
+        pair_ports = ["8100,8100"]
+    forward = ForwardPorts(pair_ports=pair_ports, device_id=device_id)
+    forward.start()
+    return forward
+
+
+def stop_forward(forward: ForwardPorts):
+    forward.stop()
+
+
 def te1st(res):
     # print(res[0]["PerCPUUsage"])
     print(res)
 
 
 if __name__ == "__main__":
-    print(get_netstat(216))
-    channel = PyiOSDevice()
-    print(channel.get_netstat(216))
-    channel.stop()
+    # print(get_netstat(216))
+    # channel = PyiOSDevice()
+    # print(channel.get_netstat(216))
+    # channel.stop()
     # c = start_get_mobile_notifications(callback=te1st)
     # time.sleep(5)
     # stop_get_mobile_notifications(c)
@@ -702,6 +746,9 @@ if __name__ == "__main__":
     # device = get_device()
     # print(device.get_apps_bid())
 
+    f = start_forward(["8200:8200"])
+    time.sleep(30)
+    stop_forward(f)
     pass
 
     # channel.register_unhandled_callback(test)
