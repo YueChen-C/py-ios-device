@@ -17,7 +17,7 @@ requires = [
     "numpy>=1.15.1"
 ]
 setup(name='py_ios_device',
-      version="1.0.6",
+      version="1.0.7",
       description='Get ios data and operate ios devices',
       author='chenpeijie & liyachao',
       author_email='me@aaronsw.com',
