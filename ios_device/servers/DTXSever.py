@@ -266,6 +266,10 @@ class DTXServerRPC:
             return out
         DTXServer.register_callback("challenge:", challenge)
         DTXServer.init(_cli)
+        while not _done.wait(5):
+            logging.debug("[WIRELESS] challange callback registered error")
+            return False
+
         print("[WIRELESS] challange callback registered")
         return DTXServer
 
