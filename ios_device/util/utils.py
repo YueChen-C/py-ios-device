@@ -134,6 +134,9 @@ def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, p
             if not info:
                 if _info.request(zeroconf, 2000, True):
                     info = _info
+            if not info:
+                done.set()
+
             # _info = ServiceInfo(type, name, parsed_addresses=["10.3.3.230"])
             # if _info.request(zeroconf, 1000):
             #     info = _info
@@ -153,6 +156,8 @@ def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, p
     # for index in zero_conf1:
     #     print(index)
     listener = MyListener()
+    if not ctx:
+        raise Exception("ip 绑定失败,请检查 wifi 后重试")
     browser = ServiceBrowser(zero_conf, f"_{service_name}._tcp.local.", listener)
     if not done.wait(timeout):
         ctx['addresses'] = []
