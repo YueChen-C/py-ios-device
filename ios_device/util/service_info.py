@@ -29,9 +29,7 @@ class MyServiceInfo(ServiceInfo):
                         _addr: str = list(map(socket.inet_ntoa, [record.address]))[0]
                     except OSError:
                         return
-
-                    if not _addr.startswith("169") and not _addr.startswith("127") and not _addr.startswith(
-                            "0.") and record.address not in self._addresses:
+                    if not _addr.startswith("169") and record.address not in self._addresses:
                         self._addresses.append(record.address)
             elif record.type == _TYPE_SRV:
                 assert isinstance(record, DNSService)
@@ -48,7 +46,31 @@ class MyServiceInfo(ServiceInfo):
                 if record.name == self.name:
                     self._set_text(record.text)
 
-    def request(self, zc: 'Zeroconf', timeout: float) -> bool:
+    def local_update_record(self, zc: 'Zeroconf', now: float, record) -> None:
+        """Updates service information from a DNS record"""
+        if record is not None and not record.is_expired(now):
+            if record.type in [_TYPE_A, _TYPE_AAAA]:
+                assert isinstance(record, DNSAddress)
+                # if record.name == self.name:
+                if record.name == self.server:
+                    if record.address not in self._addresses:
+                        self._addresses.append(record.address)
+            elif record.type == _TYPE_SRV:
+                assert isinstance(record, DNSService)
+                if record.name == self.name:
+                    self.server = record.server
+                    self.port = record.port
+                    self.weight = record.weight
+                    self.priority = record.priority
+                    # self.address = None
+                    self.local_update_record(zc, now, zc.cache.get_by_details(self.server, _TYPE_A, _CLASS_IN))
+                    self.local_update_record(zc, now, zc.cache.get_by_details(self.server, _TYPE_AAAA, _CLASS_IN))
+            elif record.type == _TYPE_TXT:
+                assert isinstance(record, DNSText)
+                if record.name == self.name:
+                    self._set_text(record.text)
+
+    def request(self, zc: 'Zeroconf', timeout: float, local=False) -> bool:
         """Returns true if the service could be discovered on the
         network, and updates this object with details discovered.
         """
@@ -64,7 +86,10 @@ class MyServiceInfo(ServiceInfo):
         for record_type in record_types_for_check_cache:
             cached = zc.cache.get_by_details(self.name, *record_type)
             if cached:
-                self.update_record(zc, now, cached)
+                if local:
+                    self.local_update_record(zc, now, cached)
+                else:
+                    self.update_record(zc, now, cached)
 
         if self.server is not None and self.text is not None and self._addresses:
             return True

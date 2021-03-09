@@ -128,10 +128,12 @@ def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, p
             # info = zeroconf.get_service_info(type, name)
 
             _info = MyServiceInfo(type, name)
-            for index in range(0, 10):
-                if _info.request(zeroconf, 3000):
+            info = None
+            if _info.request(zeroconf, 5000):
+                info = _info
+            if not info:
+                if _info.request(zeroconf, 2000, True):
                     info = _info
-                    break
             # _info = ServiceInfo(type, name, parsed_addresses=["10.3.3.230"])
             # if _info.request(zeroconf, 1000):
             #     info = _info
