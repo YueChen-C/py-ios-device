@@ -113,7 +113,7 @@ class PyiOSDevice:
         """
         return get_applications(device_id=self.device_id, rpc_channel=self.rpc_channel)
 
-    def start_xcuitest(self, bundle_id, callback: callable, app_env: dict = None, forward: bool = False,
+    def start_xcuitest(self, bundle_id, callback: callable, app_env: dict = None,
                        pair_ports=None):
         """
         启动 xcuittest
@@ -125,7 +125,7 @@ class PyiOSDevice:
         :return:
         """
 
-        self.xcuitest = start_xcuitest(bundle_id, callback, self.device_id, app_env, forward, pair_ports)
+        self.xcuitest = start_xcuitest(bundle_id, callback, self.device_id, app_env, pair_ports)
         return self.xcuitest
 
     def stop_xcuitest(self, xcuitest=None):
@@ -434,11 +434,10 @@ def get_applications(device_id: str = None, rpc_channel: InstrumentServer = None
 
 
 def start_xcuitest(bundle_id: str, callback: callable, device_id: str = None, app_env: dict = None,
-                   forward: bool = False, pair_ports=None):
+                   pair_ports=None):
     """
     启动 xcuittest
     :param pair_ports: 端口对的数组，每对端口中前一个代表远程端口，后一个代表本地端口，例如：["8100:8100", "8200:8200"]
-    :param forward: 是否进行端口转发
     :param bundle_id:
     :param callback:
     :param device_id:
@@ -461,7 +460,7 @@ def start_xcuitest(bundle_id: str, callback: callable, device_id: str = None, ap
     if pair_ports is None:
         pair_ports = ["8100:8100"]
     xcuitest = RunXCUITest(bundle_id=bundle_id, callback=callback, device_id=device_id, app_env=app_env,
-                           forward=forward, pair_ports=pair_ports)
+                           pair_ports=pair_ports)
 
     xcuitest.start()
     return xcuitest
@@ -727,10 +726,10 @@ if __name__ == "__main__":
     # x = start_xcuitest("cn.rongcloud.rce.autotest.xctrunner", te1st,app_env={'USE_PORT': '8111'})
     # time.sleep(10)
     # stop_xcuitest(x)
-    rpc_channel = init_wireless()
-    system = start_get_system(callback=te1st, rpc_channel=rpc_channel)
-    time.sleep(100)
-    stop_get_system(system)
+    # rpc_channel = init_wireless()
+    # system = start_get_system(callback=te1st, rpc_channel=rpc_channel)
+    # time.sleep(100)
+    # stop_get_system(system)
     # processes = channel.start_get_gpu_data(callba)
     # print(processes)
     # channel.stop_channel()

@@ -148,7 +148,7 @@ class PyIOSDeviceException(Exception):
 
 
 class RunXCUITest(threading.Thread):
-    def __init__(self, bundle_id, callback, device_id=None, app_env: dict = None, forward: bool = False,
+    def __init__(self, bundle_id, callback, device_id=None, app_env: dict = None,
                  pair_ports=None):
         super().__init__()
         if pair_ports is None:
@@ -159,7 +159,7 @@ class RunXCUITest(threading.Thread):
         self.callback = callback
         self.app_env = app_env
         self.lock_down = None
-        self.forward = forward
+        self.forward = False
         self.pair_ports = pair_ports
         self.forward_thread = None
 
@@ -175,7 +175,8 @@ class RunXCUITest(threading.Thread):
         lock_down = LockdownClient(udid=self.device_id)
         installation = InstallationProxy(lockdown=lock_down)
 
-        if self.forward:
+        if self.pair_ports:
+            self.forward = True
             self.forward_thread = ForwardPorts(pair_ports=self.pair_ports, device_id=self.device_id)
             self.forward_thread.start()
 

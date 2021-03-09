@@ -19,7 +19,7 @@ requires = [
 
 ]
 setup(name='py_ios_device',
-      version="1.0.7",
+      version="1.0.8",
       description='Get ios data and operate ios devices',
       author='chenpeijie & liyachao',
       author_email='me@aaronsw.com',
