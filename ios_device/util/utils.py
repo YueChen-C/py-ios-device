@@ -1,6 +1,7 @@
 """
 Utils
 """
+from ios_device.util.service_info import MyServiceInfo
 
 __all__ = ['DictAttrProperty', 'DictAttrFieldNotFoundError']
 
@@ -8,7 +9,7 @@ import socket
 import struct
 import threading
 
-from zeroconf import Zeroconf, ServiceBrowser
+from zeroconf import Zeroconf, ServiceBrowser, ServiceInfo
 
 _NotSet = object()
 
@@ -37,7 +38,7 @@ class DictAttrProperty:
         each time it is accessed.
 
         To un-cache a value (causes the descriptor to take over again)::\n
-            >>> del instance.__dict__[attr_name]
+            # >>> del instance.__dict__[attr_name]
 
         The :class:`ClearableCachedPropertyMixin` mixin class can be used to facilitate clearing all
         :class:`DictAttrProperty` and any similar cached properties that exist in a given object.
@@ -124,8 +125,20 @@ def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, p
 
     class MyListener:
         def add_service(self, zeroconf, type, name):
-            info = zeroconf.get_service_info(type, name)
-            print(f"[Service] `{name}` added, service info: `{info}`")
+            # info = zeroconf.get_service_info(type, name)
+
+            _info = MyServiceInfo(type, name)
+            for index in range(0, 10):
+                if _info.request(zeroconf, 3000):
+                    info = _info
+                    break
+            # _info = ServiceInfo(type, name, parsed_addresses=["10.3.3.230"])
+            # if _info.request(zeroconf, 1000):
+            #     info = _info
+            # print(f"[Service] `{name}` added, service info: `{info}`")
+
+            ctx['addresses'] = list(map(socket.inet_ntoa, info.addresses))
+            print(f"[Service] `{name}` found, `{ctx}`")
             if name == expecting_name:
                 ctx['addresses'] = list(map(socket.inet_ntoa, info.addresses))
                 ctx['port'] = info.port
@@ -133,6 +146,10 @@ def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, p
                 done.set()
 
     zero_conf = Zeroconf()
+    # zero_conf._respond_sockets.pop(0)
+    # zero_conf1 = zero_conf._respond_sockets
+    # for index in zero_conf1:
+    #     print(index)
     listener = MyListener()
     browser = ServiceBrowser(zero_conf, f"_{service_name}._tcp.local.", listener)
     if not done.wait(timeout):
