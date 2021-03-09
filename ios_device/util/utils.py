@@ -125,8 +125,6 @@ def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, p
 
     class MyListener:
         def add_service(self, zeroconf, type, name):
-            # info = zeroconf.get_service_info(type, name)
-
             _info = MyServiceInfo(type, name)
             info = None
             if _info.request(zeroconf, 5000):
@@ -134,14 +132,6 @@ def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, p
             if not info:
                 if _info.request(zeroconf, 2000, True):
                     info = _info
-            if not info:
-                done.set()
-
-            # _info = ServiceInfo(type, name, parsed_addresses=["10.3.3.230"])
-            # if _info.request(zeroconf, 1000):
-            #     info = _info
-            # print(f"[Service] `{name}` added, service info: `{info}`")
-
             ctx['addresses'] = list(map(socket.inet_ntoa, info.addresses))
             print(f"[Service] `{name}` found, `{ctx}`")
             if name == expecting_name:
@@ -151,17 +141,11 @@ def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, p
                 done.set()
 
     zero_conf = Zeroconf()
-    # zero_conf._respond_sockets.pop(0)
-    # zero_conf1 = zero_conf._respond_sockets
-    # for index in zero_conf1:
-    #     print(index)
     listener = MyListener()
-    if not ctx:
-        raise Exception("ip 绑定失败,请检查 wifi 后重试")
     browser = ServiceBrowser(zero_conf, f"_{service_name}._tcp.local.", listener)
     if not done.wait(timeout):
-        ctx['addresses'] = []
-        ctx['port'] = 0
+        if not ctx:
+            raise Exception("ip 绑定失败,请检查 wifi 后重试")
     browser.cancel()
     zero_conf.close()
 

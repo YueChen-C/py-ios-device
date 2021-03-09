@@ -23,7 +23,6 @@ class MyServiceInfo(ServiceInfo):
         if record is not None and not record.is_expired(now):
             if record.type in [_TYPE_A, _TYPE_AAAA]:
                 assert isinstance(record, DNSAddress)
-                # if record.name == self.name:
                 if record.name == self.server:
                     try:
                         _addr: str = list(map(socket.inet_ntoa, [record.address]))[0]
@@ -38,8 +37,6 @@ class MyServiceInfo(ServiceInfo):
                     self.port = record.port
                     self.weight = record.weight
                     self.priority = record.priority
-                    # self.address = None
-                    self.update_record(zc, now, zc.cache.get_by_details(self.server, _TYPE_A, _CLASS_IN))
                     self.update_record(zc, now, zc.cache.get_by_details(self.server, _TYPE_AAAA, _CLASS_IN))
             elif record.type == _TYPE_TXT:
                 assert isinstance(record, DNSText)
@@ -51,7 +48,6 @@ class MyServiceInfo(ServiceInfo):
         if record is not None and not record.is_expired(now):
             if record.type in [_TYPE_A, _TYPE_AAAA]:
                 assert isinstance(record, DNSAddress)
-                # if record.name == self.name:
                 if record.name == self.server:
                     if record.address not in self._addresses:
                         self._addresses.append(record.address)
@@ -62,9 +58,7 @@ class MyServiceInfo(ServiceInfo):
                     self.port = record.port
                     self.weight = record.weight
                     self.priority = record.priority
-                    # self.address = None
                     self.local_update_record(zc, now, zc.cache.get_by_details(self.server, _TYPE_A, _CLASS_IN))
-                    self.local_update_record(zc, now, zc.cache.get_by_details(self.server, _TYPE_AAAA, _CLASS_IN))
             elif record.type == _TYPE_TXT:
                 assert isinstance(record, DNSText)
                 if record.name == self.name:
