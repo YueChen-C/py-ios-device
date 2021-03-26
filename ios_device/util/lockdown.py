@@ -49,15 +49,18 @@ class LockdownClient:
             udid: Optional[str] = None,
             device: Optional[MuxDevice] = None,
             cache_dir: str = '.cache/pymobiledevice',
+            network=None
     ):
+        self.network = network
         self.cache_dir = cache_dir
         self.record = None  # type: Optional[Dict[str, Any]]
         self.sslfile = None
         self.session_id = None
         self.host_id = str(uuid.uuid3(uuid.NAMESPACE_DNS, platform.node())).upper()
-        self.svc = PlistService(62078, udid, device)
+        self.svc = PlistService(62078, udid, device, network=network)
         self._verify_query_type()
         self.device_info = self.get_value()
+        self.device_info['UniqueDeviceID'] = udid or self.svc.device.serial
         self.paired = self._pair()
 
     def _verify_query_type(self):
@@ -77,7 +80,7 @@ class LockdownClient:
         if self._validate_pairing():
             return True
         self._pair_full()
-        self.svc = PlistService(62078, self.udid, self.svc.device)
+        self.svc = PlistService(62078, self.udid, self.svc.device, network=self.network)
         if self._validate_pairing():
             return True
         raise FatalPairingError
@@ -182,6 +185,8 @@ class LockdownClient:
     def set_value(self, value, domain=None, key=None):
         resp = self._plist_request('SetValue', {'Value': value}, Domain=domain, Key=key)
         log.debug(f'set_value {resp}')
+        if resp.get('Error'):
+            log.error(f'set_value {resp}')
         return resp
 
     def remove_value(self, domain=None, key=None):
@@ -189,14 +194,17 @@ class LockdownClient:
         log.debug(f'remove_value {resp}')
         return resp
 
-    def enable_wireless(self, enable, wireless_id, buddy_id):
+    def enable_wireless(self, enable, wireless_id=None, buddy_id=None):
 
         self.set_value(domain='com.apple.mobile.wireless_lockdown', key='EnableWifiConnections', value=enable)
         self.set_value(domain='com.apple.mobile.wireless_lockdown', key='EnableWifiDebugging', value=enable)
-        self.set_value(domain='com.apple.mobile.wireless_lockdown', key='WirelessBuddyID', value=buddy_id)
         if enable:
-            if wireless_id is not None:
-                self.set_value(domain='com.apple.xcode.developerdomain', key='WirelessHosts', value=[wireless_id])
+            if buddy_id is not None:
+                # buddy_id = [str(uuid.uuid4())]
+                self.set_value(domain='com.apple.mobile.wireless_lockdown', key='WirelessBuddyID', value=buddy_id)
+            if wireless_id is None:
+                wireless_id = ['']
+            self.set_value(domain='com.apple.xcode.developerdomain', key='WirelessHosts', value=wireless_id)
         else:
             self.remove_value(domain='com.apple.xcode.developerdomain', key='WirelessHosts')
 
@@ -217,8 +225,7 @@ class LockdownClient:
             raise StartServiceError(f'Unable to start service={name!r} - {error}')
         logging.debug(f'connect port: {resp.get("Port")}')
         plist_service = PlistService(
-            resp.get('Port'), self.udid, ssl_file=self.sslfile if resp.get('EnableServiceSSL', False) else None
-        )
+            resp.get('Port'), self.udid, ssl_file=self.sslfile if resp.get('EnableServiceSSL', False) else None,network=self.network)
         return plist_service
 
     @property

@@ -9,9 +9,9 @@ from ..util.utils import wait_for_wireless
 
 
 class InstrumentServer(DTXServerRPC):
-    def __init__(self, lockdown=None, udid=None, *args, **kw):
+    def __init__(self, lockdown=None, udid=None, network=None,*args, **kw):
         super().__init__(*args, **kw)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
+        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid,network=network)
 
     def init(self, _cli=None):
         """

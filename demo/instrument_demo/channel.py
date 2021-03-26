@@ -16,6 +16,6 @@ def channels(rpc):
 
 
 if __name__ == '__main__':
-    rpc = InstrumentServer()
+    rpc = InstrumentServer(network=True)
     channels(rpc)
     rpc.stop()
