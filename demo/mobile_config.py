@@ -43,7 +43,7 @@ class MobileConfigService(object):
         self.service = lockdown.start_service("com.apple.mobile.MCInstall")
 
     def GetProfileList(self):
-        self.service.sendPlist({"RequestType": "GetProfileList"})
+        self.service.send_plist({"RequestType": "GetProfileList"})
         res = self.service.recvPlist()
         if res.get("Status") != "Acknowledged":
             self.logger.error("GetProfileList error")
@@ -53,7 +53,7 @@ class MobileConfigService(object):
 
     def InstallProfile(self, s):
         # s = plistlib.dumps(payload)
-        self.service.sendPlist({"RequestType": "InstallProfile", "Payload": plistlib.Data(s)})
+        self.service.send_plist({"RequestType": "InstallProfile", "Payload": s})
         return self.service.recvPlist()
 
     def RemoveProfile(self, ident):
@@ -70,7 +70,7 @@ class MobileConfigService(object):
                                             "PayloadUUID": meta["PayloadUUID"],
                                             "PayloadVersion": meta["PayloadVersion"]
                                             })
-        self.service.sendPlist({"RequestType": "RemoveProfile", "ProfileIdentifier": plistlib.Data(data)})
+        self.service.send_plist({"RequestType": "RemoveProfile", "ProfileIdentifier": data})
         return self.service.recvPlist()
 
 

@@ -42,6 +42,7 @@ class LockdownClient:
     label = 'pyMobileDevice'
     udid = DictAttrProperty('device_info', 'UniqueDeviceID')
     unique_chip_id = DictAttrProperty('device_info', 'UniqueChipID')
+    device_id = DictAttrProperty('device_info', 'DeviceID')
     ios_version = DictAttrProperty('device_info', 'ProductVersion', LooseVersion)
 
     def __init__(
@@ -49,15 +50,18 @@ class LockdownClient:
             udid: Optional[str] = None,
             device: Optional[MuxDevice] = None,
             cache_dir: str = '.cache/pymobiledevice',
+            network=None
     ):
+        self.network = network
         self.cache_dir = cache_dir
         self.record = None  # type: Optional[Dict[str, Any]]
         self.sslfile = None
         self.session_id = None
         self.host_id = str(uuid.uuid3(uuid.NAMESPACE_DNS, platform.node())).upper()
-        self.svc = PlistService(62078, udid, device)
+        self.svc = PlistService(62078, udid, device, network=network)
         self._verify_query_type()
         self.device_info = self.get_value()
+        self.device_info['UniqueDeviceID'] = udid or self.svc.device.serial
         self.paired = self._pair()
 
     def _verify_query_type(self):
@@ -77,7 +81,8 @@ class LockdownClient:
         if self._validate_pairing():
             return True
         self._pair_full()
-        self.svc = PlistService(62078, self.udid, self.svc.device)
+        self.svc.close()
+        self.svc = PlistService(62078, self.udid, self.svc.device, network=self.network)
         if self._validate_pairing():
             return True
         raise FatalPairingError
@@ -95,11 +100,11 @@ class LockdownClient:
             log.debug(f'No iTunes pairing record found for device {self.identifier}')
             if self.ios_version > LooseVersion('13.0'):
                 log.debug('Getting pair record from usbmuxd')
-                return UsbmuxdClient().get_pair_record(self.udid)
+                with UsbmuxdClient() as usb:
+                    return usb.get_pair_record(self.udid)
             elif read_home_file(self.cache_dir, f'{self.identifier}.plist'):
                 log.debug(f'Found pymobiledevice pairing record for device {self.udid}')
                 return plistlib.loads(read_home_file(self.cache_dir, f'{self.identifier}.plist'))
-
             log.debug(f'No pymobiledevice pairing record found for device {self.identifier}')
             return None
 
@@ -118,6 +123,15 @@ class LockdownClient:
         system_buid = pair_record.get('SystemBUID') or str(uuid.uuid3(uuid.NAMESPACE_DNS, platform.node())).upper()
         resp = self._plist_request('StartSession', HostID=self.host_id, SystemBUID=system_buid)
         self.session_id = resp.get('SessionID')
+
+        if 'Error' in resp:
+            if resp['Error'] == 'InvalidHostID':
+                with UsbmuxdClient() as usb:
+                    usb.delete_pair_record(self.udid)
+                pair_record = self._get_pair_record() or self._pair_full()
+                if not pair_record:
+                    return False
+
         if resp.get('EnableSessionSSL'):
             self.sslfile = write_home_file(
                 self.cache_dir,
@@ -125,32 +139,43 @@ class LockdownClient:
                 pair_record['HostCertificate'] + b'\n' + pair_record['HostPrivateKey']
             )
             self.svc.ssl_start(self.sslfile, self.sslfile)
-
         return True
 
     def _pair_full(self):
-        device_public_key = self.get_value('', 'DevicePublicKey')
+        device_public_key = self.get_value(key='DevicePublicKey')
+        wifi_address = self.get_value(key="WiFiAddress")
+        with UsbmuxdClient() as usb:
+            buid = usb.read_system_buid()
         if not device_public_key:
             log.error('Unable to retrieve DevicePublicKey')
-            return False
-
+            return
         log.debug('Creating host key & certificate')
         cert_pem, priv_key_pem, dev_cert_pem = make_certs_and_key(device_public_key)
         pair_record = {
-            'DevicePublicKey': plistlib.Data(device_public_key),
-            'DeviceCertificate': plistlib.Data(dev_cert_pem),
-            'HostCertificate': plistlib.Data(cert_pem),
+            'DevicePublicKey': device_public_key,
+            'DeviceCertificate': dev_cert_pem,
+            'HostCertificate': cert_pem,
             'HostID': self.host_id,
-            'RootCertificate': plistlib.Data(cert_pem),
-            'SystemBUID': '30142955-444094379208051516'
+            'RootCertificate': cert_pem,
+            'SystemBUID': buid
         }
 
-        pair = self.svc.plist_request({'Label': self.label, 'Request': 'Pair', 'PairRecord': pair_record})
+        pair = self.svc.plist_request({'Label': self.label,
+                                       'Request': 'Pair',
+                                       'PairRecord': pair_record,
+                                       "ProtocolVersion": "2",
+                                       "PairingOptions": {
+                                           "ExtendedPairingErrors": True}
+                                       })
+
         if pair and pair.get('Result') == 'Success' or 'EscrowBag' in pair:
-            pair_record['HostPrivateKey'] = plistlib.Data(priv_key_pem)
+            pair_record['HostPrivateKey'] = priv_key_pem
             pair_record['EscrowBag'] = pair.get('EscrowBag')
+            pair_record['WiFiMACAddress'] = wifi_address
             write_home_file(self.cache_dir, '%s.plist' % self.identifier, plistlib.dumps(pair_record))
-            return True
+            with UsbmuxdClient() as usb:
+                usb.save_pair_record(self.udid, pair_record, self.device_id)
+            return pair_record
         elif pair and pair.get('Error') == 'PasswordProtected':
             self.svc.close()
             raise NotTrustedError
@@ -168,7 +193,7 @@ class LockdownClient:
                 req[k] = v
         return self.svc.plist_request(req)
 
-    def get_value(self, domain=None, key=None):
+    def get_value(self, domain='', key=None):
         if isinstance(key, str) and self.record and key in self.record:
             return self.record[key]
         resp = self._plist_request('GetValue', Domain=domain, Key=key)
@@ -182,6 +207,8 @@ class LockdownClient:
     def set_value(self, value, domain=None, key=None):
         resp = self._plist_request('SetValue', {'Value': value}, Domain=domain, Key=key)
         log.debug(f'set_value {resp}')
+        if resp.get('Error'):
+            log.error(f'set_value {resp}')
         return resp
 
     def remove_value(self, domain=None, key=None):
@@ -189,14 +216,17 @@ class LockdownClient:
         log.debug(f'remove_value {resp}')
         return resp
 
-    def enable_wireless(self, enable, wireless_id, buddy_id):
+    def enable_wireless(self, enable, wireless_id=None, buddy_id=None):
 
         self.set_value(domain='com.apple.mobile.wireless_lockdown', key='EnableWifiConnections', value=enable)
         self.set_value(domain='com.apple.mobile.wireless_lockdown', key='EnableWifiDebugging', value=enable)
-        self.set_value(domain='com.apple.mobile.wireless_lockdown', key='WirelessBuddyID', value=buddy_id)
         if enable:
-            if wireless_id is not None:
-                self.set_value(domain='com.apple.xcode.developerdomain', key='WirelessHosts', value=[wireless_id])
+            if buddy_id is not None:
+                # buddy_id = [str(uuid.uuid4())]
+                self.set_value(domain='com.apple.mobile.wireless_lockdown', key='WirelessBuddyID', value=buddy_id)
+            if wireless_id is None:
+                wireless_id = ['']
+            self.set_value(domain='com.apple.xcode.developerdomain', key='WirelessHosts', value=wireless_id)
         else:
             self.remove_value(domain='com.apple.xcode.developerdomain', key='WirelessHosts')
 
@@ -217,8 +247,8 @@ class LockdownClient:
             raise StartServiceError(f'Unable to start service={name!r} - {error}')
         logging.debug(f'connect port: {resp.get("Port")}')
         plist_service = PlistService(
-            resp.get('Port'), self.udid, ssl_file=self.sslfile if resp.get('EnableServiceSSL', False) else None
-        )
+            resp.get('Port'), self.udid, ssl_file=self.sslfile if resp.get('EnableServiceSSL', False) else None,
+            network=self.network)
         return plist_service
 
     @property

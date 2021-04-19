@@ -49,10 +49,10 @@ def sysmontap(rpc):
 
 
 if __name__ == '__main__':
-    rpc = InstrumentServer()
-    addresses, port, psk = rpc.start_wireless()
-    print('start wireless', addresses, port, psk)
-    rpc = rpc.init_wireless(addresses, port, psk)
-    # rpc = InstrumentServer().init()
+    # rpc = InstrumentServer()
+    # addresses, port, psk = rpc.start_wireless()
+    # print('start wireless', addresses, port, psk)
+    # rpc = rpc.init_wireless(addresses, port, psk)
+    rpc = InstrumentServer().init()
     sysmontap(rpc)
     rpc.stop()

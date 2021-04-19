@@ -54,6 +54,6 @@ def traceCodesFile(rpc):
 
 
 if __name__ == '__main__':
-    rpc = InstrumentServer().init()
+    rpc = InstrumentServer(udid='be4fde24033d5a06eadbb20ad1150ad633dbb046').init()
     runningProcesses(rpc)
     rpc.stop()

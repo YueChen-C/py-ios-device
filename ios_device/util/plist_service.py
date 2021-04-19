@@ -23,13 +23,14 @@ class PlistService:
 
     def __init__(
             self,
-            port: int,
+            port: int = 62078,
             udid: Optional[str] = None,
             device: Optional[MuxDevice] = None,
             ssl_file: Optional[str] = None,
+            network=None
     ):
         self.port = port
-        self.device = device or USBMux().find_device(udid, 0.1)
+        self.device = device or USBMux().find_device(udid, network)
         log.debug(f'Connecting to device: {self.device.serial}')
         self.sock = self.device.connect(port)  # type: socket
         if ssl_file:
