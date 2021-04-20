@@ -3,10 +3,10 @@
 """
 import os
 import sys
+sys.path.append(os.getcwd())
 
 from ios_device.servers.Instrument import InstrumentServer
 
-sys.path.append(os.getcwd())
 import json
 import time
 from ios_device.util import logging

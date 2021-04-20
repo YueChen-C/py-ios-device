@@ -6,3 +6,4 @@ pycparser==2.20
 pyOpenSSL==20.0.0
 six==1.15.0
 zeroconf==0.28.8
+requests
