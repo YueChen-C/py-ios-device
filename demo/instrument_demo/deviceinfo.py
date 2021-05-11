@@ -53,7 +53,31 @@ def traceCodesFile(rpc):
     return parsed
 
 
+def networkInformation(rpc):
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "networkInformation").parsed
+    print(parsed)
+    rpc.stop()
+
+
+def systemInformation(rpc):
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "systemInformation").parsed
+    print(parsed)
+    rpc.stop()
+
+
+def sysmonProcessAttributes(rpc):
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "sysmonProcessAttributes").parsed
+    print(parsed)
+    rpc.stop()
+
+
+def sysmonSystemAttributes(rpc):
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "symbolicatorSignaturesForExpiredPids").parsed
+    print(list(parsed))
+    rpc.stop()
+
+
 if __name__ == '__main__':
-    rpc = InstrumentServer(udid='be4fde24033d5a06eadbb20ad1150ad633dbb046').init()
+    rpc = InstrumentServer().init()
     runningProcesses(rpc)
     rpc.stop()

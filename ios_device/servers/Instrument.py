@@ -1,23 +1,29 @@
+import logging
 import time
 import uuid
 from distutils.version import LooseVersion
 
 from ..servers.DTXSever import DTXServerRPC
+from ..util import Log
 from ..util.exceptions import StartServiceError
 from ..util.lockdown import LockdownClient
 from ..util.utils import wait_for_wireless
+from ..util.variables import LOG
+
+log = Log.getLogger(LOG.Instrument.value)
 
 
 class InstrumentServer(DTXServerRPC):
-    def __init__(self, lockdown=None, udid=None, network=None,*args, **kw):
+    def __init__(self, lockdown=None, udid=None, network=None, *args, **kw):
         super().__init__(*args, **kw)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid,network=network)
+        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid, network=network)
 
     def init(self, _cli=None):
         """
         初始化 servers rpc 服务:
         :return: bool 是否成功
         """
+        log.info('InstrumentServer init ...')
         if not _cli:
             try:
                 if self.lockdown.ios_version >= LooseVersion('14.0'):

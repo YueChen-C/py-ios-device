@@ -3,8 +3,8 @@ USBMux client that handles iDevice descovery via USB.
 
 :author: Doug Skrypa (original: Hector Martin "marcan" <hector@marcansoft.com>)
 """
-from .bpylist import archive
-from ..util import logging
+from .variables import LOG
+from ..util import  Log
 import select
 import socket
 import struct
@@ -12,7 +12,7 @@ import sys
 import plistlib
 from typing import Dict, Union, Optional, Tuple, Any, Mapping, List
 
-log = logging.getLogger(__name__)
+log = Log.getLogger(LOG.USBMux.value)
 
 from ..util.exceptions import MuxError, MuxVersionError, NoMuxDeviceFound
 
@@ -29,7 +29,7 @@ class MuxDevice:
         self.connection_type = self.device['Properties']['ConnectionType']
 
     def __repr__(self):
-        return f'serial:{self.serial},Connection:{self.connection_type}'
+        return f'serial:{self.serial}, ConnectionType:{self.connection_type}'
 
     def connect(self, port):
         connector = MuxConnection(self._socket_path, self._proto_cls)
@@ -108,7 +108,7 @@ class MuxConnection:
         return self.socket.sock
 
     def close(self):
-        logging.debug("Socket %r closed", self)
+        log.debug("Socket %r closed", self)
         self.socket.sock.close()
 
     def __exit__(self, *args):
@@ -133,8 +133,10 @@ class USBMux:
         for device in self.devices:
             if serial:
                 if device.device['Properties']['SerialNumber'] == serial:
+                    log.info(f"Connecting Device {device} ")
                     return device
             else:
+                log.info(f"Connecting Device {device} ")
                 return device
         if serial:
             raise NoMuxDeviceFound(f'Found {len(self.devices)} MuxDevice instances, but none with {serial}')

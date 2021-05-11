@@ -10,7 +10,7 @@ from ios_device.servers.Installation import InstallationProxy
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.servers.house_arrest import HouseArrestClient
 from ios_device.servers.testmanagerd import TestManagerdLockdown
-from ios_device.util.bpylist import archive
+from ios_device.util.bpylist2 import archive
 from ios_device.util._types import XCTestConfiguration, NSURL, NSUUID
 from ios_device.util.dtxlib import get_auxiliary_text
 from ios_device.util.lockdown import LockdownClient
@@ -30,7 +30,7 @@ class RunXCUITest(threading.Thread):
         def _callback(res):
             logging.info(f" {res.parsed} : {get_auxiliary_text(res.raw)}")
 
-        self.lockdown = LockdownClient(udid=self.udid)
+        self.lockdown = LockdownClient(udid=self.udid,network=False)
         installation = InstallationProxy(lockdown=self.lockdown)
         app_info = installation.find_bundle_id(self.bundle_id)
         if not app_info:

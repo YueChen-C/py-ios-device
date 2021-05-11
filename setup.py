@@ -2,8 +2,7 @@
 @Date    : 2020-12-18
 @Author  : liyachao
 """
-import setuptools
-from setuptools import setup
+from setuptools import setup,find_packages
 
 # 第三方依赖
 requires = [
@@ -15,20 +14,28 @@ requires = [
     "pyOpenSSL==20.0.0",
     "six==1.15.0",
     "numpy>=1.15.1",
-    "zeroconf>=0.28.8"
+    "zeroconf>=0.28.8",
+    "requests>=2.25.1",
+    'click>=7.1.2',
+    'coloredlogs>=3.3.2',
 
 ]
 setup(name='py_ios_device',
-      version="1.0.8",
+      version="2.0.0",
       description='Get ios data and operate ios devices',
       author='chenpeijie & liyachao',
       author_email='me@aaronsw.com',
       maintainer='chenpeijie & liyachao',
       maintainer_email='',
       url='https://github.com/YueChen-C/py-ios-device',
-      packages=['ios_device.util', 'ios_device.servers', 'ios_device'],
+      packages=find_packages(),
       long_description="",
-      license="Public domain",
+      license="MIT",
       platforms=["any"],
       install_requires=requires,  # 第三方库依赖
+      entry_points={
+          'console_scripts':{
+              'pyidevice=ios_device.main:cli'
+          }
+      },
       )

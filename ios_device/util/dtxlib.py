@@ -11,9 +11,9 @@ dtx msg 分为几层，按顺序
 import struct
 from ctypes import Structure, \
     c_uint32, c_uint16, c_uint64, c_int64, sizeof
+from enum import Enum
 
-
-from .bpylist import unarchive, archive
+from .bpylist2 import unarchive, archive
 
 
 def div_ceil(p: int, q: int) -> int:
@@ -116,7 +116,6 @@ class DTXMessage:
             return ret
         if ret._message_header.length != len(buffer) - cursor - (ret._message_header.fragmentCount - 1) * sizeof(
                 DTXMessageHeader):
-
             raise ValueError(f"incorrect DTXMessageHeader {ret._message_header.length} -> length:{len(buffer)}")
 
         if ret._message_header.fragmentCount == 1:
@@ -266,7 +265,7 @@ def ns_keyed_archiver(obj):
 
 
 def pyobject_to_auxiliary(var):
-    if isinstance(var,int):
+    if isinstance(var, int):
         if abs(var) < 2 ** 32:
             return struct.pack('<iii', 0xa, 3, var)
         elif abs(var) < 2 ** 64:
@@ -274,6 +273,8 @@ def pyobject_to_auxiliary(var):
         else:
             raise ValueError("num too large")
     else:
+        if isinstance(var, Enum):
+            var = var.value
         buf = ns_keyed_archiver(var)
         return struct.pack('<iii', 0xa, 2, len(buf)) + buf
 

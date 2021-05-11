@@ -544,8 +544,3 @@ class AFCCrashLog(AFCClient):
         super(AFCCrashLog, self).__init__(lockdown, serviceName="com.apple.crashreportcopymobile", udid=udid)
 
 
-if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(level=logging.INFO)
-    AFCShell().cmdloop("Hello iPhone!")

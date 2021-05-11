@@ -45,12 +45,12 @@ class InstallationProxy(object):
         self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
         if not self.lockdown:
             raise Exception("Unable to start lockdown")
-        self.start()
-
-    def start(self):
         self.service = self.lockdown.start_service("com.apple.mobile.installation_proxy")
         if not self.service:
             raise Exception("installation_proxy init error : Could not start com.apple.mobile.installation_proxy")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.service.close()
 
     def watch_completion(self, handler=None, *args):
         while True:

@@ -11,7 +11,7 @@ from distutils.version import LooseVersion
 
 from ios_device.servers.house_arrest import HouseArrestClient
 
-from ios_device.util.bpylist import archive
+from ios_device.util.bpylist2 import archive
 
 from ios_device.servers.testmanagerd import TestManagerdLockdown
 

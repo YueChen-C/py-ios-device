@@ -1,5 +1,5 @@
 import base64
-import logging
+
 from datetime import datetime, timedelta
 
 from OpenSSL.crypto import X509, TYPE_RSA, X509Req, PKey, FILETYPE_PEM as PEM
@@ -12,7 +12,6 @@ from cryptography.hazmat.backends import default_backend
 
 
 __all__ = ['make_certs_and_key']
-log = logging.getLogger(__name__)
 
 
 def make_certs_and_key(device_public_key: bytes):

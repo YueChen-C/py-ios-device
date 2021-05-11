@@ -1,5 +1,8 @@
 import logging
+import os
 import sys
+
+import coloredlogs
 
 gettrace = getattr(sys, 'gettrace', None)
 
@@ -17,10 +20,36 @@ def read_file(filename):
     return data
 
 
-if gettrace():
-    logging.basicConfig(format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s',
-                        level=logging.DEBUG)
-else:
-    logging.basicConfig(format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s',
-                        level=logging.INFO)
+coloredlogs.DEFAULT_FIELD_STYLES = {'asctime': {'color': 'green'}, 'hostname': {'color': 'magenta'},
+                                    'levelname': {'color': 'green', 'bold': True},
+                                    'name': {'color': 'blue'}, 'programname': {'color': 'cyan'},
+                                    'threadName': {'color': 'yellow'}}
+
+
+class Log:
+    __instances = {}
+
+    @classmethod
+    def getLogger(cls, name=os.path.abspath(__name__)):
+        if name not in cls.__instances:
+            logger = logging.getLogger(name)
+            fmt = '%(asctime)s [%(levelname)s] [%(name)s] %(filename)s[line:%(lineno)d] %(message)s'
+            formater = logging.Formatter(fmt)
+            ch = logging.StreamHandler()
+            ch.setLevel(Log.__getLogLevel())
+            ch.setFormatter(formater)
+            logger.addHandler(ch)
+            coloredlogs.install(fmt=fmt, level=Log.__getLogLevel(), logger=logger)
+            logger.setLevel(Log.__getLogLevel())
+            cls.__instances[name] = logger
+        return cls.__instances[name]
+
+    @staticmethod  # 设置日志等级
+    def __getLogLevel():
+        if gettrace():
+            return logging.DEBUG
+        else:
+            return logging.INFO
+
+
 PROGRAM_NAME = "py_ios_device"

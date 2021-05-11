@@ -19,14 +19,15 @@ import requests
 from .exceptions import PairingError, NotTrustedError, FatalPairingError, NotPairedError, CannotStopSessionError
 from .exceptions import StartServiceError, InitializationError
 from .plist_service import PlistService
-from .ssl import make_certs_and_key
+from .ca import make_certs_and_key
 from .usbmux import MuxDevice, UsbmuxdClient
 from .utils import DictAttrProperty, cached_property
+from .variables import LOG
 from ..servers.image_mounter import MobileImageMounter
-from ..util import logging, PROGRAM_NAME
+from ..util import Log, PROGRAM_NAME
 
 __all__ = ['LockdownClient']
-log = logging.getLogger(__name__)
+log = Log.getLogger(LOG.LockDown.value)
 
 
 def get_app_dir(*paths) -> str:
@@ -96,7 +97,7 @@ class LockdownClient:
                 with itunes_lockdown_path.open('rb') as f:
                     return plistlib.load(f)
         except Exception as E:
-            log.warning(f'{E}')
+            log.debug(f'{E}')
             log.debug(f'No iTunes pairing record found for device {self.identifier}')
             if self.ios_version > LooseVersion('13.0'):
                 log.debug('Getting pair record from usbmuxd')
@@ -245,7 +246,7 @@ class LockdownClient:
                 raise StartServiceError(f'Unable to start service={name!r} - a password must be entered on the device')
             error = resp.get('Error')
             raise StartServiceError(f'Unable to start service={name!r} - {error}')
-        logging.debug(f'connect port: {resp.get("Port")}')
+        log.debug(f'connect port: {resp.get("Port")}')
         plist_service = PlistService(
             resp.get('Port'), self.udid, ssl_file=self.sslfile if resp.get('EnableServiceSSL', False) else None,
             network=self.network)
@@ -261,7 +262,7 @@ class LockdownClient:
 
     def _urlretrieve(self, url, local_filename):
         """ download url to local """
-        logging.info("Download %s -> %s", url, local_filename)
+        log.info("Download %s -> %s", url, local_filename)
 
         try:
             tmp_local_filename = local_filename + f".download-{int(time.time() * 1000)}"
@@ -271,7 +272,7 @@ class LockdownClient:
                     shutil.copyfileobj(r.raw, f, length=16 << 20)
                     f.flush()
                 os.rename(tmp_local_filename, local_filename)
-                logging.info("%r download successfully", local_filename)
+                log.info("%r download successfully", local_filename)
         finally:
             if os.path.isfile(tmp_local_filename):
                 os.remove(tmp_local_filename)
@@ -279,7 +280,7 @@ class LockdownClient:
     @contextlib.contextmanager
     def _request_developer_image_dir(self):
         product_version = self.get_value('', "ProductVersion")
-        logging.info("ProductVersion: %s", product_version)
+        log.info("ProductVersion: %s", product_version)
         major, minor = product_version.split(".")[:2]
         version = major + "." + minor
 
@@ -306,11 +307,11 @@ class LockdownClient:
                 zip_name = _alias.get(version, f"{version}.zip")
                 origin_url = f"https://github.com/iGhibli/iOS-DeviceSupport/raw/master/DeviceSupport/{zip_name}"
                 mirror_url = f"https://tool.appetizer.io/iGhibli/iOS-DeviceSupport/raw/master/DeviceSupport/{zip_name}"
-                logging.info("Download %s -> %s", origin_url, image_zip_path)
+                log.info("Download %s -> %s", origin_url, image_zip_path)
                 try:
                     self._urlretrieve(mirror_url, image_zip_path)
                 except requests.HTTPError:
-                    logging.debug("mirror download failed, change to original url")
+                    log.debug("mirror download failed, change to original url")
                     # this might be slower
                     self._urlretrieve(origin_url, image_zip_path)
 
@@ -326,7 +327,7 @@ class LockdownClient:
         """
         try:
             if self.imagemounter.is_developer_mounted():
-                logging.info("DeveloperImage already mounted")
+                log.info("DeveloperImage already mounted")
                 return
         except Exception:  # expect: DeviceLocked
             pass
@@ -335,7 +336,7 @@ class LockdownClient:
             image_path = os.path.join(_dir, "DeveloperDiskImage.dmg")
             signature_path = image_path + ".signature"
             self.imagemounter.mount(image_path, signature_path)
-            logging.info("DeveloperImage mounted successfully")
+            log.info("DeveloperImage mounted successfully")
 
     def start_service(self, name: str, escrow_bag=None) -> PlistService:
         try:

@@ -1,4 +1,5 @@
 import enum
+import plistlib
 import socket
 import struct
 import threading
@@ -8,16 +9,16 @@ import typing
 from ctypes import sizeof
 from threading import Thread, Event
 
-from ..util import logging
-from ..util.bpylist import load, unarchive
+from ..util import logging, Log
+from ..util.bpylist2 import unarchive
 from ..util.dtxlib import DTXMessage, DTXMessageHeader, \
     pyobject_to_auxiliary, get_auxiliary_text, \
     pyobject_to_selector, selector_to_pyobject, ns_keyed_archiver, auxiliary_to_pyobject
 from ..util.plist_service import PlistService
-from ..util.ssl import AESCrypto
+from ..util.ca import AESCrypto
+from ..util.variables import LOG
 
-log = logging.getLogger(__name__)
-
+log = Log.getLogger(LOG.Instrument.value)
 
 class DTXEnum(str, enum.Enum):
     NOTIFICATION = "notification:"
@@ -138,6 +139,8 @@ class DTXClientMixin(DTXUSBTransport):
                 message = fragment.message
                 try:
                     log.debug(f'接收 DTX Data: {selector_to_pyobject(message._selector)} :{get_auxiliary_text(message)}')
+                    if '_channelCanceled:' in selector_to_pyobject(message._selector):
+                        client.close()
                 except Exception as e:
                     log.debug(f'Decode DTX error: {message._buf}')
                 return message
@@ -190,23 +193,25 @@ class DTXServerRPCResult:
         self.parsed = None
         self.plist = None
         self.auxiliary = None
-        sel = dtx.get_selector()
-        if not sel:
-            return
-        self.auxiliary = get_auxiliary_text(dtx)
-        try:
-            self.plist = load(sel)
-        except:
-            self.plist = InstrumentRPCParseError()
-        try:
-            self.parsed = unarchive(sel)
-        except:
-            self.parsed = InstrumentRPCParseError()
+        if dtx:
+            sel = dtx.get_selector()
+            if not sel:
+                return
+            self.auxiliary = get_auxiliary_text(dtx)
+            try:
+                self.plist = plistlib.loads(sel)
+            except:
+                self.plist = InstrumentRPCParseError()
+            try:
+                self.parsed = unarchive(sel)
+            except:
+
+                self.parsed = InstrumentRPCParseError()
 
 
 class DTXServerRPC:
 
-    def __init__(self,lockdown=None,udid=None):
+    def __init__(self, lockdown=None, udid=None):
         self._cli = None
         self._is = None
         self._recv_thread = None
@@ -233,7 +238,7 @@ class DTXServerRPC:
 
         self.register_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
 
-    def init(self,_cli=None):
+    def init(self, _cli=None):
         """ 继承类
         初始化 servers rpc 服务:
         :return: bool 是否成功
@@ -243,7 +248,7 @@ class DTXServerRPC:
         return self
 
     @classmethod
-    def init_wireless(self,addresses, port,psk):
+    def init_wireless(self, addresses, port, psk):
         _cli = None
         try:
             for address in addresses:
@@ -264,6 +269,7 @@ class DTXServerRPC:
             out = AESCrypto.cbc_encrypt(d_val[:-1] + b'ack\x00', bytes(psk, encoding='utf8'))
             _done.set()
             return out
+
         DTXServer.register_callback("challenge:", challenge)
         DTXServer.init(_cli)
         while not _done.wait(5):
@@ -299,6 +305,10 @@ class DTXServerRPC:
         if self._cli:
             self._cli.close()
             self._cli = None
+        if self._sync_waits:
+            for key, param in self._sync_waits.items():
+                if param.get('event'):
+                    param.get('event').set()
 
     def _run_callbacks(self, event_name, data):
         """
@@ -326,6 +336,7 @@ class DTXServerRPC:
         :param callback: 回调函数, 接受一个参数, 类型是 InstrumentRPCResult 对象实例
         :return: 无返回值
         """
+        log.info(f'set {channel} callback ...')
         channel_id = self._make_channel(channel)
         self._channel_callbacks[channel_id] = callback
 
@@ -448,3 +459,4 @@ class DTXServerRPC:
             log.error(E)
             self._run_callbacks(DTXEnum.NOTIFICATION, None)
             self._run_callbacks(DTXEnum.FINISHED, None)
+            self.stop()
