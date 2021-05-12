@@ -20,6 +20,7 @@ from ..util.variables import LOG
 
 log = Log.getLogger(LOG.Instrument.value)
 
+
 class DTXEnum(str, enum.Enum):
     NOTIFICATION = "notification:"
     FINISHED = "finished:"

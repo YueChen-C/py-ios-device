@@ -7,14 +7,12 @@ from ctypes import c_byte, c_uint16, c_uint32
 from datetime import datetime
 
 import click
-from ios_device.util.utils import kperf_data
 
-from ios_device.cli.cli import Command, print_json
-from ios_device.servers.DTXSever import InstrumentRPCParseError
-from ios_device.util import Log
 from ios_device.cli.base import InstrumentsBase
+from ios_device.cli.cli import Command, print_json
+from ios_device.util import Log
 from ios_device.util.dtxlib import get_auxiliary_text
-from ios_device.util.variables import LOG, DgbFuncQual
+from ios_device.util.variables import LOG
 
 log = Log.getLogger(LOG.Instrument.value)
 

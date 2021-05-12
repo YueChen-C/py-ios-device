@@ -4,9 +4,9 @@ import uuid
 from distutils.version import LooseVersion
 
 from ios_device.servers.DTXSever import DTXServerRPCRawObj, DTXEnum
-from ios_device.servers.Installation import InstallationProxy
+from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
-from ios_device.servers.house_arrest import HouseArrestClient
+from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.testmanagerd import TestManagerdLockdown
 from ios_device.util import Log
 from ios_device.util._types import NSUUID, NSURL, XCTestConfiguration
@@ -382,20 +382,6 @@ class InstrumentsBase:
         c = self.instruments.call(InstrumentsService.ConditionInducer, 'disableActiveCondition').parsed
         return c
 
-    def gup(self, callback):
-        self.instruments.register_channel_callback('com.apple.instruments.server.services.gpu',
-                                                   callback)
-        c = self.instruments.call('com.apple.instruments.server.services.gpu', 'requestDeviceGPUInfo').parsed
-        print(c)
-
-    def vmtracking(self):
-        self.instruments.register_channel_callback('com.apple.instruments.server.services.filebrowser',
-                                                   callback)
-
-        c = self.instruments.call('com.apple.instruments.server.services.filebrowser', 'updateAttributesForItem:',
-                                  './').parsed
-
-        print(c)
 
     def xctest(self, bundle_id, USE_PORT='', quit_event=threading.Event()):
         log = Log.getLogger(LOG.xctest.value)
@@ -403,7 +389,7 @@ class InstrumentsBase:
         def _callback(res):
             log.info(f" {res.parsed} : {get_auxiliary_text(res.raw)}")
 
-        with InstallationProxy(lockdown=self.lock_down) as install:
+        with InstallationProxyService(lockdown=self.lock_down) as install:
             app_info = install.find_bundle_id(bundle_id)
             if not app_info:
                 log.warning(f"No app matches {bundle_id}")
@@ -470,7 +456,7 @@ class InstrumentsBase:
             "sessionIdentifier": session_identifier,
         }))
 
-        fsync = HouseArrestClient(self.lock_down)
+        fsync = HouseArrestService(self.lock_down)
         fsync.send_command(bundle_id)
         for fname in fsync.read_directory("/tmp"):
             if fname.endswith(".xctestconfiguration"):
@@ -553,5 +539,3 @@ class InstrumentsBase:
         ManagerdLockdown1.stop()
 
 
-def callback(res):
-    print(res.parsed)

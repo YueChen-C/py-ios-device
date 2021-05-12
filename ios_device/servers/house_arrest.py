@@ -7,13 +7,13 @@ from ..servers.afc import AFCClient, AFCShell
 from ..util.lockdown import LockdownClient
 
 
-class HouseArrestClient(AFCClient):
+class HouseArrestService(AFCClient):
+    serviceName = "com.apple.mobile.house_arrest"
 
-    def __init__(self,lockdown=None, udid=None,logger=None):
+    def __init__(self, lockdown=None, udid=None, network=None,logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        lockdownClient = lockdown if lockdown else LockdownClient(udid=udid)
-        serviceName = "com.apple.mobile.house_arrest"
-        super(HouseArrestClient, self).__init__(lockdownClient, serviceName)
+        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid,network=network)
+        super(HouseArrestService, self).__init__(lockdown, self.serviceName)
 
     def stop_session(self):
         self.logger.info("Disconecting...")

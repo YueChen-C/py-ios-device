@@ -12,6 +12,7 @@ class LOG(str, enum.Enum):
     LockDown = "LockDown"
     xctest = "xctest"
     USBMux = 'USBMux'
+    Mobile = 'Mobile'
 
 
 class LockdownService(str, enum.Enum):

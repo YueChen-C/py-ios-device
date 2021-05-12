@@ -1,6 +1,6 @@
 from distutils.version import LooseVersion
 
-from ..servers.DTXSever import DTXServerRPC, log
+from ..servers.DTXSever import DTXServerRPC
 from ..util.exceptions import StartServiceError
 from ..util.lockdown import LockdownClient
 
