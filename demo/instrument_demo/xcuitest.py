@@ -6,7 +6,7 @@ import time
 from distutils.version import LooseVersion
 
 from ios_device.servers.DTXSever import DTXServerRPCRawObj, DTXEnum
-from ios_device.servers.Installation import InstallationProxy
+from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.testmanagerd import TestManagerdLockdown
@@ -31,7 +31,7 @@ class RunXCUITest(threading.Thread):
             logging.info(f" {res.parsed} : {get_auxiliary_text(res.raw)}")
 
         self.lockdown = LockdownClient(udid=self.udid,network=False)
-        installation = InstallationProxy(lockdown=self.lockdown)
+        installation = InstallationProxyService(lockdown=self.lockdown)
         app_info = installation.find_bundle_id(self.bundle_id)
         if not app_info:
             raise Exception("No app matches", self.bundle_id)

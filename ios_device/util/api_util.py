@@ -17,7 +17,7 @@ from ios_device.servers.testmanagerd import TestManagerdLockdown
 
 from ios_device.util._types import NSUUID, XCTestConfiguration, NSURL
 
-from ios_device.servers.Installation import InstallationProxy
+from ios_device.servers.Installation import InstallationProxyService
 from ios_device.util.forward import ForwardPorts
 
 from ios_device.util.lockdown import LockdownClient
@@ -173,7 +173,7 @@ class RunXCUITest(threading.Thread):
             self.callback(get_auxiliary_text(res.raw))
 
         lock_down = LockdownClient(udid=self.device_id)
-        installation = InstallationProxy(lockdown=lock_down)
+        installation = InstallationProxyService(lockdown=lock_down)
 
         if self.pair_ports:
             self.forward = True

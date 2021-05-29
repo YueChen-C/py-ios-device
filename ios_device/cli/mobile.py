@@ -2,7 +2,7 @@ import click
 
 from ios_device.cli.base import InstrumentsBase
 from ios_device.cli.cli import Command, print_json
-from ios_device.servers.Installation import InstallationProxyService
+from ios_device.servers.Installation import InstallationProxyServiceService
 from ios_device.servers.crash_log import CrashLogService
 from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.mc_install import MCInstallService
@@ -133,28 +133,28 @@ def apps_list(udid, network, json_format, user, system):
         app_types.append('System')
     if not app_types:
         app_types = ['User', 'System']
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).get_apps(app_types))
+    print_json(InstallationProxyServiceService(udid=udid, network=network, logger=log).get_apps(app_types))
 
 
 @apps.command('uninstall', cls=Command)
 @click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
 def uninstall(udid, network, json_format, bundle_id):
     """ uninstall app by given bundle_id """
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).uninstall(bundle_id))
+    print_json(InstallationProxyServiceService(udid=udid, network=network, logger=log).uninstall(bundle_id))
 
 
 @apps.command('install', cls=Command)
 @click.option('--ipa_path', type=click.Path(exists=True))
 def install(udid, network, json_format, ipa_path):
     """ install given .ipa """
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).install(ipa_path))
+    print_json(InstallationProxyServiceService(udid=udid, network=network, logger=log).install(ipa_path))
 
 
 @apps.command('upgrade', cls=Command)
 @click.option('--ipa_path', type=click.Path(exists=True))
 def upgrade(udid, network, json_format, ipa_path):
     """ install given .ipa """
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).upgrade(ipa_path))
+    print_json(InstallationProxyServiceService(udid=udid, network=network, logger=log).upgrade(ipa_path))
 
 
 @apps.command('shell', cls=Command)
