@@ -9,7 +9,7 @@ from _ctypes import Structure
 from ctypes import c_byte, c_uint16, c_uint32
 from distutils.version import LooseVersion
 
-from ios_device.servers.house_arrest import HouseArrestClient
+from ios_device.servers.house_arrest import HouseArrestService
 
 from ios_device.util.bpylist2 import archive
 
@@ -245,7 +245,7 @@ class RunXCUITest(threading.Thread):
             "sessionIdentifier": session_identifier,
         }))
 
-        fsync = HouseArrestClient(lock_down)
+        fsync = HouseArrestService(lock_down)
         fsync.send_command(self.bundle_id)
         for fname in fsync.read_directory("/tmp"):
             if fname.endswith(".xctestconfiguration"):
