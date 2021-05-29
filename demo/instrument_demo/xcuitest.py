@@ -8,7 +8,7 @@ from distutils.version import LooseVersion
 from ios_device.servers.DTXSever import DTXServerRPCRawObj, DTXEnum
 from ios_device.servers.Installation import InstallationProxy
 from ios_device.servers.Instrument import InstrumentServer
-from ios_device.servers.house_arrest import HouseArrestClient
+from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.testmanagerd import TestManagerdLockdown
 from ios_device.util.bpylist2 import archive
 from ios_device.util._types import XCTestConfiguration, NSURL, NSUUID
@@ -96,7 +96,7 @@ class RunXCUITest(threading.Thread):
             "sessionIdentifier": session_identifier,
         }))
 
-        fsync = HouseArrestClient(self.lockdown)
+        fsync = HouseArrestService(self.lockdown)
         fsync.send_command(self.bundle_id)
         for fname in fsync.read_directory("/tmp"):
             if fname.endswith(".xctestconfiguration"):
