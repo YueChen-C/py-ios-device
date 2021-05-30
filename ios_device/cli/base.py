@@ -4,7 +4,7 @@ import uuid
 from distutils.version import LooseVersion
 
 from ios_device.servers.DTXSever import DTXServerRPCRawObj, DTXEnum
-from ios_device.servers.Installation import InstallationProxyServiceService
+from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.testmanagerd import TestManagerdLockdown
@@ -389,7 +389,7 @@ class InstrumentsBase:
         def _callback(res):
             log.info(f" {res.parsed} : {get_auxiliary_text(res.raw)}")
 
-        with InstallationProxyServiceService(lockdown=self.lock_down) as install:
+        with InstallationProxyService(lockdown=self.lock_down) as install:
             app_info = install.find_bundle_id(bundle_id)
             if not app_info:
                 log.warning(f"No app matches {bundle_id}")
