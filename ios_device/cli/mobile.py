@@ -60,7 +60,7 @@ def crash_shell(udid, network, json_format):
 @click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
 def cmd_house(udid, network, json_format, bundle_id):
     """ file management per application bundle """
-    crash_server = HouseArrestClient(udid=udid, network=network, logger=log)
+    crash_server = HouseArrestService(udid=udid, network=network, logger=log)
     crash_server.shell(bundle_id)
 
 

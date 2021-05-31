@@ -9,7 +9,7 @@ from datetime import datetime
 from numpy import long, mean
 
 from ios_device.servers.DTXSever import InstrumentRPCParseError
-from ios_device.servers.Installation import InstallationProxy
+from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util import api_util
 from ios_device.util.api_util import PyIOSDeviceException, RunXCUITest
@@ -409,7 +409,7 @@ def get_device(device_id: str = None, rpc_channel: InstrumentServer = None):
     :param rpc_channel:
     :return:
     """
-    current_device = InstallationProxy(udid=device_id, lockdown=rpc_channel.lockdown if rpc_channel else None)
+    current_device = InstallationProxyService(udid=device_id, lockdown=rpc_channel.lockdown if rpc_channel else None)
     return current_device
 
 

@@ -35,4 +35,4 @@ class HouseArrestService(AFCClient):
 
 
 if __name__ == '__main__':
-    HouseArrestClient().shell('cn.rongcloud.rce.autotest.xctrunner')
+    HouseArrestService().shell('cn.rongcloud.rce.autotest.xctrunner')
