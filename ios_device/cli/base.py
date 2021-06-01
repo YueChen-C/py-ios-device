@@ -29,7 +29,7 @@ class InstrumentDeviceInfo:
         """ 获取当前运行应用
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "runningProcesses").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "runningProcesses").parsed
         return parsed
 
     def execnameForPid(self, pid):
@@ -37,7 +37,7 @@ class InstrumentDeviceInfo:
         :param pid:
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "execnameForPid:", str(pid)).parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "execnameForPid:", str(pid)).parsed
         return parsed
 
     def isRunningPid(self, pid):
@@ -45,64 +45,64 @@ class InstrumentDeviceInfo:
         :param pid:
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "isRunningPid:", str(pid)).parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "isRunningPid:", str(pid)).parsed
         return parsed
 
     def nameForUID(self, uid):
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "nameForUID:", str(uid)).parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "nameForUID:", str(uid)).parsed
         return parsed
 
     def machTimeInfo(self):
         """ 时间校准，获取
         :return: mach time 比例
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "machTimeInfo").parsed
         return parsed
 
     def traceCodesFile(self):
         """ ？？
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "traceCodesFile").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "traceCodesFile").parsed
         return parsed
 
     def networkInformation(self):
         """ 当前网络信息
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "networkInformation").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "networkInformation").parsed
         return parsed
 
     def systemInformation(self):
         """ 设备基本信息
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "systemInformation").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "systemInformation").parsed
         return parsed
 
     def hardwareInformation(self):
         """ 硬件数据
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "hardwareInformation").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "hardwareInformation").parsed
         return parsed
 
     def sysmonProcessAttributes(self):
         """ 获取应用性能数据所需的参数
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "sysmonProcessAttributes").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "sysmonProcessAttributes").parsed
         return parsed
 
     def sysmonSystemAttributes(self):
         """ 获取系统性能数据所需的参数
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "sysmonSystemAttributes").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "sysmonSystemAttributes").parsed
         return parsed
 
     def symbolicatorSignaturesForExpiredPids(self):
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo",
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo,
                                "symbolicatorSignaturesForExpiredPids").parsed
         return parsed
 
@@ -111,7 +111,7 @@ class InstrumentDeviceInfo:
         :param path:
         :return:
         """
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "directoryListingForPath:",
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "directoryListingForPath:",
                                path).parsed
         return parsed
 
@@ -121,16 +121,16 @@ class InstrumentDeviceInfo:
         :return:
         """
 
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "iconDescriptionFileForAppPath:",
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "iconDescriptionFileForAppPath:",
                                path).parsed
         return parsed
 
     def kpepDatabase(self):
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "kpepDatabase").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "kpepDatabase").parsed
         return plistlib.loads(parsed)
 
     def machKernelName(self):
-        parsed = self.rpc.call("com.apple.instruments.server.services.deviceinfo", "cpKDebugEventsAsXML").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "cpKDebugEventsAsXML").parsed
         return parsed
 
 
@@ -381,7 +381,6 @@ class InstrumentsBase:
         """
         c = self.instruments.call(InstrumentsService.ConditionInducer, 'disableActiveCondition').parsed
         return c
-
 
     def xctest(self, bundle_id, USE_PORT='', quit_event=threading.Event()):
         log = Log.getLogger(LOG.xctest.value)

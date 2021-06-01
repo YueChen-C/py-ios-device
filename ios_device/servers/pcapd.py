@@ -1,155 +1,89 @@
-#!/usr/servers/env python
-# -*- coding: utf8 -*-
-#
-# $Id$
-#
-# Copyright (c) 2012-2014 "dark[-at-]gotohack.org"
-#
-# This file is part of pymobiledevice
-#
-# pymobiledevice is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#
-from __future__ import print_function
+#!/usr/bin/env python3
 
-import os
-
-from six import PY3
-import struct
-import time
-import sys
 import logging
-sys.path.append(os.getcwd())
+import struct
+
+from construct import Struct, Int32ub, Int32ul, Bytes, Byte, this, Padding, Padded, CString
 
 from ios_device.util.lockdown import LockdownClient
-from tempfile import mkstemp
-from optparse import OptionParser
+
+packet_struct = Struct(
+    'hdr_len' / Int32ub,
+    'hdr_version' / Byte,
+    'payload_len' / Int32ub,
+    'if_type' / Byte,
+    'if_unit' / Padding(2),
+    'in_out' / Padding(1),
+    'proto_family' / Int32ub,
+    'pre_len' / Int32ub,
+    'post_len' / Int32ub,
+    'interface_name' / Padded(16, CString('utf8')),
+    'pid' / Int32ul,
+    'comm' / Padded(17, CString('utf8')),
+    'svc_class' / Int32ub,
+    'epid' / Int32ul,
+    'ecomm' / Padded(17, CString('utf8')),
+    'epoch_seconds' / Int32ub,
+    'epoch_microseconds' / Int32ub,
+    'payload' / Bytes(this.payload_len)
+)
 
 
-"""
-struct pcap_hdr_s {
-        guint32 magic_number;   /* magic number */
-        guint16 version_major;  /* major version number */
-        guint16 version_minor;  /* minor version number */
-        gint32  thiszone;       /* GMT to local correction */
-        guint32 sigfigs;        /* accuracy of timestamps */
-        guint32 snaplen;        /* max length of captured packets, in octets */
-        guint32 network;        /* data link type */
-} pcap_hdr_t;
-typedef struct pcaprec_hdr_s {
-        guint32 ts_sec;         /* timestamp seconds */
-        guint32 ts_usec;        /* timestamp microseconds */
-        guint32 incl_len;       /* number of octets of packet saved in file */
-        guint32 orig_len;       /* actual length of packet */
-} pcaprec_hdr_t;
-"""
-LINKTYPE_ETHERNET = 1
-LINKTYPE_RAW = 101
+class PcapdService(object):
+    IN_OUT_MAP = {0x01: 'O', 0x10: 'I'}
 
+    def __init__(self, lockdown=None, udid=None, network=None,logger=None):
+        self.logger = logger or logging.getLogger(__name__)
+        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid,network=network)
+        self.conn = self.lockdown.start_service("com.apple.pcapd")
 
-class PcapOut(object):
+    def __iter__(self):
 
-    def __init__(self, pipename=r'test.pcap'):
-        self.pipe = open(pipename, 'wb')
-        self.pipe.write(struct.pack("<LHHLLLL", 0xa1b2c3d4, 2, 4, 0, 0, 65535, LINKTYPE_ETHERNET))
+        ctp = self._chunk_to_packet
 
-    def __del__(self):
-        self.pipe.close()
+        while True:
+            chunk = self.conn.recv_plist()
+            yield ctp(chunk)
 
-    def writePacket(self, packet):
-        t = time.time()
-        pkthdr = struct.pack('<LLLL', int(t), int(t * 1000000 % 1000000), len(packet), len(packet))
-        data = pkthdr + packet
-        l = self.pipe.write(data)
-        self.pipe.flush()
-        return True
+    def _chunk_to_packet(self, chunk):
+        packet = packet_struct.parse(chunk)
 
-
-class Win32Pipe(object):
-    def __init__(self, pipename=r'\\.\pipe\wireshark'):
-        self.pipe = win32pipe.CreateNamedPipe(pipename,
-                                              win32pipe.PIPE_ACCESS_OUTBOUND,
-                                              win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_WAIT,
-                                              1, 65536, 65536,
-                                              300,
-                                              None)
-        print("Connect wireshark to %s" % pipename)
-        win32pipe.ConnectNamedPipe(self.pipe, None)
-        win32file.WriteFile(self.pipe, struct.pack("<LHHLLLL", 0xa1b2c3d4, 2, 4, 0, 0, 65535, LINKTYPE_ETHERNET))
-
-    def writePacket(self, packet):
-        t = time.time()
-        pkthdr = struct.pack("<LLLL", int(t), int(t * 1000000 % 1000000), len(packet), len(packet))
-        errCode, nBytesWritten = win32file.WriteFile(self.pipe, pkthdr + packet)
-        return errCode == 0
-
-
-if __name__ == "__main__":
-
-    if sys.platform == "darwin":
-        print("Why not use rvictl ?")
-
-    parser = OptionParser(usage="%prog")
-    parser.add_option("-u", "--udid",
-                      default=False, action="store", dest="device_udid", metavar="DEVICE_UDID",
-                      help="Device udid")
-    parser.add_option("-o", "--output", dest="output", default=False,
-                      help="Output location", type="string")
-
-    (options, args) = parser.parse_args()
-    if sys.platform == "win32":
-        import win32pipe, win32file
-
-        output = Win32Pipe()
-
-    else:
-        if options.output:
-            path = options.output
+        if not (packet.hdr_version == 2 and len(packet.payload) == packet.payload_len):
+            raise ValueError('unsupported version')
+        packet.epoch_microseconds = packet.epoch_seconds * 1000000 + packet.epoch_microseconds
+        if packet.if_type == 0xFF:
+            packet.is_eth = False  # cellular
+            packet.payload = packet.payload[4:]
+        elif packet.if_type == 0x06:
+            packet.is_eth = True  # wifi
         else:
-            _, path = mkstemp(prefix="device_dump_", suffix=".pcap", dir=".")
-        print("Recording data to: %s" % path)
-        output = PcapOut(path)
+            raise ValueError('unknown link type {}'.format(hex(packet.if_type)))
 
-    logging.basicConfig(level=logging.INFO)
-    lockdown = LockdownClient(options.device_udid)
-    pcap = lockdown.start_service("com.apple.pcapd")
+        return packet
 
-    while True:
-        d = pcap.recv_plist()
-        if not d:
-            break
-        if not PY3:
-            d = d.data
-        hdrsize, xxx, packet_size = struct.unpack(">LBL", d[:9])
-        flags1, flags2, offset_to_ip_data, zero = struct.unpack(">LLLL", d[9:0x19])
 
-        assert hdrsize >= 0x19
-        if PY3:
-            interfacetype = d[0x19:hdrsize].strip(b"\x00")
-        else:
-            interfacetype = d[0x19:hdrsize].strip("\x00")
-            interfacetype = "b'" + "\\x".join("{:02x}".format(ord(c)) for c in interfacetype) + "'"
-        t = time.time()
-        print(interfacetype, packet_size, t)
-        packet = d[hdrsize:]
-        assert packet_size == len(packet)
+class PCAPPacketDumper:
+    HEADER_STRUCT = struct.Struct('=IHHiIII')
+    PACKET_STRUCT = struct.Struct('=IIII')
 
-        if offset_to_ip_data == 0:
-            # add fake ethernet header for pdp packets
-            if PY3:
-                packet = b"\xBE\xEF" * 6 + b"\x08\x00" + packet
-            else:
-                packet = "\xBE\xEF" * 6 + "\x08\x00" + packet
-        if not output.writePacket(packet):
-            break
+    def __init__(self, pkt_iter, out_file):
+        self.pkt_iter = pkt_iter
+        self.out_file = out_file
+
+    def run(self, packet_cb=None):
+        self.out_file.write(self.HEADER_STRUCT.pack(0xa1b2c3d4, 2, 4, 0, 0, 0xFFFFFFFF, 1))
+        for pkt in self.pkt_iter:
+            packet_cb is not None and packet_cb(pkt)
+            payload = pkt.payload
+            if not pkt.is_eth:
+                if pkt.proto_family == 2:
+                    ether_type_b = b'\x08\x00'  # IPv4
+                elif pkt.proto_family == 30:
+                    ether_type_b = b'\x86\xDD'  # IPv6
+                else:
+                    raise NotImplementedError('unsupported proto family {}'.format(pkt.proto_family))
+                payload = b''.join((bytes(12), ether_type_b, payload))
+            header = self.PACKET_STRUCT.pack(pkt.epoch_microseconds // 1000000,
+                                             pkt.epoch_microseconds % 1000000,
+                                             len(payload), len(payload))
+            self.out_file.writelines((header, payload))

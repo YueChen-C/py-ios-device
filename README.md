@@ -26,7 +26,7 @@ python 版本: 3.6+
 - [x] 描述文件管理 例如：安装 卸载 Fiddler 证书等
 - [x] 获取系统日志流
 - [x] 获取崩溃日志
-- [ ] 获取抓包数据转发至 wiershark
+- [x] 获取抓包数据转发至 wiershark
 - [x] 应用管理:安装、卸载、启动、查询、运行状态等
 - [ ] 截图
 - [ ] 打开 wifi 连接模式
@@ -179,6 +179,18 @@ $ pyidevice apps shell
 
 ```
 
+#### 抓包数据
+```bash
+$ pyidevice pcapd ./test/test.pacp
+# 抓包保存数据
+
+$ pyidevice pcapd - | "/Applications/Wireshark.app/Contents/MacOS/Wireshark" -k -i -
+# mac 转发至 Wireshark
+
+$ pyidevice pcapd - | "D:\Program Files\Wireshark\Wireshark.exe" -k -i -
+# win 转发至 Wireshark
+
+```
 
 
 

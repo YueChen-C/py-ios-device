@@ -1,3 +1,7 @@
+import functools
+import io
+import sys
+
 import click
 
 from ios_device.cli.base import InstrumentsBase
@@ -6,6 +10,7 @@ from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.crash_log import CrashLogService
 from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.mc_install import MCInstallService
+from ios_device.servers.pcapd import PcapdService, PCAPPacketDumper
 from ios_device.servers.syslog import SyslogServer
 from ios_device.util import Log
 from ios_device.util.variables import LOG
@@ -56,12 +61,15 @@ def crash_shell(udid, network, json_format):
     crash_server.shell()
 
 
-@cli.command('house', cls=Command)
+#######################################################################
+
+@cli.command('sandbox', cls=Command)
 @click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
-def cmd_house(udid, network, json_format, bundle_id):
-    """ file management per application bundle """
-    crash_server = HouseArrestService(udid=udid, network=network, logger=log)
-    crash_server.shell(bundle_id)
+@click.option('-a', '--access_type', default='VendDocuments', type=click.Choice(['VendDocuments', 'VendContainer']),
+              help='Type of access sandbox')
+def sandbox(udid, network, json_format, bundle_id, access_type):
+    """ open an AFC shell for given bundle_id, assuming its profile is installed """
+    HouseArrestService(udid=udid, network=network, logger=log).shell(bundle_id, cmd=access_type)
 
 
 #######################################################################
@@ -109,12 +117,6 @@ def cmd_syslog(udid, network, json_format, path, filter):
 #######################################################################
 
 
-@click.group()
-def cli():
-    """ apps cli """
-    pass
-
-
 @cli.group()
 def apps():
     """ application options """
@@ -159,9 +161,11 @@ def upgrade(udid, network, json_format, ipa_path):
 
 @apps.command('shell', cls=Command)
 @click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
-def shell(udid, network, json_format, bundle_id):
+@click.option('-b', '--access_type', default='VendDocuments', type=click.Choice(['VendDocuments', 'VendContainer']),
+              help='Process app bundleId to filter')
+def shell(udid, network, json_format, bundle_id, access_type):
     """ open an AFC shell for given bundle_id, assuming its profile is installed """
-    HouseArrestService(udid=udid, network=network, logger=log).shell(bundle_id)
+    HouseArrestService(udid=udid, network=network, logger=log).shell(bundle_id, cmd=access_type)
 
 
 @apps.command('launch', cls=Command)
@@ -191,4 +195,38 @@ def cmd_kill(udid, network, json_format, pid, name, bundle_id):
             log.warn(f'The {bundle_id, name, pid} did not start')
         rpc.kill_app(pid)
         print(f'Kill {pid} ...')
+
+
+@cli.command('pcapd', cls=Command)
+@click.argument('outfile', required=True)
+def cmd_pcapd(udid, network, json_format, outfile):
+    """ sniff device traffic
+
+    :param outfile: output file  or (- for stdout)
+    """
+
+    if outfile == '-':
+        out_file = sys.stdout.buffer
+        while isinstance(out_file, io.BufferedWriter):
+            out_file = out_file.detach()
+    else:
+        out_file = open(outfile, 'wb', 0)
+    num_packets = 0
+    stderr_print = functools.partial(print, file=sys.stderr)
+
+    def packet_callback(pkt):
+        nonlocal num_packets
+        num_packets += 1
+        stderr_print('\r{} packets captured.'.format(num_packets), end='', flush=True)
+
+    try:
+        packet_extractor = PcapdService(udid=udid, network=network)
+        packet_dumper = PCAPPacketDumper(packet_extractor, out_file)
+        packet_dumper.run(packet_callback)
+    except KeyboardInterrupt:
+        stderr_print()
+        stderr_print('closing capture ...')
+        out_file.close()
+    except:
+        stderr_print()
 
