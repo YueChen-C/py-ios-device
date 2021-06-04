@@ -317,16 +317,16 @@ class InstrumentsBase:
                              stopSignal: threading.Event = threading.Event()):
         self.instruments.register_channel_callback(InstrumentsService.CoreProfileSessionTap,
                                                    callback)
-        var = self.instruments.call(InstrumentsService.CoreProfileSessionTap, "setConfig:",
+        self.instruments.call(InstrumentsService.CoreProfileSessionTap, "setConfig:",
                                     {'rp': 10,
                                      'tc': [{'kdf2': {630784000, 833617920, 830472456},
                                              'tk': 3,
                                              'uuid': str(uuid.uuid4()).upper()}],
-                                     'ur': 500}).parsed
-        var = self.instruments.call(InstrumentsService.CoreProfileSessionTap, "start").parsed
+                                     'ur': 500})
+        self.instruments.call(InstrumentsService.CoreProfileSessionTap, "start")
         while not stopSignal.wait(1):
             pass
-        var = self.instruments.call(InstrumentsService.CoreProfileSessionTap, "stop").parsed
+        self.instruments.call(InstrumentsService.CoreProfileSessionTap, "stop")
 
     def screenshot(self):
         var = self.instruments.call(InstrumentsService.Screenshot, "takeScreenshot").parsed
@@ -338,11 +338,12 @@ class InstrumentsBase:
         channel = "com.apple.instruments.server.services.power"
         self.instruments.register_channel_callback(channel, callback)
         stream_num = self.instruments.call(channel, "openStreamForPath:", "live/level.dat").parsed
-        log.info("start", self.instruments.call(channel, "startStreamTransfer:", float(stream_num)).parsed)
-        log.info("[!] wait a few seconds, be patient...")
+        print("open", stream_num)
+        print("start", self.instruments.call(channel, "startStreamTransfer:", float(stream_num)).parsed)
+        print("[!] wait a few seconds, be patient...")
         while not stopSignal.wait(1):
             pass
-        log.info("stop", self.instruments.call(channel, "endStreamTransfer:", float(stream_num)).parsed)
+        log.info(f"stop{ self.instruments.call(channel, 'endStreamTransfer:', float(stream_num)).parsed}")
 
     def xcode_energy(self, pid, stopSignal:threading.Event = threading.Event()):
         self.instruments.call(InstrumentsService.XcodeEnergy, "startSamplingForPIDs:", {pid})

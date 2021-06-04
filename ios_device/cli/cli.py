@@ -7,18 +7,20 @@ import click
 class Enconding(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, bytes):
-            return o.decode()
+            try:
+                return o.decode()
+            except:
+                return str(o)
 
 
-def print_json(buf, json_format=True):
-    if json_format:
+def print_json(buf, format=True):
+    if format == 'json':
         formatted_json = json.dumps(buf, indent=4, cls=Enconding)
         print(formatted_json)
+    elif format == 'flush':
+        print(f'\r{buf}', end='', flush=True)
     else:
-        # pprint(buf,width=120)
         print(buf)
-
-    # print('*' * 100)
 
 
 class Command(click.Command):
@@ -28,5 +30,5 @@ class Command(click.Command):
         self.params[:0] = [
             click.Option(('udid', '--udid'), help='specify unique device identifier'),
             click.Option(('network', '--network'), is_flag=True, help='ios devices on wireless network'),
-            click.Option(('json_format', '--json'), is_flag=True, help='ios devices on wireless network'),
+            click.Option(('format', '--format'),type=click.Choice(['text','json','flush']), help='print format type'),
         ]

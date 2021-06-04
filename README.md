@@ -19,7 +19,8 @@ python 版本: 3.6+
 - [x] 事件监听，监听app 启动，退出，后台运行等
 - [x] 启动杀死 APP
 - [x] 运行 xcuitest 启动 wda
-- [ ] 解析内核运行数据
+- [x] 导出内核堆栈快照
+- [ ] 解析内核数据流
 
 
 ### 其他功能列表
@@ -38,6 +39,18 @@ python 版本: 3.6+
     > pyidevice --help
     > pyidevice instruments --help
 
+
+#### 获取设备列表
+
+```bash
+$ pyidevice devices
+```
+
+#### 获取设备信息
+
+```bash
+$ pyidevice --udid=xxxxxx deviceinfo
+```
 
 #### 获取性能数据
 
@@ -95,6 +108,13 @@ $ pyidevice instruments notifications
 [{'execName': 'MobileNotes', 'state_description': 'Foreground Running', 'elevated_state_description': 'Foreground Running', 'displayID': 'com.apple.mobilenotes', 'mach_absolute_time': 27205542653928, 'appName': 'Notes', 'elevated_state': 8, 'timestamp': 1620714619.1264, 'state': 8, 'pid': 99367}]
 [{'execName': 'MobileNotes', 'state_description': 'Background Running', 'elevated_state_description': 'Background Running', 'displayID': 'com.apple.mobilenotes', 'mach_absolute_time': 27205678872050, 'appName': 'Notes', 'elevated_state': 4, 'timestamp': 1620714624.802145, 'state': 4, 'pid': 99367}]
 [{'execName': 'MobileNotes', 'state_description': 'Background Task Suspended', 'elevated_state_description': 'Background Task Suspended', 'displayID': 'com.apple.mobilenotes', 'mach_absolute_time': 27205683486410, 'appName': 'Notes', 'elevated_state': 2, 'timestamp': 1620714624.99441, 'state': 2, 'pid': 99367}]
+```
+
+#### 内核堆栈快照信息
+导出内核堆栈快照信息
+```bash
+$ instruments stackshot --out stackshot.log
+
 ```
 
 
@@ -191,6 +211,14 @@ $ pyidevice pcapd - | "D:\Program Files\Wireshark\Wireshark.exe" -k -i -
 # win 转发至 Wireshark
 
 ```
+
+#### 获取电池信息
+```bash
+$ pyidevice battery
+# [Battery] time=1622777708, current=-71, voltage=4330, power=-307.43, temperature=3279
+
+```
+
 
 
 

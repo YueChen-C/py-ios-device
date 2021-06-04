@@ -5,6 +5,8 @@ import typing
 
 class MobileImageMounter(object):
 
+    SERVICE_NAME = 'com.apple.mobile.installation_proxy'
+
     def __init__(self, lockdown=None, udid=None, logger=None):
         from ..util.lockdown import LockdownClient
         self.logger = logger or logging.getLogger(__name__)
@@ -12,7 +14,7 @@ class MobileImageMounter(object):
 
         if not self.lockdown:
             raise Exception("Unable to start lockdown")
-        self.service = self.lockdown.start_service("com.apple.mobile.mobile_image_mounter")
+        self.service = self.lockdown.start_service(self.SERVICE_NAME)
         if not self.service:
             raise Exception("installation_proxy init error : Could not start com.apple.mobile.mobile_image_mounter")
 

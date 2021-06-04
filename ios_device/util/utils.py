@@ -1,9 +1,13 @@
 """
 Utils
 """
+import json
+import os
+
 from ios_device.util.service_info import MyServiceInfo
 
 __all__ = ['DictAttrProperty', 'DictAttrFieldNotFoundError']
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 import socket
 import struct
@@ -161,3 +165,9 @@ def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, p
     zero_conf.close()
 
     return ctx['addresses'], ctx['port']
+
+
+def get_device_configs(product_type):
+    with open(os.path.join(ROOT_DIR, "ios_deviceinfo.json")) as fp:
+        device_info_map = json.load(fp)
+        return device_info_map.get(product_type) or {}

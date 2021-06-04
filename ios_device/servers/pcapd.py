@@ -31,11 +31,12 @@ packet_struct = Struct(
 
 class PcapdService(object):
     IN_OUT_MAP = {0x01: 'O', 0x10: 'I'}
+    SERVICE_NAME = "com.apple.pcapd"
 
-    def __init__(self, lockdown=None, udid=None, network=None,logger=None):
+    def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid,network=network)
-        self.conn = self.lockdown.start_service("com.apple.pcapd")
+        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid, network=network)
+        self.conn = self.lockdown.start_service(self.SERVICE_NAME)
 
     def __iter__(self):
 
