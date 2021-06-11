@@ -15,13 +15,13 @@ log = logging.getLogger(__name__)
 
 def activity(rpc, pid):
     def on_callback_message(res):
-        print(f"[ACTIVITY] {res.parsed}", )
+        print(f"[ACTIVITY] {res.selector}", )
         print("\n")
     rpc.register_channel_callback("com.apple.instruments.server.services.activity", on_callback_message)
-    var = rpc.call("com.apple.instruments.server.services.activity", "startSamplingWithPid:", pid).parsed
+    var = rpc.call("com.apple.instruments.server.services.activity", "startSamplingWithPid:", pid).selector
     log.debug(f"start {var}")
     time.sleep(10)
-    var = rpc.call("com.apple.instruments.server.services.activity", "stopSampling").parsed
+    var = rpc.call("com.apple.instruments.server.services.activity", "stopSampling").selector
     log.debug(f"stop {var}")
     rpc.stop()
 

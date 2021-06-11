@@ -16,7 +16,7 @@ def runningProcesses(rpc):
     :param rpc:
     :return:
     """
-    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "runningProcesses").parsed
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "runningProcesses").selector
     log.debug("runningProcesses:")
     headers = '\t'.join(sorted(parsed[0].keys()))
     log.debug(headers)
@@ -33,51 +33,51 @@ def execnameForPid(rpc, pid):
     :param pid:
     :return:
     """
-    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "execnameForPid:", str(pid)).parsed
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "execnameForPid:", str(pid)).selector
     print(parsed)
     rpc.stop()
     return parsed
 
 
 def machTimeInfo(rpc):
-    machTimeInfo = rpc.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").parsed
+    machTimeInfo = rpc.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").selector
     print(machTimeInfo)
     rpc.stop()
     return machTimeInfo
 
 
 def traceCodesFile(rpc):
-    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "traceCodesFile").parsed
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "traceCodesFile").selector
     print(parsed)
     rpc.stop()
     return parsed
 
 
 def networkInformation(rpc):
-    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "networkInformation").parsed
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "networkInformation").selector
     print(parsed)
     rpc.stop()
 
 
 def systemInformation(rpc):
-    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "systemInformation").parsed
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "systemInformation").selector
     print(parsed)
     rpc.stop()
 
 
 def sysmonProcessAttributes(rpc):
-    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "sysmonProcessAttributes").parsed
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "sysmonProcessAttributes").selector
     print(parsed)
     rpc.stop()
 
 
 def sysmonSystemAttributes(rpc):
-    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "symbolicatorSignaturesForExpiredPids").parsed
+    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "symbolicatorSignaturesForExpiredPids").selector
     print(list(parsed))
     rpc.stop()
 
 
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
-    runningProcesses(rpc)
+    sysmonProcessAttributes(rpc)
     rpc.stop()

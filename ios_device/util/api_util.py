@@ -5,26 +5,19 @@
 import logging
 import struct
 import threading
-from _ctypes import Structure
-from ctypes import c_byte, c_uint16, c_uint32
 from distutils.version import LooseVersion
 
-from ios_device.servers.house_arrest import HouseArrestService
-
-from ios_device.util.bpylist2 import archive
-
-from ios_device.servers.testmanagerd import TestManagerdLockdown
-
-from ios_device.util._types import NSUUID, XCTestConfiguration, NSURL
+from ios_device.util.bpylist2 import NSUUID, XCTestConfiguration, NSURL
 
 from ios_device.servers.Installation import InstallationProxyService
-from ios_device.util.forward import ForwardPorts
-
-from ios_device.util.lockdown import LockdownClient
-
-from ios_device.servers.DTXSever import DTXServerRPCResult, DTXServerRPCRawObj, DTXEnum
 from ios_device.servers.Instrument import InstrumentServer
-from ios_device.util.dtxlib import selector_to_pyobject, get_auxiliary_text
+from ios_device.servers.dvt import DTXEnum
+from ios_device.servers.house_arrest import HouseArrestService
+from ios_device.servers.testmanagerd import TestManagerdLockdown
+from ios_device.util.bpylist2 import archive
+from ios_device.util.dtx_msg import RawObj
+from ios_device.util.forward import ForwardPorts
+from ios_device.util.lockdown import LockdownClient
 
 
 def channel_validate(channel: InstrumentServer):
@@ -40,12 +33,12 @@ def caller(res, func):
     :param func:
     :return:
     """
-    if isinstance(res, DTXServerRPCResult):
+    if not isinstance(res, bytes):
         res_dic = dict()
-        header = selector_to_pyobject(res.raw._selector)
+        header = res.selector
         if header:
             res_dic["header"] = header
-        body = get_auxiliary_text(res.raw)
+        body = res.auxiliaries
         if body:
             res_dic["body"] = body
         func(res_dic)
@@ -60,17 +53,18 @@ def network_caller(res, func):
     :param func:
     :return:
     """
-    from socket import inet_ntoa, htons, inet_ntop, AF_INET6
-    # RxDups : 乱序
-    # RxOOO : 丢包
-    # TxRetx : 延时
+    from construct import Struct, Int32ul, Bytes, Adapter, Switch, this, Int16ub, Int8ul
+    import ipaddress
+
+    class IP(Adapter):
+        def _decode(self, obj, context, path):
+            return ipaddress.ip_address(obj)
 
     headers = {
         0: ['InterfaceIndex', "Name"],
         1: ['LocalAddress', 'RemoteAddress', 'InterfaceIndex', 'Pid', 'RecvBufferSize', 'RecvBufferUsed',
             'SerialNumber', 'Kind'],
-        2: ['SendPackage', 'SendBytes', 'ReceivePackage', 'ReceiveBytes', 'RepeatPackage', 'DisorderlyPackage',
-            'NeedResendPackage', 'MinResponseTime', 'PackageSerialNumber',
+        2: ['RxPackets', 'RxBytes', 'TxPackets', 'TxBytes', 'RxDups', 'RxOOO', 'TxRetx', 'MinRTT', 'AvgRTT',
             'ConnectionSerial']
     }
     msg_type = {
@@ -79,66 +73,32 @@ def network_caller(res, func):
         2: "connection-update",
     }
 
-    class SockAddr4(Structure):
-        _fields_ = [
-            ('len', c_byte),
-            ('family', c_byte),
-            ('port', c_uint16),
-            ('addr', c_byte * 4),
-            ('zero', c_byte * 8)
-        ]
-
-        def __str__(self):
-            return f"{inet_ntoa(self.addr)}:{htons(self.port)}"
-
-    class SockAddr6(Structure):
-        _fields_ = [
-            ('len', c_byte),
-            ('family', c_byte),
-            ('port', c_uint16),
-            ('flowinfo', c_uint32),
-            ('addr', c_byte * 16),
-            ('scopeid', c_uint32)
-        ]
-
-        def __str__(self):
-            return f"[{inet_ntop(AF_INET6, self.addr)}]:{htons(self.port)}"
-
-    data = res.parsed
+    SockAddr = Struct(
+        'len' / Int8ul,
+        Int8ul,
+        'port' / Int16ub,
+        'network' / Switch(this.len, {
+            0x1c: Struct(
+                Int32ul,
+                'address' / IP(Bytes(16)),
+                Int32ul, ),
+            0x10: Struct(
+                'address' / IP(Bytes(4)),
+                Bytes(8))})
+    )
+    data = res.selector
     if data[0] == 1:
-        if len(data[1][0]) == 16:
-            data[1][0] = str(SockAddr4.from_buffer_copy(data[1][0]))
-            data[1][1] = str(SockAddr4.from_buffer_copy(data[1][1]))
-        elif len(data[1][0]) == 28:
-            data[1][0] = str(SockAddr6.from_buffer_copy(data[1][0]))
-            data[1][1] = str(SockAddr6.from_buffer_copy(data[1][1]))
+        addr = SockAddr.parse(data[1][0])
+        data[1][0] = f"{addr.network.address}:{addr.port}"
+        addr = SockAddr.parse(data[1][1])
+        data[1][1] = f"{addr.network.address}:{addr.port}"
+
     func({str(msg_type[data[0]]): dict(zip(headers[data[0]], data[1]))})
 
 
-def power_caller(res, func):
-    """
-    电量异步回调包解析
-    :param res:
-    :param func:
-    :return:
-    """
-    headers = ['startingTime', 'duration', 'level']  # DTPower
-    ctx = {
-        'remained': b''
-    }
-    ctx['remained'] += res.parsed['data']
-    cur = 0
-    while cur + 3 * 8 <= len(ctx['remained']):
-        print("[level.dat]", dict(zip(headers, struct.unpack('>ddd', ctx['remained'][cur: cur + 3 * 8]))))
-        cur += 3 * 8
-        pass
-    ctx['remained'] = ctx['remained'][cur:]
-    func(ctx)
-
-
 def system_caller(res, func):
-    if isinstance(res.parsed, list):
-        func(res.parsed)
+    if isinstance(res.selector, list):
+        func(res.selector)
 
 
 class PyIOSDeviceException(Exception):
@@ -170,7 +130,7 @@ class RunXCUITest(threading.Thread):
 
     def run(self) -> None:
         def _callback(res):
-            self.callback(get_auxiliary_text(res.raw))
+            self.callback(res.auxiliaries)
 
         lock_down = LockdownClient(udid=self.device_id)
         installation = InstallationProxyService(lockdown=lock_down)
@@ -191,19 +151,19 @@ class RunXCUITest(threading.Thread):
         session_identifier = NSUUID('96508379-4d3b-4010-87d1-6483300a7b76')
         manager_lock_down_1 = TestManagerdLockdown(lock_down).init()
 
-        manager_lock_down_1._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
+        manager_lock_down_1.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
         if lock_down.ios_version > LooseVersion('11.0'):
             result = manager_lock_down_1.call(
                 "dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface",
-                "_IDE_initiateControlSessionWithProtocolVersion:", DTXServerRPCRawObj(xcode_version)).parsed
+                "_IDE_initiateControlSessionWithProtocolVersion:", RawObj(xcode_version)).selector
             logging.debug("result: %s", result)
-        manager_lock_down_1.register_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
-        manager_lock_down_1.register_unhandled_callback(_callback)
+        manager_lock_down_1.register_selector_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
+        manager_lock_down_1.register_undefined_callback(_callback)
 
         manager_lock_down_2 = TestManagerdLockdown(lock_down).init()
-        manager_lock_down_2._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
-        manager_lock_down_2.register_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
-        manager_lock_down_2.register_unhandled_callback(_callback)
+        manager_lock_down_2.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
+        manager_lock_down_2.register_selector_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
+        manager_lock_down_2.register_undefined_callback(_callback)
 
         _start_flag = threading.Event()
 
@@ -213,30 +173,31 @@ class RunXCUITest(threading.Thread):
             _start_flag.set()
 
             logging.debug(" _start_executing Start execute test plan with IDE version: %d",
-                         xcode_version)
+                          xcode_version)
             manager_lock_down_2._call(False, 0xFFFFFFFF, '_IDE_startExecutingTestPlanWithProtocolVersion:',
-                                      DTXServerRPCRawObj(xcode_version))
+                                      RawObj(xcode_version))
 
         def _show_log_message(res):
-            # logging.info(f"{res.parsed} : {get_auxiliary_text(res.raw)}")
+            # logging.info(f"{res.selector} : {get_auxiliary_text(res.raw)}")
             if 'Received test runner ready reply with error: (null' in ''.join(
-                    get_auxiliary_text(res.raw)):
+                    res.auxiliaries):
                 logging.debug("_start_executing Test runner ready detected")
                 _start_executing()
 
-        manager_lock_down_2.register_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:',
-                                              _start_executing)
-        manager_lock_down_2.register_callback('_XCT_logDebugMessage:', _show_log_message)
-        manager_lock_down_2.register_callback('_XCT_didFinishExecutingTestPlan', lambda _: self.quit_event.set())
+        manager_lock_down_2.register_selector_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:',
+                                                       _start_executing)
+        manager_lock_down_2.register_selector_callback('_XCT_logDebugMessage:', _show_log_message)
+        manager_lock_down_2.register_selector_callback('_XCT_didFinishExecutingTestPlan',
+                                                       lambda _: self.quit_event.set())
 
         result = manager_lock_down_2.call('dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                                           '_IDE_initiateSessionWithIdentifier:forClient:atPath:protocolVersion:',
-                                          DTXServerRPCRawObj(
+                                          RawObj(
                                               session_identifier,
                                               str(session_identifier) + '-6722-000247F15966B083',
                                               '/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild',
                                               xcode_version
-                                          )).parsed
+                                          )).selector
         logging.debug("_start_executing result: %s", result)
         # launch_wda
         xctest_path = "/tmp/WebDriverAgentRunner-" + str(session_identifier).upper() + ".xctestconfiguration"
@@ -257,7 +218,7 @@ class RunXCUITest(threading.Thread):
         conn.call('com.apple.instruments.server.services.processcontrol', 'processIdentifierForBundleIdentifier:',
                   self.bundle_id)
 
-        conn.register_unhandled_callback(_callback)
+        conn.register_undefined_callback(_callback)
         app_path = app_info['Path']
         app_container = app_info['Container']
 
@@ -295,31 +256,31 @@ class RunXCUITest(threading.Thread):
         identifier = "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:"
 
         pid = conn.call('com.apple.instruments.server.services.processcontrol', identifier,
-                        app_path, self.bundle_id, app_env, app_args, app_options).parsed
+                        app_path, self.bundle_id, app_env, app_args, app_options).selector
         if not isinstance(pid, int):
             logging.error(f"Launch failed: {pid}")
             raise Exception("Launch failed")
 
         logging.debug(f" Launch {self.bundle_id} pid: {pid}")
 
-        conn.call('com.apple.instruments.server.services.processcontrol', "startObservingPid:", DTXServerRPCRawObj(pid))
+        conn.call('com.apple.instruments.server.services.processcontrol', "startObservingPid:", RawObj(pid))
 
         if self.quit_event:
-            conn.register_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
+            conn.register_selector_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
 
         if lock_down.ios_version > LooseVersion('12.0'):
             identifier = '_IDE_authorizeTestSessionWithProcessID:'
             result = manager_lock_down_1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                 identifier,
-                DTXServerRPCRawObj(pid)).parsed
+                RawObj(pid)).selector
             logging.debug("_IDE_authorizeTestSessionWithProcessID: %s", result)
         else:
             identifier = '_IDE_initiateControlSessionForTestProcessID:protocolVersion:'
             result = manager_lock_down_1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                 identifier,
-                DTXServerRPCRawObj(pid, xcode_version)).parsed
+                RawObj(pid, xcode_version)).selector
             logging.debug("_IDE_authorizeTestSessionWithProcessID: %s", result)
 
         while not self.quit_event.wait(.1):

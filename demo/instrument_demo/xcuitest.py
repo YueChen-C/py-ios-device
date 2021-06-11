@@ -5,15 +5,17 @@ import threading
 import time
 from distutils.version import LooseVersion
 
-from ios_device.servers.DTXSever import DTXServerRPCRawObj, DTXEnum
+from ios_device.servers.dvt import DTXEnum
 from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.testmanagerd import TestManagerdLockdown
-from ios_device.util.bpylist2 import archive
-from ios_device.util._types import XCTestConfiguration, NSURL, NSUUID
-from ios_device.util.dtxlib import get_auxiliary_text
+from ios_device.util.bpylist2 import archive, XCTestConfiguration, NSURL, NSUUID
+
+from ios_device.util.dtx_msg import RawObj
 from ios_device.util.lockdown import LockdownClient
+
+logging.basicConfig(level=logging.INFO)
 
 
 class RunXCUITest(threading.Thread):
@@ -28,9 +30,9 @@ class RunXCUITest(threading.Thread):
 
     def run(self) -> None:
         def _callback(res):
-            logging.info(f" {res.parsed} : {get_auxiliary_text(res.raw)}")
+            logging.info(f" {res.selector} : {res.auxiliaries}")
 
-        self.lockdown = LockdownClient(udid=self.udid,network=False)
+        self.lockdown = LockdownClient(udid=self.udid, network=False)
         installation = InstallationProxyService(lockdown=self.lockdown)
         app_info = installation.find_bundle_id(self.bundle_id)
         if not app_info:
@@ -43,19 +45,19 @@ class RunXCUITest(threading.Thread):
         session_identifier = NSUUID('96508379-4d3b-4010-87d1-6483300a7b76')
         ManagerdLockdown1 = TestManagerdLockdown(self.lockdown).init()
 
-        ManagerdLockdown1._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
+        ManagerdLockdown1.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
         if self.lockdown.ios_version > LooseVersion('11.0'):
             result = ManagerdLockdown1.call(
                 "dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface",
-                "_IDE_initiateControlSessionWithProtocolVersion:", DTXServerRPCRawObj(XCODE_VERSION)).parsed
+                "_IDE_initiateControlSessionWithProtocolVersion:", RawObj(XCODE_VERSION)).selector
             logging.info("result: %s", result)
-        ManagerdLockdown1.register_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
-        ManagerdLockdown1.register_unhandled_callback(_callback)
+        ManagerdLockdown1.register_selector_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
+        ManagerdLockdown1.register_undefined_callback(_callback)
 
         ManagerdLockdown2 = TestManagerdLockdown(self.lockdown).init()
-        ManagerdLockdown2._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
-        ManagerdLockdown2.register_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
-        ManagerdLockdown2.register_unhandled_callback(_callback)
+        ManagerdLockdown2.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
+        ManagerdLockdown2.register_selector_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
+        ManagerdLockdown2.register_undefined_callback(_callback)
 
         _start_flag = threading.Event()
 
@@ -67,27 +69,26 @@ class RunXCUITest(threading.Thread):
             logging.info("Start execute test plan with IDE version: %d",
                          XCODE_VERSION)
             ManagerdLockdown2._call(False, 0xFFFFFFFF, '_IDE_startExecutingTestPlanWithProtocolVersion:',
-                                    DTXServerRPCRawObj(XCODE_VERSION))
+                                    RawObj(XCODE_VERSION))
 
         def _show_log_message(res):
-            logging.info(f"{res.parsed} : {get_auxiliary_text(res.raw)}")
-            if 'Received test runner ready reply with error: (null' in ''.join(
-                    get_auxiliary_text(res.raw)):
+            logging.info(f"{res.selector} : {res.auxiliaries}")
+            if 'Received test runner ready reply with error: (null' in ''.join(res.auxiliaries):
                 logging.info("Test runner ready detected")
                 _start_executing()
 
-        ManagerdLockdown2.register_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:', _start_executing)
-        ManagerdLockdown2.register_callback('_XCT_logDebugMessage:', _show_log_message)
-        ManagerdLockdown2.register_callback('_XCT_didFinishExecutingTestPlan', lambda _: self.quit_event.set())
+        ManagerdLockdown2.register_selector_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:',
+                                                     _start_executing)
+        ManagerdLockdown2.register_selector_callback('_XCT_logDebugMessage:', _show_log_message)
+        ManagerdLockdown2.register_selector_callback('_XCT_didFinishExecutingTestPlan', lambda _: self.quit_event.set())
 
         result = ManagerdLockdown2.call('dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                                         '_IDE_initiateSessionWithIdentifier:forClient:atPath:protocolVersion:',
-                                        DTXServerRPCRawObj(
-                                            session_identifier,
-                                            str(session_identifier) + '-6722-000247F15966B083',
-                                            '/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild',
-                                            XCODE_VERSION
-                                        )).parsed
+                                        RawObj(session_identifier),
+                                        str(session_identifier) + '-6722-000247F15966B083',
+                                        '/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild',
+                                        RawObj(XCODE_VERSION)
+                                        ).selector
         logging.info("result: %s", result)
         # launch_wda
         xctest_path = "/tmp/WebDriverAgentRunner-" + str(session_identifier).upper() + ".xctestconfiguration"
@@ -108,7 +109,7 @@ class RunXCUITest(threading.Thread):
         conn.call('com.apple.instruments.server.services.processcontrol', 'processIdentifierForBundleIdentifier:',
                   self.bundle_id)
 
-        conn.register_unhandled_callback(_callback)
+        conn.register_undefined_callback(_callback)
         app_path = app_info['Path']
         app_container = app_info['Container']
 
@@ -144,31 +145,31 @@ class RunXCUITest(threading.Thread):
         identifier = "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:"
 
         pid = conn.call('com.apple.instruments.server.services.processcontrol', identifier,
-                        app_path, self.bundle_id, app_env, app_args, app_options).parsed
+                        app_path, self.bundle_id, app_env, app_args, app_options).selector
         if not isinstance(pid, int):
             logging.error(f"Launch failed: {pid}")
             raise Exception("Launch failed")
 
         logging.info(f"Launch {self.bundle_id} pid: {pid}")
 
-        conn.call('com.apple.instruments.server.services.processcontrol', "startObservingPid:", DTXServerRPCRawObj(pid))
+        conn.call('com.apple.instruments.server.services.processcontrol', "startObservingPid:", RawObj(pid))
 
         if self.quit_event:
-            conn.register_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
+            conn.register_selector_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
 
         if self.lockdown.ios_version > LooseVersion('12.0'):
             identifier = '_IDE_authorizeTestSessionWithProcessID:'
             result = ManagerdLockdown1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                 identifier,
-                DTXServerRPCRawObj(pid)).parsed
+                RawObj(pid)).selector
             logging.info("_IDE_authorizeTestSessionWithProcessID: %s", result)
         else:
             identifier = '_IDE_initiateControlSessionForTestProcessID:protocolVersion:'
             result = ManagerdLockdown1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                 identifier,
-                DTXServerRPCRawObj(pid, XCODE_VERSION)).parsed
+                RawObj(pid), RawObj(XCODE_VERSION)).selector
             logging.info("_IDE_authorizeTestSessionWithProcessID: %s", result)
 
         while not self.quit_event.wait(.1):
@@ -183,5 +184,5 @@ if __name__ == '__main__':
     bundle_id = 'cn.rongcloud.autotest.xctrunner'
     xcuitest = RunXCUITest(bundle_id)
     xcuitest.start()
-    time.sleep(20)
+    time.sleep(100)
     xcuitest.close()

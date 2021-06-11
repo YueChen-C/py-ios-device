@@ -86,7 +86,7 @@ class MuxConnection:
     def listen(self):
         ret = self.exchange(self.proto.TYPE_LISTEN)
         if ret['Number'] != 0:
-            raise MuxError('Listen failed: error %d' % ret)
+            raise MuxError(f'Listen failed: error {ret}')
 
     def process(self, timeout: Optional[float] = None):
         if self.proto.connected:

@@ -1,19 +1,12 @@
 """
 Utils
 """
-import json
 import os
-
-from ios_device.util.service_info import MyServiceInfo
 
 __all__ = ['DictAttrProperty', 'DictAttrFieldNotFoundError']
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-import socket
 import struct
-import threading
-
-from zeroconf import Zeroconf, ServiceBrowser, ServiceInfo
 
 _NotSet = object()
 
@@ -120,54 +113,3 @@ def kperf_data(messages):
         p_record += 64
     return _list
 
-
-def wait_for_wireless(name, service_name, timeout=None):  # return (addresses, port)
-    expecting_name = f"perfcat_{name}._{service_name}._tcp.local."
-    print(f"[WIRELESS] expecting {expecting_name}")
-    done = threading.Event()
-    ctx = {}
-
-    class MyListener:
-        def add_service(self, zeroconf, type, name):
-            # info = zeroconf.get_service_info(type, name)
-
-            _info = MyServiceInfo(type, name)
-            info = None
-            if _info.request(zeroconf, 5000):
-                info = _info
-            if not info:
-                if _info.request(zeroconf, 2000, True):
-                    info = _info
-            # _info = ServiceInfo(type, name, parsed_addresses=["10.3.3.230"])
-            # if _info.request(zeroconf, 1000):
-            #     info = _info
-            # print(f"[Service] `{name}` added, service info: `{info}`")
-
-            ctx['addresses'] = list(map(socket.inet_ntoa, info.addresses))
-            print(f"[Service] `{name}` found, `{ctx}`")
-            if name == expecting_name:
-                ctx['addresses'] = list(map(socket.inet_ntoa, info.addresses))
-                ctx['port'] = info.port
-                print(f"[Service] `{name}` found, `{ctx}`")
-                done.set()
-
-    zero_conf = Zeroconf()
-    # zero_conf._respond_sockets.pop(0)
-    # zero_conf1 = zero_conf._respond_sockets
-    # for index in zero_conf1:
-    #     print(index)
-    listener = MyListener()
-    browser = ServiceBrowser(zero_conf, f"_{service_name}._tcp.local.", listener)
-    if not done.wait(timeout):
-        ctx['addresses'] = []
-        ctx['port'] = 0
-    browser.cancel()
-    zero_conf.close()
-
-    return ctx['addresses'], ctx['port']
-
-
-def get_device_configs(product_type):
-    with open(os.path.join(ROOT_DIR, "ios_deviceinfo.json")) as fp:
-        device_info_map = json.load(fp)
-        return device_info_map.get(product_type) or {}

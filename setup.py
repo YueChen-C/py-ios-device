@@ -21,7 +21,7 @@ requires = [
 
 ]
 setup(name='py_ios_device',
-      version="2.0.2",
+      version="2.1.0",
       description='Get ios data and operate ios devices',
       author='chenpeijie & liyachao',
       author_email='cpjsf@163.com',
@@ -29,8 +29,8 @@ setup(name='py_ios_device',
       maintainer_email='',
       url='https://github.com/YueChen-C/py-ios-device',
       packages=find_packages(),
-      long_description="",
-      license="MIT",
+      long_description=open('README.md').read(),
+      long_description_content_type="text/markdown",
       platforms=["any"],
       install_requires=requires,  # 第三方库依赖
       entry_points={

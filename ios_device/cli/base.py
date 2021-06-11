@@ -3,15 +3,16 @@ import threading
 import uuid
 from distutils.version import LooseVersion
 
-from ios_device.servers.DTXSever import DTXServerRPCRawObj, DTXEnum
+
 from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
+from ios_device.servers.dvt import DTXEnum
 from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.testmanagerd import TestManagerdLockdown
 from ios_device.util import Log
-from ios_device.util._types import NSUUID, NSURL, XCTestConfiguration
+from ios_device.util.bpylist2 import NSUUID, NSURL, XCTestConfiguration
 from ios_device.util.bpylist2 import archive
-from ios_device.util.dtxlib import get_auxiliary_text
+from ios_device.util.dtx_msg import RawObj
 from ios_device.util.lockdown import LockdownClient
 from ios_device.util.variables import InstrumentsService, LOG
 
@@ -29,7 +30,7 @@ class InstrumentDeviceInfo:
         """ 获取当前运行应用
         :return:
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "runningProcesses").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "runningProcesses").selector
         return parsed
 
     def execnameForPid(self, pid):
@@ -37,7 +38,7 @@ class InstrumentDeviceInfo:
         :param pid:
         :return:
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "execnameForPid:", str(pid)).parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "execnameForPid:", str(pid)).selector
         return parsed
 
     def isRunningPid(self, pid):
@@ -45,65 +46,65 @@ class InstrumentDeviceInfo:
         :param pid:
         :return:
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "isRunningPid:", str(pid)).parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "isRunningPid:", str(pid)).selector
         return parsed
 
     def nameForUID(self, uid):
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "nameForUID:", str(uid)).parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "nameForUID:", str(uid)).selector
         return parsed
 
     def machTimeInfo(self):
         """ 时间校准，获取
         :return: mach time 比例
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "machTimeInfo").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "machTimeInfo").selector
         return parsed
 
     def traceCodesFile(self):
         """ ？？
         :return:
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "traceCodesFile").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "traceCodesFile").selector
         return parsed
 
     def networkInformation(self):
         """ 当前网络信息
         :return:
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "networkInformation").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "networkInformation").selector
         return parsed
 
     def systemInformation(self):
         """ 设备基本信息
         :return:
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "systemInformation").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "systemInformation").selector
         return parsed
 
     def hardwareInformation(self):
         """ 硬件数据
         :return:
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "hardwareInformation").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "hardwareInformation").selector
         return parsed
 
     def sysmonProcessAttributes(self):
         """ 获取应用性能数据所需的参数
         :return:
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "sysmonProcessAttributes").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "sysmonProcessAttributes").selector
         return parsed
 
     def sysmonSystemAttributes(self):
         """ 获取系统性能数据所需的参数
         :return:
         """
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "sysmonSystemAttributes").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "sysmonSystemAttributes").selector
         return parsed
 
     def symbolicatorSignaturesForExpiredPids(self):
         parsed = self.rpc.call(InstrumentsService.DeviceInfo,
-                               "symbolicatorSignaturesForExpiredPids").parsed
+                               "symbolicatorSignaturesForExpiredPids").selector
         return parsed
 
     def directoryListingForPath(self, path: str):
@@ -112,7 +113,7 @@ class InstrumentDeviceInfo:
         :return:
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "directoryListingForPath:",
-                               path).parsed
+                               path).selector
         return parsed
 
     def iconDescriptionFileForAppPath(self, path: str):
@@ -122,15 +123,15 @@ class InstrumentDeviceInfo:
         """
 
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "iconDescriptionFileForAppPath:",
-                               path).parsed
+                               path).selector
         return parsed
 
     def kpepDatabase(self):
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "kpepDatabase").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "kpepDatabase").selector
         return plistlib.loads(parsed)
 
     def machKernelName(self):
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "cpKDebugEventsAsXML").parsed
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "cpKDebugEventsAsXML").selector
         return parsed
 
 
@@ -199,22 +200,22 @@ class InstrumentsBase:
         pid = self.instruments.call(InstrumentsService.ProcessControl,
                                     "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments"
                                     ":options:",
-                                    app_path, bundle_id, app_env, app_args, options).parsed
+                                    app_path, bundle_id, app_env, app_args, options).selector
         return pid
 
     def kill_app(self, pid):
-        parsed = self.instruments.call(InstrumentsService.ProcessControl, "killPid:", str(pid)).parsed
+        parsed = self.instruments.call(InstrumentsService.ProcessControl, "killPid:", str(pid)).selector
         return parsed
 
     def application_listing(self, bundle_id=None):
-        """ selector
+        """ _selector
             - installedApplicationsMatching:registerUpdateToken:
             - unregisterUpdateToken:
         :return:
         """
         applist = self.instruments.call(InstrumentsService.ApplicationListing,
                                         "installedApplicationsMatching:registerUpdateToken:",
-                                        {}, "").parsed
+                                        {}, "").selector
         ret = applist
         if bundle_id:
             for app in applist:
@@ -262,8 +263,8 @@ class InstrumentsBase:
         :return:
         """
         self.instruments.register_channel_callback(InstrumentsService.GraphicsOpengl, callback)
-        log.info(self.instruments.call(InstrumentsService.GraphicsOpengl, "availableStatistics").parsed)
-        log.info(self.instruments.call(InstrumentsService.GraphicsOpengl, "driverNames").parsed)
+        log.info(self.instruments.call(InstrumentsService.GraphicsOpengl, "availableStatistics").selector)
+        log.info(self.instruments.call(InstrumentsService.GraphicsOpengl, "driverNames").selector)
         self.instruments.call(InstrumentsService.GraphicsOpengl, "setSamplingRate:",
                               float(time / 100))
         self.instruments.call(InstrumentsService.GraphicsOpengl,
@@ -279,7 +280,7 @@ class InstrumentsBase:
         self.instruments.call(channel, "startSamplingForPIDs:", {pid})
         while not stopSignal.wait(1):
             ret = self.instruments.call(channel, "sampleAttributes:forPIDs:", attr, {pid})
-            print(ret.parsed)
+            print(ret.selector)
 
     def networking(self,
                    callback: callable,
@@ -295,6 +296,7 @@ class InstrumentsBase:
         log.info(msg=f'networking replayLastRecordedSession')
         self.instruments.call(InstrumentsService.Networking, "startMonitoring")
         log.info(msg=f'networking startMonitoring networking')
+        self.instruments.register_selector_callback(DTXEnum.FINISHED, lambda _: stopSignal.set())
         while not stopSignal.wait(1):
             pass
         self.instruments.call(InstrumentsService.Networking, "stopMonitoring")
@@ -304,7 +306,7 @@ class InstrumentsBase:
                              callback: callable,
                              stopSignal: threading.Event = threading.Event()):
 
-        self.instruments.register_unhandled_callback(callback)
+        self.instruments.register_undefined_callback(callback)
         self.instruments.call(InstrumentsService.MobileNotifications,
                               'setApplicationStateNotificationsEnabled:', str(True))
         while not stopSignal.wait(1):
@@ -329,7 +331,7 @@ class InstrumentsBase:
         self.instruments.call(InstrumentsService.CoreProfileSessionTap, "stop")
 
     def screenshot(self):
-        var = self.instruments.call(InstrumentsService.Screenshot, "takeScreenshot").parsed
+        var = self.instruments.call(InstrumentsService.Screenshot, "takeScreenshot").selector
         return var
 
     def power(self,
@@ -337,25 +339,25 @@ class InstrumentsBase:
               stopSignal: threading.Event = threading.Event()):
         channel = "com.apple.instruments.server.services.power"
         self.instruments.register_channel_callback(channel, callback)
-        stream_num = self.instruments.call(channel, "openStreamForPath:", "live/level.dat").parsed
+        stream_num = self.instruments.call(channel, "openStreamForPath:", "live/level.dat").selector
         print("open", stream_num)
-        print("start", self.instruments.call(channel, "startStreamTransfer:", float(stream_num)).parsed)
+        print("start", self.instruments.call(channel, "startStreamTransfer:", float(stream_num)).selector)
         print("[!] wait a few seconds, be patient...")
         while not stopSignal.wait(1):
             pass
-        log.info(f"stop{ self.instruments.call(channel, 'endStreamTransfer:', float(stream_num)).parsed}")
+        log.info(f"stop{ self.instruments.call(channel, 'endStreamTransfer:', float(stream_num)).selector}")
 
     def xcode_energy(self, pid, stopSignal:threading.Event = threading.Event()):
         self.instruments.call(InstrumentsService.XcodeEnergy, "startSamplingForPIDs:", {pid})
         while not stopSignal.wait(1):
             ret = self.instruments.call(InstrumentsService.XcodeEnergy, "sampleAttributes:forPIDs:", {}, {pid})
-            print(ret.parsed)
+            print(ret.selector)
 
     def get_condition_inducer(self):
         """ 获取网络配置参数，用于 condition_inducer
         :return:
         """
-        ret = self.instruments.call(InstrumentsService.ConditionInducer, "availableConditionInducers").parsed
+        ret = self.instruments.call(InstrumentsService.ConditionInducer, "availableConditionInducers").selector
         return ret
 
     def set_condition_inducer(self,
@@ -369,7 +371,7 @@ class InstrumentsBase:
         """
         ret = self.instruments.call(InstrumentsService.ConditionInducer,
                                     'enableConditionWithIdentifier:profileIdentifier:',
-                                    condition_identifier, profile_identifier).parsed
+                                    condition_identifier, profile_identifier).selector
         log.info(
             f"Condition configuration enabled [{profile_identifier}] successfully, please do not stop the command...")
 
@@ -380,14 +382,14 @@ class InstrumentsBase:
     def disable_condition_inducer(self):
         """ 关闭手机状态，模拟网络，手机压力数据等
         """
-        c = self.instruments.call(InstrumentsService.ConditionInducer, 'disableActiveCondition').parsed
+        c = self.instruments.call(InstrumentsService.ConditionInducer, 'disableActiveCondition').selector
         return c
 
     def xctest(self, bundle_id, USE_PORT='', quit_event=threading.Event()):
         log = Log.getLogger(LOG.xctest.value)
 
         def _callback(res):
-            log.info(f" {res.parsed} : {get_auxiliary_text(res.raw)}")
+            log.info(f" {res.selector} : {res.auxiliary}")
 
         with InstallationProxyService(lockdown=self.lock_down) as install:
             app_info = install.find_bundle_id(bundle_id)
@@ -403,19 +405,19 @@ class InstrumentsBase:
         session_identifier = NSUUID('96508379-4d3b-4010-87d1-6483300a7b76')
         ManagerdLockdown1 = TestManagerdLockdown(self.lock_down).init()
 
-        ManagerdLockdown1._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
+        ManagerdLockdown1.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
         if self.lock_down.ios_version > LooseVersion('11.0'):
             result = ManagerdLockdown1.call(
                 "dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface",
-                "_IDE_initiateControlSessionWithProtocolVersion:", DTXServerRPCRawObj(XCODE_VERSION)).parsed
+                "_IDE_initiateControlSessionWithProtocolVersion:", RawObj(XCODE_VERSION)).selector
             log.info("result: %s", result)
-        ManagerdLockdown1.register_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
-        ManagerdLockdown1.register_unhandled_callback(_callback)
+        ManagerdLockdown1.register_selector_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
+        ManagerdLockdown1.register_undefined_callback(_callback)
 
         ManagerdLockdown2 = TestManagerdLockdown(self.lock_down).init()
-        ManagerdLockdown2._make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
-        ManagerdLockdown2.register_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
-        ManagerdLockdown2.register_unhandled_callback(_callback)
+        ManagerdLockdown2.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
+        ManagerdLockdown2.register_selector_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
+        ManagerdLockdown2.register_undefined_callback(_callback)
 
         _start_flag = threading.Event()
 
@@ -427,27 +429,27 @@ class InstrumentsBase:
             log.info("Start execute test plan with IDE version: %d",
                      XCODE_VERSION)
             ManagerdLockdown2._call(False, 0xFFFFFFFF, '_IDE_startExecutingTestPlanWithProtocolVersion:',
-                                    DTXServerRPCRawObj(XCODE_VERSION))
+                                    RawObj(XCODE_VERSION))
 
         def _show_log_message(res):
-            log.info(f"{res.parsed} : {get_auxiliary_text(res.raw)}")
+            log.info(f"{res.selector} : {res.auxiliary}")
             if 'Received test runner ready reply with error: (null' in ''.join(
-                    get_auxiliary_text(res.raw)):
+                    res.auxiliary):
                 log.info("Test runner ready detected")
                 _start_executing()
 
-        ManagerdLockdown2.register_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:', _start_executing)
-        ManagerdLockdown2.register_callback('_XCT_logDebugMessage:', _show_log_message)
-        ManagerdLockdown2.register_callback('_XCT_didFinishExecutingTestPlan', lambda _: quit_event.set())
+        ManagerdLockdown2.register_selector_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:', _start_executing)
+        ManagerdLockdown2.register_selector_callback('_XCT_logDebugMessage:', _show_log_message)
+        ManagerdLockdown2.register_selector_callback('_XCT_didFinishExecutingTestPlan', lambda _: quit_event.set())
 
         result = ManagerdLockdown2.call('dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                                         '_IDE_initiateSessionWithIdentifier:forClient:atPath:protocolVersion:',
-                                        DTXServerRPCRawObj(
+                                        RawObj(
                                             session_identifier,
                                             str(session_identifier) + '-6722-000247F15966B083',
                                             '/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild',
                                             XCODE_VERSION
-                                        )).parsed
+                                        )).selector
         log.info("result: %s", result)
         # launch_wda
         xctest_path = "/tmp/WebDriverAgentRunner-" + str(session_identifier).upper() + ".xctestconfiguration"
@@ -468,7 +470,7 @@ class InstrumentsBase:
         conn.call('com.apple.instruments.server.services.processcontrol', 'processIdentifierForBundleIdentifier:',
                   bundle_id)
 
-        conn.register_unhandled_callback(_callback)
+        conn.register_undefined_callback(_callback)
         app_path = app_info['Path']
         app_container = app_info['Container']
 
@@ -504,31 +506,31 @@ class InstrumentsBase:
         identifier = "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:"
 
         pid = conn.call('com.apple.instruments.server.services.processcontrol', identifier,
-                        app_path, bundle_id, app_env, app_args, app_options).parsed
+                        app_path, bundle_id, app_env, app_args, app_options).selector
         if not isinstance(pid, int):
             log.error(f"Launch failed: {pid}")
             raise Exception("Launch failed")
 
         log.info(f"Launch {bundle_id} pid: {pid}")
 
-        conn.call('com.apple.instruments.server.services.processcontrol', "startObservingPid:", DTXServerRPCRawObj(pid))
+        conn.call('com.apple.instruments.server.services.processcontrol', "startObservingPid:", RawObj(pid))
 
         if quit_event:
-            conn.register_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
+            conn.register_selector_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
 
         if self.lock_down.ios_version > LooseVersion('12.0'):
             identifier = '_IDE_authorizeTestSessionWithProcessID:'
             result = ManagerdLockdown1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                 identifier,
-                DTXServerRPCRawObj(pid)).parsed
+                RawObj(pid)).selector
             log.info("_IDE_authorizeTestSessionWithProcessID: %s", result)
         else:
             identifier = '_IDE_initiateControlSessionForTestProcessID:protocolVersion:'
             result = ManagerdLockdown1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                 identifier,
-                DTXServerRPCRawObj(pid, XCODE_VERSION)).parsed
+                RawObj(pid),RawObj(XCODE_VERSION)).selector
             log.info("_IDE_authorizeTestSessionWithProcessID: %s", result)
 
         while not quit_event.wait(.1):

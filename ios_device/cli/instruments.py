@@ -1,22 +1,17 @@
 # flake8: noqa: C901
 import dataclasses
-import functools
 import json
-import struct
-import sys
 import threading
-from _ctypes import Structure
 from copy import deepcopy
-from ctypes import c_byte, c_uint16, c_uint32
 from datetime import datetime
+from distutils.version import LooseVersion
 
 import click
 
 from ios_device.cli.base import InstrumentsBase
 from ios_device.cli.cli import Command, print_json
-from ios_device.servers.DTXSever import InstrumentRPCParseError
-from ios_device.util import Log
-from ios_device.util.dtxlib import get_auxiliary_text
+from ios_device.util import Log, api_util
+from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.util.kc_data import kc_data_parse
 from ios_device.util.variables import LOG
 
@@ -147,58 +142,12 @@ def cmd_network_process(udid, network, pid, name, bundle_id, format):
 @instruments.command('networking', cls=Command)
 def cmd_networking(udid, network, format):
     """ Print information about current network activity. """
-    headers = {
-        0: ['InterfaceIndex', "Name"],
-        1: ['LocalAddress', 'RemoteAddress', 'InterfaceIndex', 'Pid', 'RecvBufferSize', 'RecvBufferUsed',
-            'SerialNumber', 'Kind'],
-        2: ['RxPackets', 'RxBytes', 'TxPackets', 'TxBytes', 'RxDups', 'RxOOO', 'TxRetx', 'MinRTT', 'AvgRTT',
-            'ConnectionSerial']
-    }
-    msg_type = {
-        0: "interface-detection",
-        1: "connection-detected",
-        2: "connection-update",
-    }
 
-    def on_callback_message(res):
-        from socket import inet_ntoa, htons, inet_ntop, AF_INET6
-        class SockAddr4(Structure):
-            _fields_ = [
-                ('len', c_byte),
-                ('family', c_byte),
-                ('port', c_uint16),
-                ('addr', c_byte * 4),
-                ('zero', c_byte * 8)
-            ]
-
-            def __str__(self):
-                return f"{inet_ntoa(self.addr)}:{htons(self.port)}"
-
-        class SockAddr6(Structure):
-            _fields_ = [
-                ('len', c_byte),
-                ('family', c_byte),
-                ('port', c_uint16),
-                ('flowinfo', c_uint32),
-                ('addr', c_byte * 16),
-                ('scopeid', c_uint32)
-            ]
-
-            def __str__(self):
-                return f"[{inet_ntop(AF_INET6, self.addr)}]:{htons(self.port)}"
-
-        data = res.parsed
-        if data[0] == 1:
-            if len(data[1][0]) == 16:
-                data[1][0] = str(SockAddr4.from_buffer_copy(data[1][0]))
-                data[1][1] = str(SockAddr4.from_buffer_copy(data[1][1]))
-            elif len(data[1][0]) == 28:
-                data[1][0] = str(SockAddr6.from_buffer_copy(data[1][0]))
-                data[1][1] = str(SockAddr6.from_buffer_copy(data[1][1]))
-        print_json((msg_type[data[0]] + json.dumps(dict(zip(headers[data[0]], data[1])))))
+    def _callback(res):
+        api_util.network_caller(res, print_json)
 
     with InstrumentsBase(udid=udid, network=network) as rpc:
-        rpc.networking(on_callback_message)
+        rpc.networking(_callback)
 
 
 @instruments.command('sysmontap', cls=Command)
@@ -215,10 +164,10 @@ def cmd_sysmontap(udid, network, format, time, pid, name, bundle_id, processes, 
     """ Get performance data """
 
     def on_callback_message(res):
-        if isinstance(res.parsed, list):
-            data = deepcopy(res.parsed)
+        if isinstance(res.selector, list):
+            data = deepcopy(res.selector)
             processes_data = {}
-            for index, row in enumerate(res.parsed):
+            for index, row in enumerate(res.selector):
                 if 'Processes' in row:
                     data[index]['Processes'] = {}
                     for _pid, process in row['Processes'].items():
@@ -322,7 +271,7 @@ def cmd_graphics(udid, network, format, time):
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         def on_callback_message(res):
-            data = res.parsed
+            data = res.selector
             print_json({"currentTime": str(datetime.now()), "fps": data['CoreAnimationFramesPerSecond']}, format)
 
         rpc.graphics(on_callback_message, time)
@@ -334,7 +283,7 @@ def cmd_notifications(udid, network, format):
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         def on_callback_message(res):
-            print_json(get_auxiliary_text(res.raw), format)
+            print_json(res.auxiliaries, format)
 
         rpc.mobile_notifications(on_callback_message)
 
@@ -344,11 +293,15 @@ def cmd_notifications(udid, network, format):
 def stackshot(udid, network, format, out):
     """ Dump stackshot information. """
     with InstrumentsBase(udid=udid, network=network) as rpc:
+
+        if rpc.lock_down.ios_version < LooseVersion('12.0'):
+            log.warn('The interface requires iOS version 12+')
+            return
         stopSignal = threading.Event()
 
         def on_callback_message(res):
-            if type(res.plist) is InstrumentRPCParseError:
-                buf = res.raw.get_selector()
+            if isinstance(res.selector, InstrumentRPCParseError):
+                buf = res.selector.data
                 if buf.startswith(b'\x07X\xa2Y'):
                     stopSignal.set()
                     kc_data = kc_data_parse(buf)
@@ -357,26 +310,5 @@ def stackshot(udid, network, format, out):
                         log.info(f'Successfully dump stackshot to {out.name}')
                     else:
                         print_json(kc_data, format)
-        rpc.core_profile_session(on_callback_message, stopSignal)
 
-# @instruments.command('power', cls=Command)
-# def cmd_power(udid, network, format):
-#     """Get mobile power
-#     """
-#     headers = ['startingTime', 'duration', 'level']  # DTPower
-#     ctx = {
-#         'remained': b''
-#     }
-#     def on_callback_message(res):
-#         print(res.parsed)
-#         ctx['remained'] += res.parsed['data']
-#         cur = 0
-#         while cur + 3 * 8 <= len(ctx['remained']):
-#             print("[level.dat]", dict(zip(headers, struct.unpack('>ddd', ctx['remained'][cur: cur + 3 * 8]))))
-#             cur += 3 * 8
-#             pass
-#         ctx['remained'] = ctx['remained'][cur:]
-#
-#     with InstrumentsBase(udid=udid, network=network) as rpc:
-#
-#         rpc.power(on_callback_message)
+        rpc.core_profile_session(on_callback_message, stopSignal)

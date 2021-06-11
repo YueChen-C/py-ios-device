@@ -54,7 +54,7 @@ def networking(rpc):
             def __str__(self):
                 return f"[{inet_ntop(AF_INET6, self.addr)}]:{htons(self.port)}"
 
-        data = res.parsed
+        data = res.selector
         if data[0] == 1:
             if len(data[1][0]) == 16:
                 data[1][0] = str(SockAddr4.from_buffer_copy(data[1][0]))
@@ -64,14 +64,14 @@ def networking(rpc):
                 data[1][1] = str(SockAddr6.from_buffer_copy(data[1][1]))
 
         print(msg_type[data[0]] + json.dumps(dict(zip(headers[data[0]], data[1]))))
-        # print("[data]", res.parsed)
+        # print("[data]", res.selector)
     rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
-    var = rpc.call("com.apple.instruments.server.services.networking", "replayLastRecordedSession").parsed
+    var = rpc.call("com.apple.instruments.server.services.networking", "replayLastRecordedSession").selector
     log.debug(f"replay {var}")
-    var = rpc.call("com.apple.instruments.server.services.networking", "startMonitoring").parsed
+    var = rpc.call("com.apple.instruments.server.services.networking", "startMonitoring").selector
     log.debug(f"start {var}")
     time.sleep(10)
-    var = rpc.call("com.apple.instruments.server.services.networking", "stopMonitoring").parsed
+    var = rpc.call("com.apple.instruments.server.services.networking", "stopMonitoring").selector
     log.debug(f"stopMonitoring {var}")
     rpc.stop()
 

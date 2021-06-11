@@ -5,15 +5,14 @@
 
 from time import sleep
 
-from ios_device.servers.DTXSever import DTXServerRPC
+from ios_device.servers.dvt import DTXServer
 from ios_device.servers.Instrument import InstrumentServer
-from ios_device.util.dtxlib import get_auxiliary_text
 
 
-def MobileNotifications(rpc: DTXServerRPC):
+def MobileNotifications(rpc: DTXServer):
     def dropped_message(res):
-        print("[DROP]", res.parsed, get_auxiliary_text(res.raw))
-    rpc.register_unhandled_callback(dropped_message)
+        print("[DROP]", res.selector, res.auxiliaries)
+    rpc.register_undefined_callback(dropped_message)
 
     rpc.call(
         "com.apple.instruments.server.services.mobilenotifications",
@@ -22,7 +21,7 @@ def MobileNotifications(rpc: DTXServerRPC):
     rpc.call(
         "com.apple.instruments.server.services.mobilenotifications",
         'setApplicationStateNotificationsEnabled:', str(False))
-    print("aaaaa")
+    # print("aaaaa")
     sleep(10)
     rpc.stop()
 

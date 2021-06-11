@@ -3,16 +3,16 @@
 """
 import json
 
-from ios_device.servers.DTXSever import DTXServerRPC
+from ios_device.servers.dvt import DTXServer
 from ios_device.servers.Instrument import InstrumentServer
 
 
-def applictionListing(rpc: DTXServerRPC):
+def applictionListing(rpc: DTXServer):
     ret = rpc.call(
         "com.apple.instruments.server.services.device.applictionListing",
         "installedApplicationsMatching:registerUpdateToken:",
         {}, "")
-    print(json.dumps(ret.parsed, indent=4))
+    print(json.dumps(ret.selector, indent=4))
     rpc.stop()
 
 

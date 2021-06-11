@@ -16,7 +16,6 @@ from ios_device.servers.syslog import SyslogServer
 from ios_device.util import Log
 from ios_device.util.lockdown import LockdownClient
 from ios_device.util.usbmux import USBMux
-from ios_device.util.utils import get_device_configs
 from ios_device.util.variables import LOG
 
 log = Log.getLogger(LOG.Mobile.value)
@@ -88,8 +87,6 @@ def cmd_devices(udid, network, format):
 def cmd_deviceinfo(udid, network, format):
     """ open an AFC shell for given bundle_id, assuming its profile is installed """
     device_info = LockdownClient(udid=udid, network=network).get_value()
-    product_type = device_info['ProductType']
-    device_info.update(get_device_configs(product_type))
     print_json(device_info,format=format)
 
 

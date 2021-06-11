@@ -1,3 +1,4 @@
+import copy
 import sys
 from typing import Mapping, Dict
 import uuid

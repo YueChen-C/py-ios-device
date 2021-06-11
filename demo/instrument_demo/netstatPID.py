@@ -9,9 +9,9 @@ def netstat(rpc, pid):
     rpc._start()
     channel = "com.apple.xcode.debug-gauge-data-providers.NetworkStatistics"
     attr = {}
-    print("start", rpc.call(channel, "startSamplingForPIDs:", {pid}).parsed)
+    print("start", rpc.call(channel, "startSamplingForPIDs:", {pid}).selector)
     ret = rpc.call(channel, "sampleAttributes:forPIDs:", attr, {pid})
-    print(ret.parsed)
+    print(ret.selector)
     rpc.stop()
 
 

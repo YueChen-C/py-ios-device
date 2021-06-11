@@ -220,15 +220,9 @@ $ pyidevice battery
 ```
 
 
-
-
-
-
 QQ 交流群：37042417
 
 
 使用文档: [查看文档](./doc/使用文档.md)
 使用demo: [查看demo](./test/test.py)
 
-## LICENSE
-[MIT](LICENSE)

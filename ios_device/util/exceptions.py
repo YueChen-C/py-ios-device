@@ -58,6 +58,7 @@ class NoMuxDeviceFound(MuxError):
 
 class iOSError(PyPodException, OSError):
     """Generic exception for AFC errors or errors that would normally be raised by the OS"""
+
     def __init__(self, errno=None, afc_errno=AFC_E_UNKNOWN_ERROR, *args, **kwargs):
         errno = AFC_TO_OS_ERROR_CODES.get(afc_errno) if errno is None else errno
         # noinspection PyArgumentList
@@ -77,3 +78,8 @@ class iFileNotFoundError(PyPodException, FileNotFoundError):
 
 class iDeviceFileClosed(iOSError):
     pass
+
+
+class InstrumentRPCParseError:
+    def __init__(self, data=None):
+        self.data = data

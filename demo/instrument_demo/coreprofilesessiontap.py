@@ -7,8 +7,8 @@ from datetime import datetime
 from numpy import mean
 from numpy.core import long
 
-from ios_device.servers.DTXSever import InstrumentRPCParseError
 from ios_device.servers.Instrument import InstrumentServer
+from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.util.utils import kperf_data
 
 sys.path.append(os.getcwd())
@@ -19,7 +19,7 @@ MOVIE_FRAME_COST = 1 / 24
 
 def graphics_display(rpc):
     def dropped_message(res):
-        print("[DROP]", res.parsed, res.raw.channel_code)
+        print("[DROP]", res.selector, res.raw.channel_code)
 
     last_frame = None
     last_1_frame_cost, last_2_frame_cost, last_3_frame_cost = 0, 0, 0
@@ -36,8 +36,8 @@ def graphics_display(rpc):
     def on_graphics_message(res):
         nonlocal frame_count, last_frame, last_1_frame_cost, last_2_frame_cost, last_3_frame_cost, time_count, mach_time_factor, last_time, \
             jank_count, big_jank_count, jank_time_count, _list, count_time
-        if type(res.plist) is InstrumentRPCParseError:
-            for args in kperf_data(res.raw.get_selector()):
+        if type(res.selector) is InstrumentRPCParseError:
+            for args in kperf_data(res.selector.data):
                 _time, code = args[0], args[7]
                 if code == 830472984:
                     if not last_frame:
@@ -73,10 +73,10 @@ def graphics_display(rpc):
                 # else:
                 #     last_time = datetime.now().timestamp()
 
-    rpc.register_unhandled_callback(dropped_message)
+    rpc.register_undefined_callback(dropped_message)
     rpc.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap", on_graphics_message)
     # 获取mach time比例
-    machTimeInfo = rpc.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").parsed
+    machTimeInfo = rpc.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").selector
     mach_time_factor = machTimeInfo[1] / machTimeInfo[2]
 
     print("set", rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "setConfig:",
@@ -84,15 +84,11 @@ def graphics_display(rpc):
                            'tc': [{'kdf2': {630784000, 833617920, 830472456},
                                    'tk': 3,
                                    'uuid': str(uuid.uuid4()).upper()}],
-                           'ur': 500}).parsed)
+                           'ur': 500}).selector)
     print("start",
-          rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "start").parsed)
-    try:
-        while 1:
-            time.sleep(10)
-    except:
-        pass
-    print("stop", rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop").parsed)
+          rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "start").selector)
+    time.sleep(10)
+    print("stop", rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop").selector)
     rpc.stop()
 
 

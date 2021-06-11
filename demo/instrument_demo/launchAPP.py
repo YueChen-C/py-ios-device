@@ -4,24 +4,21 @@
 import os
 import sys
 
-from ios_device.servers.Instrument import InstrumentServer
-from ios_device.util.dtxlib import auxiliary_to_pyobject
-
 sys.path.append(os.getcwd())
+
+from ios_device.servers.Instrument import InstrumentServer
 
 
 def _launch_app(rpc, bundleid):
     rpc._start()
 
     def on_channel_message(res):
-        if res.raw._auxiliaries:
-            for buf in res.raw._auxiliaries:
-                print(auxiliary_to_pyobject(buf))
+        print(res.auxiliaries, res.selector)
 
     channel = "com.apple.instruments.server.services.processcontrol"
     rpc.register_channel_callback(channel, on_channel_message)
     pid = rpc.call(channel, "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:", "",
-                   bundleid, {}, [], {"StartSuspendedKey": 0, "KillExisting": 1}).parsed
+                   bundleid, {}, [], {"StartSuspendedKey": 0, "KillExisting": 1}).selector
     print("start", pid)
 
 

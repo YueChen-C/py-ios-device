@@ -13,6 +13,7 @@ class LOG(str, enum.Enum):
     xctest = "xctest"
     USBMux = 'USBMux'
     Mobile = 'Mobile'
+    DTXMsg = 'DTXMsg'
 
 
 class LockdownService(str, enum.Enum):
@@ -30,7 +31,7 @@ class LockdownService(str, enum.Enum):
 
 class InstrumentsService(str, enum.Enum):
     DeviceInfo = 'com.apple.instruments.server.services.deviceinfo'  # 获取设备信息
-    # selector
+    # _selector
     # - machTimeInfo
     # - runningProcesses
     # - nameForGID:
@@ -53,7 +54,7 @@ class InstrumentsService(str, enum.Enum):
     # - networkInformation
     # - nameForUID:
     ProcessControl = "com.apple.instruments.server.services.processcontrol"  # 控制应用进程
-    # selector
+    # _selector
     # - stopObservingPid:
     # - launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:
     # - sendSignal:toPid:
@@ -63,7 +64,7 @@ class InstrumentsService(str, enum.Enum):
     # - killPid:
     # - sendProcessControlEvent:toPid:
     Sysmontap = "com.apple.instruments.server.services.sysmontap"  # 获取应用性能数据
-    # selector
+    # _selector
     # - setConfig: {'ur,'bm','procAttrs','sysAttrs','cpuUsage','sampleInterval'}
     # - fetchDataNow
     # - pause
@@ -71,17 +72,17 @@ class InstrumentsService(str, enum.Enum):
     # - start
     # - unpause
     Networking = 'com.apple.instruments.server.services.networking'  # 全局网络数据
-    # selector
+    # _selector
     # - replayLastRecordedSession
     # - stopMonitoring
     # - setTargetPID:
     # - startMonitoring
     MobileNotifications = 'com.apple.instruments.server.services.mobilenotifications'  # 监控应用状态
-    # selector
+    # _selector
     # - setApplicationStateNotificationsEnabled:
     # - setMemoryNotificationsEnabled:
     GraphicsOpengl = "com.apple.instruments.server.services.graphics.opengl"  # 获取 FPS
-    # selector
+    # _selector
     # - startSamplingAtTimeInterval:processIdentifier:
     # - startSamplingAtTimeInterval:
     # - availableStatistics
@@ -92,12 +93,12 @@ class InstrumentsService(str, enum.Enum):
     # - stopSampling
     # - cleanup
     ApplicationListing = "com.apple.instruments.server.services.device.applictionListing"  # 获取应用数据
-    # selector
+    # _selector
     # - installedApplicationsMatching: registerUpdateToken:
     # - unregisterUpdateToken:
     XcodeNetworkStatistics = 'com.apple.xcode.debug-gauge-data-providers.NetworkStatistics'  # 获取单进程网络数据
     CoreProfileSessionTap = "com.apple.instruments.server.services.coreprofilesessiontap"  # 获取内核数据
-    # selector
+    # _selector
     # - fetchDataNow
     # - pause
     # - stop
@@ -105,7 +106,7 @@ class InstrumentsService(str, enum.Enum):
     # - unpause
     # - setConfig:
     Screenshot = 'com.apple.instruments.server.services.screenshot'  # 获取画面
-    # selector
+    # _selector
     # - takeScreenshot
     ConditionInducer = "com.apple.instruments.server.services.ConditionInducer"  # 控制手机，比如网络，手机状态
     # - availableConditionInducers
