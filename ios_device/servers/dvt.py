@@ -18,7 +18,7 @@ class DTXEnum(str, enum.Enum):
 
 class DTXClient:
 
-    def recv(self, client, length, timeout=-1) -> bytes:
+    def recv(self, client, length) -> bytes:
         buf = bytearray()
         while len(buf) < length:
             chunk = client.recv(length - len(buf))
@@ -33,7 +33,7 @@ class DTXClient:
         log.debug(f'发送 DTX: {buffer}')
         return client.send(buffer)
 
-    def recv_dtx(self, client, timeout=-1):
+    def recv_dtx(self, client):
         """
         :param client:
         :param timeout:  (s)
@@ -42,7 +42,7 @@ class DTXClient:
         payload = bytearray()
         header_data = None
         while True:
-            header_buffer = self.recv(client, dtx_message_header.sizeof(), timeout=timeout)
+            header_buffer = self.recv(client, dtx_message_header.sizeof())
             if not header_buffer:
                 return None
             header = dtx_message_header.parse(header_buffer)
@@ -50,7 +50,7 @@ class DTXClient:
                 header_data = header_buffer
                 if header.fragment_count > 1:
                     continue
-            body_buffer = self.recv(client, header.payload_length, timeout=timeout)
+            body_buffer = self.recv(client, header.payload_length,)
             if not body_buffer:
                 break
             payload.extend(body_buffer)
@@ -211,7 +211,7 @@ class DTXServer:
     def _receiver(self):
         try:
             while self._running:
-                dtx = self._client.recv_dtx(self._cli, 1000)
+                dtx = self._client.recv_dtx(self._cli)
                 if '_channelCanceled:' in str(dtx.selector):
                     self._cli.close()
                 if dtx.conversation_index == 1:

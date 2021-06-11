@@ -1,6 +1,7 @@
 ## run xcuitest
 ## https://github.com/alibaba/taobao-iphone-device/blob/main/tidevice/_device.py#L921
 import logging
+import os
 import threading
 import time
 from distutils.version import LooseVersion
@@ -42,7 +43,7 @@ class RunXCUITest(threading.Thread):
         sign_identity = app_info.get("SignerIdentity", "")
         logging.info("SignIdentity: %r", sign_identity)
         XCODE_VERSION = 29
-        session_identifier = NSUUID('96508379-4d3b-4010-87d1-6483300a7b76')
+        session_identifier = NSUUID(bytes=os.urandom(16), version=4)
         ManagerdLockdown1 = TestManagerdLockdown(self.lockdown).init()
 
         ManagerdLockdown1.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")

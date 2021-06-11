@@ -1,3 +1,4 @@
+import os
 import plistlib
 import threading
 import uuid
@@ -402,7 +403,7 @@ class InstrumentsBase:
         sign_identity = app_info.get("SignerIdentity", "")
         log.info("SignIdentity: %r", sign_identity)
         XCODE_VERSION = 29
-        session_identifier = NSUUID('96508379-4d3b-4010-87d1-6483300a7b76')
+        session_identifier = NSUUID(bytes=os.urandom(16), version=4)
         ManagerdLockdown1 = TestManagerdLockdown(self.lock_down).init()
 
         ManagerdLockdown1.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
