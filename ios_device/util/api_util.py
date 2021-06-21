@@ -3,6 +3,7 @@
 @Author  : liyachao
 """
 import logging
+import os
 import struct
 import threading
 from distutils.version import LooseVersion
@@ -148,7 +149,7 @@ class RunXCUITest(threading.Thread):
         sign_identity = app_info.get("SignerIdentity", "")
         logging.debug("SignIdentity: %r", sign_identity)
         xcode_version = 29
-        session_identifier = NSUUID('96508379-4d3b-4010-87d1-6483300a7b76')
+        session_identifier = NSUUID(bytes=os.urandom(16), version=4)
         manager_lock_down_1 = TestManagerdLockdown(lock_down).init()
 
         manager_lock_down_1.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")

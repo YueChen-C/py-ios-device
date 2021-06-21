@@ -5,7 +5,7 @@ import typing
 
 class MobileImageMounter(object):
 
-    SERVICE_NAME = 'com.apple.mobile.installation_proxy'
+    SERVICE_NAME = 'com.apple.mobile.mobile_image_mounter'
 
     def __init__(self, lockdown=None, udid=None, logger=None):
         from ..util.lockdown import LockdownClient

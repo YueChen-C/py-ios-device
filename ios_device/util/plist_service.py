@@ -2,7 +2,7 @@
 Plist Service - handles parsing and formatting plist content
 """
 from .exceptions import MuxError
-from ..util import logging
+from ..util import  Log
 import plistlib
 import re
 import ssl
@@ -13,7 +13,7 @@ from typing import Optional, Dict, Any
 from .usbmux import USBMux, MuxDevice
 
 __all__ = ['PlistService']
-log = logging.getLogger(__name__)
+log = Log.getLogger(__name__)
 HARDWARE_PLATFORM_SUB = re.compile(r'[^\w<>/ \-_0-9\"\'\\=.?!+]+').sub
 
 
@@ -94,8 +94,8 @@ class PlistService:
     def send_plist(self, data):
         log.debug(f'发送 Plist: {data}')
         payload = plistlib.dumps(data)
-        log.debug(f'发送 Plist byte: {payload}')
         payload_len = struct.pack('>L', len(payload))
+        log.debug(f'发送 Plist byte: {payload_len+payload}')
         return self.sock.send(payload_len + payload)
 
     def plist_request(self, request):

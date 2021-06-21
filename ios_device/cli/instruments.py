@@ -240,7 +240,7 @@ def cmd_get_condition_inducer(udid, network, format):
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         ret = rpc.get_condition_inducer()
-        print_json(ret)
+        print_json(ret,format)
 
 
 @condition.command('set', cls=Command)
@@ -291,7 +291,7 @@ def cmd_notifications(udid, network, format):
 @instruments.command('stackshot', cls=Command)
 @click.option('--out', type=click.File('w'), default=None)
 def stackshot(udid, network, format, out):
-    """ Dump stackshot information. """
+    """ Dump stack snapshot information. """
     with InstrumentsBase(udid=udid, network=network) as rpc:
 
         if rpc.lock_down.ios_version < LooseVersion('12.0'):
