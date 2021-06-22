@@ -1,10 +1,14 @@
 # py-ios-device
+[![PyPI](https://img.shields.io/pypi/v/py-ios-device)](https://pypi.org/project/py-ios-device/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/py-ios-device)](https://pypistats.org/search/py-ios-device)
 
 A python based Apple instruments protocol，you can get CPU, Memory and other metrics from real iOS devices
 
 
 
-相关文章链接:https://testerhome.com/topics/27159
+link:https://testerhome.com/topics/27159
+
+[中文文档](README_EN.md)
 
 ## pip :
     pip install py-ios-device
@@ -154,7 +158,6 @@ $ pyidevice profiles remove --name fe7371d9ce36c541ac8dee5f51f3b490b2aa98dcd9569
 $ pyidevice syslog
 # --path
 # --filter
-# 获取 日志流
 ```
 
 
@@ -162,17 +165,13 @@ $ pyidevice syslog
 
 ```bash
 $ pyidevice crash list
-# 获取 crash日志列表
 ['.', '..', 'com.apple.appstored', 'JetsamEvent-2021-05-12-112126.ips']
 
 $ pyidevice crash export --name JetsamEvent-2021-05-12-112126.ips
-# 导出 crash 日志
 
 $ pyidevice crash delete --name JetsamEvent-2021-05-12-112126.ips
-# 删除 crash 日志
 
 $ pyidevice crash shell
-# 进入命令行操作模式
 
 ```
 
@@ -197,13 +196,12 @@ $ pyidevice apps shell
 #### packet traffic
 ```bash
 $ pyidevice pcapd ./test/test.pacp
-# 抓包保存数据
 
 $ pyidevice pcapd - | "/Applications/Wireshark.app/Contents/MacOS/Wireshark" -k -i -
-# mac 转发至 Wireshark
+# mac forword Wireshark
 
 $ pyidevice pcapd - | "D:\Program Files\Wireshark\Wireshark.exe" -k -i -
-# win 转发至 Wireshark
+# win forword Wireshark
 
 ```
 

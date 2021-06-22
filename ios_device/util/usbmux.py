@@ -185,7 +185,9 @@ class UsbmuxdClient(MuxConnection):
         _, recvtag, data = self.proto.getpacket()
         if recvtag != tag:
             raise MuxError('Reply tag mismatch: expected %d, got %d' % (tag, recvtag))
-        pair_record = data['PairRecordData']
+        pair_record = data.get('PairRecordData')
+        if not pair_record:
+            return None
         pair_record = plistlib.loads(pair_record)
         return pair_record
 

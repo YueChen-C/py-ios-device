@@ -1,4 +1,6 @@
 # py-ios-device
+[![PyPI](https://img.shields.io/pypi/v/py-ios-device)](https://pypi.org/project/py-ios-device/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/py-ios-device)](https://pypistats.org/search/py-ios-device)
 
 A python based Apple instruments protocol，you can get CPU, Memory and other metrics from real iOS devices
 
