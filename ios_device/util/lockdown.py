@@ -62,8 +62,10 @@ class LockdownClient:
         self.svc = PlistService(62078, udid, device, network=network)
         self._verify_query_type()
         self.device_info = self.get_value()
-        self.device_info['UniqueDeviceID'] = udid or self.svc.device.serial
+        self.device_info['UniqueDeviceID'] = self.svc.device.serial
+        self.device_info['DeviceID'] = self.svc.device.device_id
         self.paired = self._pair()
+        log.info(f"Connecting Device {self.svc.device.serial} ")
 
     def _verify_query_type(self):
         query_type = self.svc.plist_request({'Request': 'QueryType'}).get('Type')
@@ -99,15 +101,10 @@ class LockdownClient:
         except Exception as E:
             log.debug(f'{E}')
             log.debug(f'No iTunes pairing record found for device {self.identifier}')
-            if self.ios_version > LooseVersion('13.0'):
-                log.debug('Getting pair record from usbmuxd')
-                with UsbmuxdClient() as usb:
-                    return usb.get_pair_record(self.udid)
-            elif read_home_file(self.cache_dir, f'{self.identifier}.plist'):
-                log.debug(f'Found pymobiledevice pairing record for device {self.udid}')
-                return plistlib.loads(read_home_file(self.cache_dir, f'{self.identifier}.plist'))
-            log.debug(f'No pymobiledevice pairing record found for device {self.identifier}')
-            return None
+            log.debug('Getting pair record from usbmuxd')
+            with UsbmuxdClient() as usb:
+                return usb.get_pair_record(self.udid)
+        return None
 
     def _validate_pairing(self):
         pair_record = self._get_pair_record()
@@ -136,7 +133,7 @@ class LockdownClient:
         if resp.get('EnableSessionSSL'):
             self.sslfile = write_home_file(
                 self.cache_dir,
-                f'{self.identifier}_ssl.txt',
+                f'{self.identifier}_ssl.pem',
                 pair_record['HostCertificate'] + b'\n' + pair_record['HostPrivateKey']
             )
             self.svc.ssl_start(self.sslfile, self.sslfile)
@@ -258,7 +255,8 @@ class LockdownClient:
         start_service will call imagemounter, so here should call
         _unsafe_start_service instead
         """
-        return MobileImageMounter(self)
+        service = self._start_service("com.apple.mobile.mobile_image_mounter")
+        return MobileImageMounter(service=service)
 
     def _urlretrieve(self, url, local_filename):
         """ download url to local """

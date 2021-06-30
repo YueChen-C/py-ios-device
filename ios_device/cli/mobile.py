@@ -164,7 +164,7 @@ def uninstall(udid, network, format, bundle_id):
 
 
 @apps.command('install', cls=Command)
-@click.option('--ipa_path', type=click.Path(exists=True))
+@click.argument('ipa_path', required=True,type=click.Path(exists=True))
 def install(udid, network, format, ipa_path):
     """ install given .ipa """
     print_json(InstallationProxyService(udid=udid, network=network, logger=log).install(ipa_path))

@@ -84,13 +84,14 @@ class InstallationProxyService(object):
 
     def install_or_upgrade(self, ipaPath, cmd="Install", options={}, handler=None, *args):
         afc = AFCClient(self.lockdown)
+        self.logger.info(f"push  path {ipaPath}")
         afc.set_file_contents("/" + os.path.basename(ipaPath), open(ipaPath, "rb").read())
         cmd = {"Command": cmd,
                "ClientOptions": options,
                "PackagePath": os.path.basename(ipaPath)}
 
         self.service.send_plist(cmd)
-        self.watch_completion(handler, args)
+        return self.watch_completion(handler, args)
 
     def install(self, ipaPath, options={}, handler=None, *args):
         return self.install_or_upgrade(ipaPath, "Install", options, handler, args)

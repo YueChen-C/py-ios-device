@@ -310,6 +310,7 @@ class InstrumentsBase:
         self.instruments.register_undefined_callback(callback)
         self.instruments.call(InstrumentsService.MobileNotifications,
                               'setApplicationStateNotificationsEnabled:', str(True))
+        log.info(msg='Waiting for action app')
         while not stopSignal.wait(1):
             pass
         self.instruments.call(InstrumentsService.MobileNotifications,

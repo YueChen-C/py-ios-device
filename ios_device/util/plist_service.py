@@ -80,11 +80,7 @@ class PlistService:
 
         if not payload:
             return None
-        if payload.startswith(b'bplist00'):
-            data = plistlib.loads(payload)
-            log.debug(f'接收 Plist data: {data}')
-            return data
-        elif payload.startswith(b'<?xml'):
+        if payload.startswith(b'bplist00') or payload.startswith(b'<?xml'):
             data = plistlib.loads(payload)
             log.debug(f'接收 Plist data: {data}')
             return data
