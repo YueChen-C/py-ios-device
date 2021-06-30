@@ -2,14 +2,13 @@ import base64
 
 from datetime import datetime, timedelta
 
-from OpenSSL.crypto import X509, TYPE_RSA, X509Req, PKey, FILETYPE_PEM as PEM
+from OpenSSL.crypto import X509, TYPE_RSA, X509Req, PKey, FILETYPE_PEM as PEM, X509Name, X509Extension
 from OpenSSL.crypto import load_publickey, dump_privatekey, dump_certificate
 from pyasn1.type import univ
 from pyasn1.codec.der import encoder as der_encoder, decoder as der_decoder
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-
 
 __all__ = ['make_certs_and_key']
 
@@ -64,7 +63,10 @@ def make_cert(req: X509Req, ca_pkey: PKey) -> X509:
     cert.set_pubkey(req.get_pubkey())
     cert.set_notBefore(x509_time(minutes=-1))
     cert.set_notAfter(x509_time(days=30))
-    # noinspection PyTypeChecker
+    ca_subj = cert.get_subject()
+    ca_subj.CN = 'The YueChen'
+    ca_subj.O = 'The Organization Otherwise Known as YueChen CA, Inc.'
+    cert.set_issuer(ca_subj)
     cert.sign(ca_pkey, 'sha1')
     return cert
 
