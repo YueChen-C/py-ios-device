@@ -10,6 +10,10 @@ win，mac 跨平台方案，通过 Instruments 私有协议获取 iOS 相关性�
 
 [English](README_EN.md)
 
+
+[Java 版本](https://github.com/YueChen-C/java-ios-device)
+
+
 ## pip 仓库:
     pip install py-ios-device
     
