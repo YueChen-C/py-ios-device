@@ -18,7 +18,11 @@ class DTXEnum(str, enum.Enum):
 
 class DTXClient:
 
+    def __init__(self):
+        self._dtx_manager = {}
+
     def recv(self, client, length) -> bytes:
+
         buf = bytearray()
         while len(buf) < length:
             chunk = client.recv(length - len(buf))
@@ -40,23 +44,32 @@ class DTXClient:
         :return:
         """
         payload = bytearray()
-        header_data = None
         while True:
+
             header_buffer = self.recv(client, dtx_message_header.sizeof())
             if not header_buffer:
                 return None
             header = dtx_message_header.parse(header_buffer)
+
             if header.fragment_id == 0:
-                header_data = header_buffer
+                if header.channel not in self._dtx_manager:
+                    self._dtx_manager[header.channel] = (header_buffer, payload)
+
                 if header.fragment_count > 1:
                     continue
-            body_buffer = self.recv(client, header.payload_length,)
+
+            body_buffer = self.recv(client, header.payload_length)
             if not body_buffer:
                 break
-            payload.extend(body_buffer)
+            self._dtx_manager.get(header.channel)[1].extend(body_buffer)
+
             if header.fragment_id == header.fragment_count - 1:
                 break
-        return DTXMessage.decode(header_data, payload)
+
+        data = self._dtx_manager.get(header.channel)
+
+        self._dtx_manager.pop(header.channel)
+        return DTXMessage.decode(data[0], data[1])
 
 
 class DTXServer:
@@ -83,6 +96,7 @@ class DTXServer:
         def _notifyOfPublishedCapabilities(res):
             self.done.set()
             self._published_capabilities = res.auxiliaries
+
         self.register_selector_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
 
     def init(self, _cli=None):
@@ -121,7 +135,7 @@ class DTXServer:
             self._cli.close()
             self._cli = None
 
-    def _run_callbacks(self, event_name,data):
+    def _run_callbacks(self, event_name, data):
         """
         Returns:
             if called
@@ -232,5 +246,5 @@ class DTXServer:
         except Exception as E:
             log.exception(E)
         finally:
-            self._run_callbacks(DTXEnum.FINISHED,None)
+            self._run_callbacks(DTXEnum.FINISHED, None)
             self.stop()

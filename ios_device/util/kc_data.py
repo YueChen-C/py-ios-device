@@ -242,8 +242,11 @@ class KCSubTypeElement(object):
 
     def GetValueAsString(self, base_data, array_pos=0):
         data = self.GetValue(base_data, array_pos)
-        if isinstance(data, bytes):
-            return data.decode()
+        try:
+            if isinstance(data, bytes):
+                return data.decode()
+        except:
+            pass
         return str(data)
 
     def GetValue(self, base_data, array_pos=0):
@@ -282,9 +285,7 @@ class KCSubTypeElement(object):
         count = self.count
         if count > len(base_data) / self.size:
             count = len(base_data) / self.size
-
         o = '[' + ','.join([self.GetValueAsString(base_data, i) for i in range(count)]) + ']'
-
         return o
 
     def GetJsonRepr(self, base_data, flags=0):
@@ -481,6 +482,8 @@ class KCObject(object):
         if self.i_type in KNOWN_TYPES_COLLECTION:
             return KNOWN_TYPES_COLLECTION[self.i_type].GetJsonRepr(self.i_data, self.i_flags)
         if self.is_naked_type:
+            if isinstance(self.obj,map):
+                self.obj = list(self.obj)
             return json.dumps(self.obj)
         if self.nested_kcdata:
             return self.nested_kcdata.GetJsonRepr()
