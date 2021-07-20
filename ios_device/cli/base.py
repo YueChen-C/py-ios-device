@@ -217,12 +217,12 @@ class InstrumentsBase:
         applist = self.instruments.call(InstrumentsService.ApplicationListing,
                                         "installedApplicationsMatching:registerUpdateToken:",
                                         {}, "").selector
-        ret = applist
+        # ret = applist
         if bundle_id:
             for app in applist:
                 if app.get('CFBundleIdentifier') == bundle_id:
-                    ret = app
-        return ret
+                    return app
+        # return ret
 
     def sysmontap(self,
                   callback: callable,

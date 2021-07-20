@@ -1,6 +1,8 @@
 """
 Utils
 """
+import dataclasses
+import math
 import os
 
 __all__ = ['DictAttrProperty', 'DictAttrFieldNotFoundError']
@@ -113,3 +115,100 @@ def kperf_data(messages):
         p_record += 64
     return _list
 
+
+def convertBytes(_bytes):
+    lst = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB']
+    i = int(math.floor(  # 舍弃小数点，取小
+        math.log(_bytes, 1024)  # 求对数(对数：若 a**b = N 则 b 叫做以 a 为底 N 的对数)
+    ))
+
+    if i >= len(lst):
+        i = len(lst) - 1
+    return ('%.2f' + " " + lst[i]) % (_bytes / math.pow(1024, i))
+
+
+class DumpDisk:
+
+    def __init__(self):
+        self.last_diskBytesRead = 1e100
+        self.last_diskBytesWritten = 1e100
+        self.last_diskReadOps = 0
+        self.last_diskWriteOps = 0
+        self.filter = ["Data Read", "Data Read/sec", "Data Written", "Data Written/sec", "Reads in", "Reads in/sec",
+                       "Writes Out", "Writes Out/sec"]
+
+    def decode(self, System):
+        diskBytesRead = System.get('diskBytesRead')
+        diskBytesRead_str = f"{convertBytes(diskBytesRead)}"
+        diskBytesRead_qps = f"{convertBytes(diskBytesRead - self.last_diskBytesRead)}" if diskBytesRead - self.last_diskBytesRead > 0 else 0
+        self.last_diskBytesRead = diskBytesRead
+
+        diskBytesWritten = System.get('diskBytesWritten')
+
+        diskBytesWritten_str = f"{convertBytes(diskBytesWritten)}"
+        diskBytesWritten_qps = f"{convertBytes(diskBytesWritten - self.last_diskBytesWritten)}" if diskBytesWritten - self.last_diskBytesWritten > 0 else 0
+        self.last_diskBytesWritten = diskBytesWritten
+
+        diskReadOps = System.get('diskReadOps')
+        diskReadOps_sec = diskReadOps - self.last_diskReadOps if diskReadOps - self.last_diskReadOps > 0 else 0
+        self.last_diskReadOps = diskReadOps
+        diskWriteOps = System.get('diskWriteOps')
+
+        diskWriteOps_sec = diskWriteOps - self.last_diskWriteOps if diskWriteOps - self.last_diskWriteOps > 0 else 0
+        self.last_diskWriteOps = diskWriteOps
+        disk = [diskBytesRead_str, diskBytesRead_qps, diskBytesWritten_str, diskBytesWritten_qps, diskReadOps,
+                diskReadOps_sec, diskWriteOps, diskWriteOps_sec]
+        return dict(zip(self.filter, disk))
+
+
+class DumpNetwork:
+
+    def __init__(self):
+        self.last_netBytesIn = 0
+        self.last_netBytesOut = 0
+        self.last_netPacketsIn = 0
+        self.last_netPacketsOut = 0
+        self.filter = ["Data Received", "Data Received/sec", "Data Sent", "Data Sent/sec", "Packets in",
+                       "Packets in/sec",
+                       "Packets Out", "Packets Out/sec"]
+
+    def decode(self, System):
+        netBytesIn = System.get('netBytesIn')
+        netBytesIn_str = f"{convertBytes(netBytesIn)}"
+        netBytesIn_qps = f"{convertBytes(netBytesIn - self.last_netBytesIn)}" if netBytesIn - self.last_netBytesIn > 0 else 0
+        self.last_netBytesIn = netBytesIn
+
+        netBytesOut = System.get('netBytesOut')
+
+        netBytesOut_str = f"{convertBytes(netBytesOut)}"
+        netBytesOut_qps = f"{convertBytes(netBytesOut - self.last_netBytesOut)}" if netBytesOut - self.last_netBytesOut > 0 else 0
+        self.last_netBytesOut = netBytesOut
+
+        netPacketsIn = System.get('netPacketsIn')
+        netPacketsIn_sec = netPacketsIn - self.last_netPacketsIn if netPacketsIn - self.last_netPacketsIn > 0 else 0
+        self.last_netPacketsIn = netPacketsIn
+
+        netPacketsOut = System.get('netPacketsOut')
+        diskWriteOps_sec = netPacketsOut - self.last_netPacketsOut if netPacketsOut - self.last_netPacketsOut > 0 else 0
+        self.last_netPacketsOut = netPacketsOut
+
+        data = [netBytesIn_str, netBytesIn_qps, netBytesOut_str, netBytesOut_qps, netPacketsOut,
+                netPacketsIn_sec, netPacketsOut, diskWriteOps_sec]
+        return dict(zip(self.filter, data))
+
+
+class DumpMemory:
+
+    def __init__(self):
+        self.kernel_page_size = 16384  # core_profile_session_tap get kernel_page_size
+
+    def decode(self, system: dict):
+        App_Memory = convertBytes((system.get('vmIntPageCount') - system.get("vmPurgeableCount")) * self.kernel_page_size)
+        Cached_Files = convertBytes((system.get('vmExtPageCount') + system.get("vmPurgeableCount")) * self.kernel_page_size)
+        Compressed = convertBytes(system.get('vmCompressorPageCount') * self.kernel_page_size)
+        Memory_Used = convertBytes((system.get('vmUsedCount')-system.get('vmExtPageCount')) * self.kernel_page_size)
+        Wired_Memory = convertBytes(system.get("vmWireCount") * self.kernel_page_size)
+        Swap_Used = convertBytes(system.get("__vmSwapUsage"))
+        data = {"App Memory": App_Memory, "Cached Files": Cached_Files, "Compressed": Compressed,
+                "Memory Used": Memory_Used, "Wired Memory":Wired_Memory,"Swap Used":Swap_Used}
+        return data

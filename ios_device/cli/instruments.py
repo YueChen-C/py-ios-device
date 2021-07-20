@@ -13,6 +13,7 @@ from ios_device.cli.cli import Command, print_json
 from ios_device.util import Log, api_util
 from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.util.kc_data import kc_data_parse
+from ios_device.util.utils import DumpDisk, DumpNetwork, DumpMemory
 from ios_device.util.variables import LOG
 
 log = Log.getLogger(LOG.Instrument.value)
@@ -197,7 +198,7 @@ def cmd_sysmontap(udid, network, format, time, pid, name, bundle_id, processes, 
                                         reverse=True)
                 print_json(processes_data, format)
             else:
-                print_json(print_json, format)
+                print_json(data, format)
 
     with InstrumentsBase(udid=udid, network=network) as rpc:
 
@@ -227,6 +228,34 @@ def cmd_sysmontap(udid, network, format, time, pid, name, bundle_id, processes, 
         rpc.sysmontap(on_callback_message, time)
 
 
+@instruments.command('monitor', cls=Command)
+@click.option('--filter',default="all",type=click.Choice(["all",'disk', 'network','memory']), help='')
+def cmd_monitor(udid, network, format, filter:str):
+    """ Get monitor performance data """
+    disk = DumpDisk()
+    Network = DumpNetwork()
+    Memory = DumpMemory()
+
+    def on_callback_message(res):
+        if isinstance(res.selector, list):
+            for index, row in enumerate(res.selector):
+                if 'System' in row:
+                    data = dict(zip(rpc.system_attributes, row['System']))
+                    if 'disk' == filter.lower():
+                        print("Disk    >>", disk.decode(data))
+                    if 'network' == filter.lower():
+                        print("Network >>", Network.decode(data))
+                    if 'memory' == filter.lower():
+                        print("Memory  >>", Memory.decode(data))
+                    if "all" == filter.lower():
+                        print("Memory  >>", Memory.decode(data))
+                        print("Network >>", Network.decode(data))
+                        print("Disk    >>", disk.decode(data))
+    with InstrumentsBase(udid=udid, network=network) as rpc:
+        rpc.process_attributes = ['name', 'pid']
+        rpc.sysmontap(on_callback_message)
+
+
 @instruments.group()
 def condition():
     """
@@ -240,7 +269,7 @@ def cmd_get_condition_inducer(udid, network, format):
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         ret = rpc.get_condition_inducer()
-        print_json(ret,format)
+        print_json(ret, format)
 
 
 @condition.command('set', cls=Command)
