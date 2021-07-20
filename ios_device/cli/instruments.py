@@ -229,28 +229,36 @@ def cmd_sysmontap(udid, network, format, time, pid, name, bundle_id, processes, 
 
 
 @instruments.command('monitor', cls=Command)
-@click.option('--filter',default="all",type=click.Choice(["all",'disk', 'network','memory']), help='')
-def cmd_monitor(udid, network, format, filter:str):
+@click.option('--filter', default="all", type=click.Choice(["all", 'disk', 'network', 'memory', 'cpu']), help='')
+def cmd_monitor(udid, network, format, filter: str):
     """ Get monitor performance data """
     disk = DumpDisk()
     Network = DumpNetwork()
     Memory = DumpMemory()
 
     def on_callback_message(res):
+        data = {}
+        SystemCPUUsage = {}
         if isinstance(res.selector, list):
             for index, row in enumerate(res.selector):
                 if 'System' in row:
                     data = dict(zip(rpc.system_attributes, row['System']))
-                    if 'disk' == filter.lower():
-                        print("Disk    >>", disk.decode(data))
-                    if 'network' == filter.lower():
-                        print("Network >>", Network.decode(data))
-                    if 'memory' == filter.lower():
-                        print("Memory  >>", Memory.decode(data))
-                    if "all" == filter.lower():
-                        print("Memory  >>", Memory.decode(data))
-                        print("Network >>", Network.decode(data))
-                        print("Disk    >>", disk.decode(data))
+                if "SystemCPUUsage" in row:
+                    SystemCPUUsage = row["SystemCPUUsage"]
+            if 'disk' == filter.lower():
+                print("Disk    >>", disk.decode(data))
+            if 'network' == filter.lower():
+                print("Network >>", Network.decode(data))
+            if 'memory' == filter.lower():
+                print("Memory  >>", Memory.decode(data))
+            if 'cpu' == filter.lower():
+                print("CPU     >>", SystemCPUUsage)
+            if "all" == filter.lower():
+                print("Memory  >>", Memory.decode(data))
+                print("Network >>", Network.decode(data))
+                print("Disk    >>", disk.decode(data))
+                print("Cpu     >>", SystemCPUUsage)
+
     with InstrumentsBase(udid=udid, network=network) as rpc:
         rpc.process_attributes = ['name', 'pid']
         rpc.sysmontap(on_callback_message)

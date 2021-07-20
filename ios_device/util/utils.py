@@ -164,8 +164,8 @@ class DumpDisk:
 class DumpNetwork:
 
     def __init__(self):
-        self.last_netBytesIn = 0
-        self.last_netBytesOut = 0
+        self.last_netBytesIn = 1e100
+        self.last_netBytesOut = 1e100
         self.last_netPacketsIn = 0
         self.last_netPacketsOut = 0
         self.filter = ["Data Received", "Data Received/sec", "Data Sent", "Data Sent/sec", "Packets in",
