@@ -61,7 +61,20 @@ $ pyidevice devices
 $ pyidevice --udid=xxxxxx deviceinfo
 ```
 
-#### 获取性能数据
+#### 获取系统性能数据
+
+```bash
+$ pyidevice instruments monitor 
+Memory  >> {'App Memory': '699.69 MiB', 'Cached Files': '1.48 GiB', 'Compressed': '155.17 MiB', 'Memory Used': '1.42 GiB', 'Wired Memory': '427.91 MiB', 'Swap Used': '46.25 MiB'}
+Network >> {'Data Received': '4.07 GiB', 'Data Received/sec': '4.07 GiB', 'Data Sent': '2.54 GiB', 'Data Sent/sec': '2.54 GiB', 'Packets in': 2885929, 'Packets in/sec': 6031576, 'Packets Out': 2885929, 'Packets Out/sec': 2885929}
+Disk    >> {'Data Read': '117.91 GiB', 'Data Read/sec': 0, 'Data Written': '64.28 GiB', 'Data Written/sec': 0, 'Reads in': 9734132, 'Reads in/sec': 9734132, 'Writes Out': 6810640, 'Writes Out/sec': 6810640}
+
+$ pyidevice instruments monitor --filter = memory
+Memory  >> {'App Memory': '699.69 MiB', 'Cached Files': '1.48 GiB', 'Compressed': '155.17 MiB', 'Memory Used': '1.42 GiB', 'Wired Memory': '427.91 MiB', 'Swap Used': '46.25 MiB'}
+
+```
+
+#### 获取应用性能数据
 
 ```bash
 $ pyidevice instruments sysmontap --help
@@ -70,8 +83,9 @@ $ pyidevice instruments sysmontap  -b com.tencent.xin --proc_filter memVirtualSi
 [('WeChat', {'cpuUsage': 0.03663705586691998, 'memVirtualSize': 2179284992, 'name': 'WeChat', 'pid': 99269})]
 [('WeChat', {'cpuUsage': 0.036558268613227536, 'memVirtualSize': 2179284992, 'name': 'WeChat', 'pid': 99269})]
 
-
 ```
+
+
 #### 获取 FPS 数据
 
 ```bash

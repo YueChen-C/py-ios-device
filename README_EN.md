@@ -58,7 +58,22 @@ $ pyidevice devices
 $ pyidevice --udid=xxxxxx deviceinfo
 ```
 
-#### Get performance data
+#### Get System performance data
+
+```bash
+$ pyidevice instruments monitor 
+Memory  >> {'App Memory': '699.69 MiB', 'Cached Files': '1.48 GiB', 'Compressed': '155.17 MiB', 'Memory Used': '1.42 GiB', 'Wired Memory': '427.91 MiB', 'Swap Used': '46.25 MiB'}
+Network >> {'Data Received': '4.07 GiB', 'Data Received/sec': '4.07 GiB', 'Data Sent': '2.54 GiB', 'Data Sent/sec': '2.54 GiB', 'Packets in': 2885929, 'Packets in/sec': 6031576, 'Packets Out': 2885929, 'Packets Out/sec': 2885929}
+Disk    >> {'Data Read': '117.91 GiB', 'Data Read/sec': 0, 'Data Written': '64.28 GiB', 'Data Written/sec': 0, 'Reads in': 9734132, 'Reads in/sec': 9734132, 'Writes Out': 6810640, 'Writes Out/sec': 6810640}
+
+$ pyidevice instruments monitor --filter = memory
+Memory  >> {'App Memory': '699.69 MiB', 'Cached Files': '1.48 GiB', 'Compressed': '155.17 MiB', 'Memory Used': '1.42 GiB', 'Wired Memory': '427.91 MiB', 'Swap Used': '46.25 MiB'}
+
+```
+
+
+
+#### Get Processes performance data
 
 ```bash
 $ pyidevice instruments sysmontap --help
