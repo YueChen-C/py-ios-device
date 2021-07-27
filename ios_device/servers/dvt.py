@@ -230,8 +230,8 @@ class DTXServer:
                     self._cli.close()
                 if dtx.conversation_index == 1:
                     self._reply_queues[dtx.identifier].put(dtx)
-                elif ((1 << 32) - dtx.channel_code) in self._channel_callbacks:
-                    self._channel_callbacks[((1 << 32) - dtx.channel_code)](dtx)
+                elif (2 ** 32 - dtx.channel_code) in self._channel_callbacks:
+                    self._channel_callbacks[(2 ** 32 - dtx.channel_code)](dtx)
                 else:
                     selector = dtx.selector
                     if isinstance(selector, str) and selector in self._callbacks:

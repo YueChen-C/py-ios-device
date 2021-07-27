@@ -209,6 +209,7 @@ class DumpMemory:
         Memory_Used = convertBytes((system.get('vmUsedCount')-system.get('vmExtPageCount')) * self.kernel_page_size)
         Wired_Memory = convertBytes(system.get("vmWireCount") * self.kernel_page_size)
         Swap_Used = convertBytes(system.get("__vmSwapUsage"))
-        data = {"App Memory": App_Memory, "Cached Files": Cached_Files, "Compressed": Compressed,
+        Free_Memory = convertBytes(system.get("vmFreeCount") * self.kernel_page_size)
+        data = {"App Memory": App_Memory, "Free Memory":Free_Memory,"Cached Files": Cached_Files, "Compressed": Compressed,
                 "Memory Used": Memory_Used, "Wired Memory":Wired_Memory,"Swap Used":Swap_Used}
         return data

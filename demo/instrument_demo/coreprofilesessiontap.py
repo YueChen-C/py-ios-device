@@ -4,8 +4,6 @@ import time
 import uuid
 from datetime import datetime
 
-from numpy import mean
-from numpy.core import long
 
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util.exceptions import InstrumentRPCParseError
@@ -18,6 +16,9 @@ MOVIE_FRAME_COST = 1 / 24
 
 
 def graphics_display(rpc):
+    from numpy import mean
+    from numpy.core import long
+
     def dropped_message(res):
         print("[DROP]", res.selector, res.raw.channel_code)
 

@@ -6,7 +6,6 @@ import time
 import uuid
 from datetime import datetime
 
-from numpy import long, mean
 
 from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.servers.Installation import InstallationProxyService
@@ -462,6 +461,8 @@ def stop_xcuitest(xcuitest):
 
 
 def start_get_fps(device_id: str = None, rpc_channel: InstrumentServer = None, callback: callable = None):
+    from numpy import long, mean
+
     """
     开始获取 fps 相关数据
     :param device_id:

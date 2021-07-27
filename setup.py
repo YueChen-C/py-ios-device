@@ -13,8 +13,6 @@ requires = [
     "pycparser==2.20",
     "pyOpenSSL==20.0.0",
     "six==1.15.0",
-    "numpy>=1.15.1",
-    "zeroconf>=0.28.8",
     "requests>=2.25.1",
     'click>=7.1.2',
     'coloredlogs>=3.3.2',
