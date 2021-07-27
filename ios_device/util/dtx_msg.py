@@ -178,9 +178,9 @@ class DTXMessage:
 
 def object_to_aux(arg, aux: MessageAux):
     if isinstance(arg, int) and not isinstance(arg, RawObj):
-        if abs(arg) < (2 << 32):
+        if abs(arg) < 2 ** 32:
             aux.append_int(arg)
-        elif abs(arg) < (2 << 64):
+        elif abs(arg) < 2 ** 64:
             aux.append_long(arg)
         else:
             raise ValueError("num too large")

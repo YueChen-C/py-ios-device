@@ -1,4 +1,3 @@
-# flake8: noqa: C901
 import dataclasses
 import json
 import threading
@@ -257,7 +256,7 @@ def cmd_monitor(udid, network, format, filter: str):
                 print("Memory  >>", Memory.decode(data))
                 print("Network >>", Network.decode(data))
                 print("Disk    >>", disk.decode(data))
-                print("Cpu     >>", SystemCPUUsage)
+                print("CPU     >>", SystemCPUUsage)
 
     with InstrumentsBase(udid=udid, network=network) as rpc:
         rpc.process_attributes = ['name', 'pid']
