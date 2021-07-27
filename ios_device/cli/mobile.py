@@ -153,7 +153,7 @@ def apps_list(udid, network, format, user, system):
         app_types.append('System')
     if not app_types:
         app_types = ['User', 'System']
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).get_apps(app_types))
+    print_json(InstallationProxyService(udid=udid, network=network, logger=log).get_apps(app_types),format=format)
 
 
 @apps.command('uninstall', cls=Command)
@@ -178,9 +178,9 @@ def upgrade(udid, network, format, ipa_path):
 
 
 @apps.command('shell', cls=Command)
-@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
-@click.option('-b', '--access_type', default='VendDocuments', type=click.Choice(['VendDocuments', 'VendContainer']),
-              help='Process app bundleId to filter')
+@click.option('-b', '--bundle_id', default=None,required=True, help='Process app bundleId to filter')
+@click.option('-a', '--access_type', default='VendDocuments', type=click.Choice(['VendDocuments', 'VendContainer']),
+              help='filter VendDocuments or VendContainer')
 def shell(udid, network, format, bundle_id, access_type):
     """ open an AFC shell for given bundle_id, assuming its profile is installed """
     HouseArrestService(udid=udid, network=network, logger=log).shell(bundle_id, cmd=access_type)
