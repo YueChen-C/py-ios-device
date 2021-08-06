@@ -494,8 +494,8 @@ def start_get_fps(device_id: str = None, rpc_channel: InstrumentServer = None, c
     def _callback(res):
         nonlocal frame_count, last_frame, last_1_frame_cost, last_2_frame_cost, last_3_frame_cost, time_count, mach_time_factor, \
             jank_count, big_jank_count, jank_time_count, _list, count_time
-        if type(res.plist) is InstrumentRPCParseError:
-            for args in kperf_data(res.raw.get_selector()):
+        if type(res.selector) is InstrumentRPCParseError:
+            for args in kperf_data(res.selector.data):
                 _time, code = args[0], args[7]
                 if code == 830472984:
                     if not last_frame:
