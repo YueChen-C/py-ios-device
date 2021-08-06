@@ -110,6 +110,8 @@ def kperf_data(messages):
     _list = []
     p_record = 0
     m_len = len(messages)
+    if m_len % 64 != 0:
+        return _list
     while p_record < m_len:
         _list.append(struct.unpack('<QLLQQQQLLQ', messages[p_record:p_record + 64]))
         p_record += 64
