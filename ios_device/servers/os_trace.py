@@ -4,11 +4,8 @@
 import logging
 import plistlib
 import struct
-import tempfile
 from abc import ABC
 from datetime import datetime
-from io import BytesIO
-from tarfile import TarFile
 
 from construct import Struct, Bytes, Int32ul, CString, Optional, Enum, Byte, Adapter, Int16ul, this, Computed
 
@@ -95,6 +92,3 @@ class OsTraceService(object):
             entry = syslog_t.parse(line)
             yield entry
 
-
-# for syslog_entry in OsTraceService().get_pid_list():
-print( OsTraceService().get_pid_list())

@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import threading
+import uuid
 from copy import deepcopy
 from datetime import datetime
 from distutils.version import LooseVersion
@@ -348,3 +349,23 @@ def stackshot(udid, network, format, out):
                         print_json(kc_data, format)
 
         rpc.core_profile_session(on_callback_message, stopSignal)
+
+
+@instruments.command('core_profile', cls=Command)
+@click.option('--pid', type=click.INT, default=None, help='Process ID to filter')
+@click.option('--process-name',default=None, help='Process name to filter')
+def stackshot(udid, network, format,pid,process_name):
+    """ Dump stack snapshot information. """
+    with InstrumentsBase(udid=udid, network=network) as rpc:
+        config={
+                 'tc': [{
+                     'csd': 128,
+                     'kdf2': {0xffffffff},
+                     'ta': [[3], [0], [2], [1, 1, 0]],
+                     'tk': 3,
+                     'uuid': str(uuid.uuid4()),
+                 }],
+                 'rp': 100,
+                 'bm': 0,
+             }
+        rpc.core_profile(config,pid,process_name)

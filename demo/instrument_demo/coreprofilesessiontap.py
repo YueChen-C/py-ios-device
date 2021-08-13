@@ -7,6 +7,7 @@ from datetime import datetime
 
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util.exceptions import InstrumentRPCParseError
+from ios_device.util.kperf_data import KperfData
 from ios_device.util.utils import kperf_data
 
 sys.path.append(os.getcwd())
@@ -38,8 +39,8 @@ def graphics_display(rpc):
         nonlocal frame_count, last_frame, last_1_frame_cost, last_2_frame_cost, last_3_frame_cost, time_count, mach_time_factor, last_time, \
             jank_count, big_jank_count, jank_time_count, _list, count_time
         if type(res.selector) is InstrumentRPCParseError:
-            for args in kperf_data(res.selector.data):
-                _time, code = args[0], args[7]
+            for args in Kperf.to_dict(res.selector.data):
+                _time, code = args.timestamp,args.debug_id
                 if code == 830472984:
                     if not last_frame:
                         last_frame = long(_time)
@@ -77,6 +78,8 @@ def graphics_display(rpc):
     rpc.register_undefined_callback(dropped_message)
     rpc.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap", on_graphics_message)
     # 获取mach time比例
+    Kperf = KperfData(rpc)
+
     machTimeInfo = rpc.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").selector
     mach_time_factor = machTimeInfo[1] / machTimeInfo[2]
 
@@ -88,7 +91,7 @@ def graphics_display(rpc):
                            'ur': 500}).selector)
     print("start",
           rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "start").selector)
-    time.sleep(10)
+    time.sleep(10000)
     print("stop", rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop").selector)
     rpc.stop()
 

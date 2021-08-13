@@ -51,6 +51,9 @@ class InstallationProxyService(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.service.close()
 
+    def __enter__(self):
+        return self
+
     def watch_completion(self, handler=None, *args):
         while True:
             z = self.service.recv_plist()

@@ -14,6 +14,8 @@ from ios_device.util import Log
 from ios_device.util.bpylist2 import NSUUID, NSURL, XCTestConfiguration
 from ios_device.util.bpylist2 import archive
 from ios_device.util.dtx_msg import RawObj
+from ios_device.util.exceptions import InstrumentRPCParseError
+from ios_device.util.kperf_data import KperfData
 from ios_device.util.lockdown import LockdownClient
 from ios_device.util.variables import InstrumentsService, LOG
 
@@ -62,11 +64,11 @@ class InstrumentDeviceInfo:
         return parsed
 
     def traceCodesFile(self):
-        """ ？？
+        """ traceCodes 堆栈 code 码
         :return:
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "traceCodesFile").selector
-        return parsed
+        return {int(k, 16): v for k, v in map(lambda l: l.split(), parsed.splitlines())}
 
     def networkInformation(self):
         """ 当前网络信息
@@ -391,7 +393,7 @@ class InstrumentsBase:
         log = Log.getLogger(LOG.xctest.value)
 
         def _callback(res):
-            log.info(f" {res.selector} : {res.auxiliary}")
+            log.info(f" {res.selector} : {res.auxiliaries}")
 
         with InstallationProxyService(lockdown=self.lock_down) as install:
             app_info = install.find_bundle_id(bundle_id)
@@ -434,9 +436,9 @@ class InstrumentsBase:
                                     RawObj(XCODE_VERSION))
 
         def _show_log_message(res):
-            log.info(f"{res.selector} : {res.auxiliary}")
+            log.info(f"{res.selector} : {res.auxiliaries}")
             if 'Received test runner ready reply with error: (null' in ''.join(
-                    res.auxiliary):
+                    res.auxiliaries):
                 log.info("Test runner ready detected")
                 _start_executing()
 
@@ -541,5 +543,22 @@ class InstrumentsBase:
         conn.stop()
         ManagerdLockdown2.stop()
         ManagerdLockdown1.stop()
+
+
+    def core_profile(self,config,pid,name,stopSignal: threading.Event = threading.Event()):
+        def on_graphics_message(res):
+            if type(res.selector) is InstrumentRPCParseError:
+                for args in Kperf.to_str(res.selector.data):
+                    print(args)
+        self.instruments.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap",
+                                      on_graphics_message)
+        traceCodesFile = self.device_info.traceCodesFile()
+        Kperf = KperfData(traceCodesFile,pid,name)
+        self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "setConfig:",config)
+        self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "start")
+        while not stopSignal.wait(1):
+            pass
+        self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop")
+        self.instruments.stop()
 
 
