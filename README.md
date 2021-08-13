@@ -4,64 +4,62 @@
 
 A python based Apple instruments protocol，you can get CPU, Memory and other metrics from real iOS devices
 
-win，mac 跨平台方案，通过 Instruments 私有协议获取 iOS 相关性能指标数据。
-
-相关文章链接:https://testerhome.com/topics/27159
-
-[English](README_EN.md)
 
 
-[Java 版本](https://github.com/YueChen-C/java-ios-device)
+link: https://testerhome.com/topics/27159
 
+[中文文档](README_CN.md)
 
-## pip 仓库:
+Java link: https://github.com/YueChen-C/java-ios-device)
+
+## pip :
     pip install py-ios-device
     
-python 版本: 3.7 +
-### instruments 相关功能列表：
-- [x] 获取 内存、cpu 数据
-- [x] 获取 FPS 数据
-- [x] 获取 网络数据
-- [x] 设置模拟真机网络状态，例如 2g 、3g、 lost 等
-- [x] 设置模拟真机设备高压过热状态
-- [x] 事件监听，监听app 启动，退出，后台运行等
-- [x] 启动杀死 APP
-- [x] 运行 xcuitest 启动 wda
-- [x] 导出内核堆栈快照
-- [ ] 解析内核数据流
+python version: 3.7 +
+### Instruments：
+- [x] Get system Memory and CPU data
+- [x] Get processes Memory and CPU data
+- [x] Get FPS data
+- [x] Get network data
+- [x] Set the device network status. eg: 2G, 3G ,100% Loss
+- [x] Set the device behaves as though under a high thermal state
+- [x] Monitoring app start、exit、background
+- [x] Launch and Kill app
+- [x] Run xctest. eg: WebDriverAgent
+- [x] Dump core profile stack snapshot 
+- [x] Analyze the core profile data stream
 
 
-### 其他功能列表
-- [x] 描述文件管理 例如：安装 卸载 Fiddler 证书等
-- [x] 获取系统日志流
-- [x] 获取崩溃日志
-- [x] 获取抓包数据转发至 wiershark
-- [x] 应用管理:安装、卸载、启动、查询、运行状态等
-- [x] 获取电池信息
-- [ ] 截图
-- [ ] 打开 wifi 连接模式
+### Other 
+- [x] Profiles & Device Management. eg: Install and uninstall Fiddler certificate
+- [x] Get syslog
+- [x] Get crash log
+- [x] Get the captured packet traffic and forward it to wireshark
+- [x] App install and uninstall 
+- [x] Get device battery 
 
-## 命令行使用文档：
 
-## pip 仓库:
+## Usage：
+
+## pip :
     > pip install py-ios-device
     > pyidevice --help
     > pyidevice instruments --help
 
 
-#### 获取设备列表
+#### Get device list
 
 ```bash
 $ pyidevice devices
 ```
 
-#### 获取设备信息
+#### Get device info
 
 ```bash
 $ pyidevice --udid=xxxxxx deviceinfo
 ```
 
-#### 获取系统性能数据
+#### Get System performance data
 
 ```bash
 $ pyidevice instruments monitor 
@@ -74,7 +72,9 @@ Memory  >> {'App Memory': '699.69 MiB', 'Cached Files': '1.48 GiB', 'Compressed'
 
 ```
 
-#### 获取应用性能数据
+
+
+#### Get Processes performance data
 
 ```bash
 $ pyidevice instruments sysmontap --help
@@ -83,10 +83,9 @@ $ pyidevice instruments sysmontap  -b com.tencent.xin --proc_filter memVirtualSi
 [('WeChat', {'cpuUsage': 0.03663705586691998, 'memVirtualSize': 2179284992, 'name': 'WeChat', 'pid': 99269})]
 [('WeChat', {'cpuUsage': 0.036558268613227536, 'memVirtualSize': 2179284992, 'name': 'WeChat', 'pid': 99269})]
 
+
 ```
-
-
-#### 获取 FPS 数据
+#### Get FPS data
 
 ```bash
 $ pyidevice instruments fps
@@ -95,37 +94,35 @@ $ pyidevice instruments fps
 {'currentTime': '2021-05-11 14:14:40.259059', 'fps': 56}
 ```
 
-#### 获取 网络数据
+#### Get network data
 ```bash
 $ pyidevice instruments networking
-# 获取全局网络数据
+# Get all network data
 "connection-update{\"RxPackets\": 2, \"RxBytes\": 148, \"TxPackets\": 2, \"TxBytes\": 263, \"RxDups\": 0, \"RxOOO\": 0, \"TxRetx\": 0, \"MinRTT\": 0.05046875, \"AvgRTT\": 0.05046875, \"ConnectionSerial\": 5}"
 "connection-update{\"RxPackets\": 4, \"RxBytes\": 150, \"TxPackets\": 3, \"TxBytes\": 1431, \"RxDups\": 0, \"RxOOO\": 0, \"TxRetx\": 0, \"MinRTT\": 0.0539375, \"AvgRTT\": 0.0541875, \"ConnectionSerial\": 4}"
 
 $ pyidevice instruments network_process -p com.tencent.xin 
-# 获取单应用网络数据
+# Get application network data
 {403: {'net.packets.delta': 119, 'time': 1620720061.0643349, 'net.tx.bytes': 366715, 'net.bytes.delta': 63721, 'net.rx.packets.delta': 47, 'net.tx.packets': 633, 'net.rx.bytes': 34532, 'net.bytes': 401247, 'net.tx.bytes.delta': 56978, 'net.rx.bytes.delta': 6743, 'net.rx.packets': 169, 'pid': 403, 'net.tx.packets.delta': 72, 'net.packets': 802}}
 {403: {'net.packets.delta': 13, 'time': 1620720076.2191892, 'net.tx.bytes': 1303204, 'net.bytes.delta': 5060, 'net.rx.packets.delta': 5, 'net.tx.packets': 2083, 'net.rx.bytes': 46736, 'net.bytes': 1349940, 'net.tx.bytes.delta': 4682, 'net.rx.bytes.delta': 378, 'net.rx.packets': 379, 'pid': 403, 'net.tx.packets.delta': 8, 'net.packets': 2462}}
 
 ```
 
-#### 设置设备状态 iOS 版本 > 12
-可以模拟网络状态，例如 2g 、3g、 lost 等<br>
-可以模拟设备高压过热状态
+#### Set device status. iOS version > 12
+
 ```bash
 $ pyidevice instruments condition get
-# 获取设备状态配置信息
+# Get device configuration information
 
 $ pyidevice instruments condition set -c SlowNetworkCondition -p SlowNetwork2GUrban
-# 模拟网络状态，例如 2g 、3g、 lost 等
+# Set the device network status. eg: 2G, 3G ,100% Loss
 
 $ pyidevice instruments condition set -c ThermalCondition -p ThermalCritical
-# 模拟设备高压过热状态下的运行模式
+# Set the device behaves as though under a high thermal state
 ```
 
 
-#### 监听 app 事件
-可以监听所有 app 事件例如： 退到后台，杀死，启动，重启等
+#### Listen to app notifications
 ```bash
 $ pyidevice instruments notifications
 [{'execName': 'MobileNotes', 'state_description': 'Foreground Running', 'elevated_state_description': 'Foreground Running', 'displayID': 'com.apple.mobilenotes', 'mach_absolute_time': 27205542653928, 'appName': 'Notes', 'elevated_state': 8, 'timestamp': 1620714619.1264, 'state': 8, 'pid': 99367}]
@@ -133,19 +130,25 @@ $ pyidevice instruments notifications
 [{'execName': 'MobileNotes', 'state_description': 'Background Task Suspended', 'elevated_state_description': 'Background Task Suspended', 'displayID': 'com.apple.mobilenotes', 'mach_absolute_time': 27205683486410, 'appName': 'Notes', 'elevated_state': 2, 'timestamp': 1620714624.99441, 'state': 2, 'pid': 99367}]
 ```
 
-#### 内核堆栈快照信息
-导出内核堆栈快照信息
+#### Dump core profile stack snapshot 
 ```bash
 $ instruments stackshot --out stackshot.log
 
 ```
 
+#### Analyze the core profile data stream 
+```bash
+$ instruments instruments core_profile --pid=1107
+SealTalk(1107)             PERF_THD_CSwitch (0x25010014)                               DBG_PERF          PERF_DATA                     DBG_FUNC_NONE  
+SealTalk(1107)             MACH_DISPATCH (0x1400080)                                   DBG_MACH          DBG_MACH_SCHED                DBG_FUNC_NONE  
+SealTalk(1107)             DecrSet (0x1090004)                                         DBG_MACH          DBG_MACH_EXCP_DECI            DBG_FUNC_NONE  
+
+```
 
 
-### 其他功能示例
-#### 描述文件管理 
 
-描述文件管理 例如：安装 卸载 Fiddler，Charles 证书等
+### Other
+#### Profiles & Device Management 
 
 ```bash
 $ pyidevice profiles list
@@ -171,42 +174,37 @@ $ pyidevice profiles list
 }
 
 $ pyidevice profiles install  --path Downloads/charles-certificate.pem
-## 安装 charles 证书
+## install charles certificate
 
 $ pyidevice profiles remove --name fe7371d9ce36c541ac8dee5f51f3b490b2aa98dcd95699ee44717fd5233fe7a0a
-## 删除 charles 证书
+## uninstall charles certificate
 ```
 
-#### 获取日志流数据
+#### get syslog
 ```bash
 $ pyidevice syslog
 # --path
 # --filter
-# 获取 日志流
 ```
 
 
-#### 获取 crash 日志数据
+#### get crash syslog
 
 ```bash
 $ pyidevice crash list
-# 获取 crash日志列表
 ['.', '..', 'com.apple.appstored', 'JetsamEvent-2021-05-12-112126.ips']
 
 $ pyidevice crash export --name JetsamEvent-2021-05-12-112126.ips
-# 导出 crash 日志
 
 $ pyidevice crash delete --name JetsamEvent-2021-05-12-112126.ips
-# 删除 crash 日志
 
 $ pyidevice crash shell
-# 进入命令行操作模式
 
 ```
 
 
-#### 应用管理
-应用管理:安装、卸载、启动、查询、运行状态等
+#### apps
+
 ```bash
 $ pyidevice apps list
 
@@ -222,20 +220,19 @@ $ pyidevice apps shell
 
 ```
 
-#### 抓包数据
+#### packet traffic
 ```bash
 $ pyidevice pcapd ./test/test.pacp
-# 抓包保存数据
 
 $ pyidevice pcapd - | "/Applications/Wireshark.app/Contents/MacOS/Wireshark" -k -i -
-# mac 转发至 Wireshark
+# mac forword Wireshark
 
 $ pyidevice pcapd - | "D:\Program Files\Wireshark\Wireshark.exe" -k -i -
-# win 转发至 Wireshark
+# win forword Wireshark
 
 ```
 
-#### 获取电池信息
+#### device battery
 ```bash
 $ pyidevice battery
 # [Battery] time=1622777708, current=-71, voltage=4330, power=-307.43, temperature=3279
@@ -243,9 +240,9 @@ $ pyidevice battery
 ```
 
 
-QQ 交流群：37042417
+QQ ：37042417
 
 
-使用文档: [查看文档](./doc/使用文档.md)
-使用demo: [查看demo](./test/test.py)
+api : [document](./doc/使用文档.md)
+demo: [document](./test/test.py)
 

@@ -28,6 +28,8 @@ coloredlogs.DEFAULT_FIELD_STYLES = {'asctime': {'color': 'green'}, 'hostname': {
 
 class Log:
     __instances = {}
+    def __init__(self,level = None):
+        self.level = level
 
     @classmethod
     def getLogger(cls, name=os.path.abspath(__name__)):
@@ -46,6 +48,8 @@ class Log:
 
     @staticmethod  # 设置日志等级
     def __getLogLevel():
+        if os.getenv("DEBUG") in ("1", "on", "true"):
+            return logging.DEBUG
         if gettrace():
             return logging.DEBUG
         else:
