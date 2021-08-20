@@ -625,9 +625,9 @@ def start_get_mobile_notifications(device_id: str = None, rpc_channel: Instrumen
         _rpc_channel = rpc_channel
 
     def _callback(res):
-        callback(res.raw)
+        callback(res)
 
-    _rpc_channel.register_undefined_callback(_callback)
+    _rpc_channel.register_channel_callback("com.apple.instruments.server.services.mobilenotifications",_callback)
 
     _rpc_channel.call(
         "com.apple.instruments.server.services.mobilenotifications",

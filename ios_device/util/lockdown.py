@@ -311,7 +311,7 @@ class LockdownClient:
                     "12.4": "12.4 (16G73).zip",
                 }
                 zip_name = _alias.get(version, f"{version}.zip")
-                origin_url = f"https://github.com/filsv/iPhoneOSDeviceSupport/raw/master/DeviceSupport/{zip_name}"
+                origin_url = f"https://github.com/filsv/iPhoneOSDeviceSupport/raw/master/{zip_name}"
                 mirror_url = f"https://tool.appetizer.io/iGhibli/iOS-DeviceSupport/raw/master/DeviceSupport/{zip_name}"
                 log.info("Download %s -> %s", origin_url, image_zip_path)
                 try:
