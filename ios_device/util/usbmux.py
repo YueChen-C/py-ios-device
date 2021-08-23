@@ -164,6 +164,12 @@ class USBMux:
         return connector.connect(dev, port)
 
 
+    def listen_device(self):
+        self.listener.listen()
+        while True:
+            data = self.listener.proto.getpacket()
+            yield data
+
 class UsbmuxdClient(MuxConnection):
     def __enter__(self):
         return self
