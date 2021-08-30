@@ -2,7 +2,7 @@ import enum
 import queue
 import typing
 from collections import defaultdict
-from threading import Thread, Event
+from threading import Thread, Event, Lock
 
 from ..util import logging, Log
 from ..util.dtx_msg import DTXMessage, MessageAux, dtx_message_header, object_to_aux
@@ -10,6 +10,8 @@ from ..util.exceptions import MuxError
 from ..util.variables import LOG
 
 log = Log.getLogger(LOG.Instrument.value)
+
+dvt_lock = Lock()
 
 
 class DTXEnum(str, enum.Enum):
@@ -131,9 +133,10 @@ class DTXServer:
         self._running = False
         if self._recv_thread:
             self._recv_thread = None
-        if self._cli:
-            self._cli.close()
-            self._cli = None
+        with dvt_lock:
+            if self._cli:
+                self._cli.close()
+                self._cli = None
 
     def _run_callbacks(self, event_name, data):
         """
@@ -227,7 +230,8 @@ class DTXServer:
             while self._running:
                 dtx = self._client.recv_dtx(self._cli)
                 if '_channelCanceled:' in str(dtx.selector):
-                    self._cli.close()
+                    with dvt_lock:
+                        self._cli.close()
                 if dtx.conversation_index == 1:
                     self._reply_queues[dtx.identifier].put(dtx)
                 elif (2 ** 32 - dtx.channel_code) in self._channel_callbacks:
