@@ -50,6 +50,8 @@ class Log:
     def __getLogLevel():
         if os.getenv("DEBUG") in ("1", "on", "true"):
             return logging.DEBUG
+        if os.getenv("ERROR") in ("1", "on", "true"):
+            return logging.ERROR
         if gettrace():
             return logging.DEBUG
         else:
