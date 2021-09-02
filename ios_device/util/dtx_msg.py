@@ -14,7 +14,7 @@ from abc import ABC
 from enum import Enum
 
 from construct import Struct, Int32ul, Int16ul, Int64ul, Const, Prefixed, GreedyBytes, this, Adapter, Select, \
-    GreedyRange, Switch, Default
+    GreedyRange, Switch, Default, Int64sl, Int32sl
 from ios_device.util.variables import LOG
 
 from . import Log
@@ -24,10 +24,20 @@ from .exceptions import InstrumentRPCParseError
 log = Log.getLogger(LOG.Instrument.value)
 
 
-class RawObj:
+class Raw:
+    """特殊参数类型判断"""
+
+class RawObj(Raw):
     """ 某些情况 int 类型需要转成 obj
     """
+    def __init__(self, *data):
+        self.data = data
 
+class RawInt64sl(Raw):
+    def __init__(self, *data):
+        self.data = data
+
+class RawInt32sl(Raw):
     def __init__(self, *data):
         self.data = data
 
@@ -64,8 +74,8 @@ dtx_message_aux = Struct(
         'magic' / Select(Const(0xa, Int32ul), Int32ul),
         'type' / Int32ul,
         'value' / Switch(this.type,
-                         {2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)), 3: Int32ul, 4: Int64ul, 5: Int32ul,
-                          6: Int64ul},
+                         {2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)), 3: Int32ul, 4: Int64ul, 5: Int32sl,
+                          6: Int64sl},
                          default=GreedyBytes),
     )))
 )
@@ -81,6 +91,16 @@ class MessageAux:
 
     def append_long(self, value: int):
         self.values.append({'type': 4, 'value': value})
+        return self
+
+    def append_signed_int(self, value: int):
+        """ 有符号 int """
+        self.values.append({'type': 5, 'value': value})
+        return self
+
+    def append_signed_long(self, value: int):
+        """ 有符号 long """
+        self.values.append({'type': 6, 'value': value})
         return self
 
     def append_obj(self, value):
@@ -184,15 +204,22 @@ def object_to_aux(arg, aux: MessageAux):
             aux.append_long(arg)
         else:
             raise ValueError("num too large")
-    else:
-        if isinstance(arg, Enum):
-            arg = arg.value
-        if isinstance(arg, RawObj):
-            arg = arg.data
-            for i in arg:
-                aux.append_obj(i)
-            return aux
+    elif isinstance(arg, Enum):
+        arg = arg.value
         aux.append_obj(arg)
+    elif isinstance(arg, Raw):
+        if isinstance(arg, RawObj):
+            for i in arg.data:
+                aux.append_obj(i)
+        if isinstance(arg, RawInt32sl):
+            for i in arg.data:
+                aux.append_signed_int(i)
+        if isinstance(arg, RawInt64sl):
+            for i in arg.data:
+                aux.append_signed_long(i)
+    else:
+        aux.append_obj(arg)
+
     return aux
 
 

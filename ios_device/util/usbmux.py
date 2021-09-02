@@ -125,6 +125,12 @@ class USBMux:
         self.version = 1
         self.devices = self.listener.devices  # type: List[MuxDevice]
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.listener.close()
+
     def process(self, timeout: float = 0.1):
         self.listener.process(timeout)
 
