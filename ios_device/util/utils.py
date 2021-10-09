@@ -110,6 +110,8 @@ def kperf_data(messages):
     _list = []
     p_record = 0
     m_len = len(messages)
+    if m_len % 64 != 0:
+        return _list
     while p_record < m_len:
         _list.append(struct.unpack('<QLLQQQQLLQ', messages[p_record:p_record + 64]))
         p_record += 64
@@ -118,10 +120,11 @@ def kperf_data(messages):
 
 def convertBytes(_bytes):
     lst = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB']
-    i = int(math.floor(  # 舍弃小数点，取小
-        math.log(_bytes, 1024)  # 求对数(对数：若 a**b = N 则 b 叫做以 a 为底 N 的对数)
-    ))
-
+    i = 0
+    if _bytes:
+        i = int(math.floor(  # 舍弃小数点，取小
+            math.log(_bytes, 1024)  # 求对数(对数：若 a**b = N 则 b 叫做以 a 为底 N 的对数)
+        ))
     if i >= len(lst):
         i = len(lst) - 1
     return ('%.2f' + " " + lst[i]) % (_bytes / math.pow(1024, i))
