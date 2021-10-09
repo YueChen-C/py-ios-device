@@ -25,7 +25,6 @@ packet_struct = Struct(
     'ecomm' / Padded(17, CString('utf8')),
     'epoch_seconds' / Int32ub,
     'epoch_microseconds' / Int32ub,
-    'payload' / Bytes(this.payload_len)
 )
 
 
@@ -48,6 +47,7 @@ class PcapdService(object):
 
     def _chunk_to_packet(self, chunk):
         packet = packet_struct.parse(chunk)
+        packet.payload = chunk[packet.hdr_len:]
 
         if not (packet.hdr_version == 2 and len(packet.payload) == packet.payload_len):
             raise ValueError('unsupported version')
