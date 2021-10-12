@@ -39,9 +39,10 @@ def graphics_display(rpc):
         nonlocal frame_count, last_frame, last_1_frame_cost, last_2_frame_cost, last_3_frame_cost, time_count, mach_time_factor, last_time, \
             jank_count, big_jank_count, jank_time_count, _list, count_time
         if type(res.selector) is InstrumentRPCParseError:
-            for args in Kperf.to_dict(res.selector.data):
-                _time, code = args.timestamp,args.debug_id
+            for args in kperf_data(res.selector.data):
+                _time, code = args[0], args[7]
                 if code == 830472984:
+                    # time_count = 0
                     if not last_frame:
                         last_frame = long(_time)
                     else:
@@ -60,8 +61,10 @@ def graphics_display(rpc):
                         time_count += this_frame_cost
                         last_frame = long(_time)
                         frame_count += 1
-                else:
-                    time_count = (datetime.now().timestamp() - count_time) * NANO_SECOND
+                # else:
+                #     time_count = (datetime.now().timestamp() - count_time) * NANO_SECOND
+                    # print(time_count)
+
                 if time_count > NANO_SECOND:
                     print(
                         f"{datetime.now().timestamp() - last_time} FPS: {frame_count / time_count * NANO_SECOND} jank: {jank_count} big_jank: {big_jank_count} stutter: {jank_time_count / time_count}")
