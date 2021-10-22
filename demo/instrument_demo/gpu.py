@@ -6,7 +6,8 @@ startCollectingCounters 之后会返回参数详解之类的， 一些解析方�
 import os
 import sys
 
-from ios_device.util.dtx_msg import RawInt64sl
+from ios_device.util.dtx_msg import RawInt64sl, RawInt32sl
+from ios_device.util.gpu_decode import GRCDecodeOrder, GRCDisplayOrder, JSEvn, TraceData
 
 sys.path.append(os.getcwd())
 
@@ -18,21 +19,37 @@ from ios_device.util import logging
 log = logging.getLogger(__name__)
 
 
+
 def gup(rpc):
+    decode_key_list = []
+    js_env:JSEvn
+    display_key_list = []
 
     def dropped_message(res):
-        print( res.selector,res.auxiliaries)
+        nonlocal js_env,decode_key_list,display_key_list
+        if res.selector[0]==1:
+            js_env.dump_trace(TraceData(*res.selector[2:]))
+        elif res.selector[0] == 0:
+            # # print(res.selector)
+            _data = res.selector[4]
+            decode_key_list = GRCDecodeOrder.decode(_data.get(1))
+            display_key_list = GRCDisplayOrder.decode(_data.get(0))
+            js_env = JSEvn(_data.get(2), display_key_list, decode_key_list, mach_time_factor)
 
-
-    # print(rpc.lockdown.device_id)
     rpc.register_undefined_callback(dropped_message)
-    print(rpc.call('com.apple.instruments.server.services.deviceinfo','machTimeInfo').selector)
-    print(rpc.call('com.apple.instruments.server.services.gpu','requestDeviceGPUInfo').selector)
-    rpc.call("com.apple.instruments.server.services.gpu", "configureCounters:counterProfile:interval:windowLimit:tracingPID:",RawInt64sl(0, 3, 0, -1), 4294967295)
-    print(rpc.call('com.apple.instruments.server.services.gpu', 'startCollectingCounters').selector)
-    # rpc.call("com.apple.instruments.server.services.gpu", "")
-    time.sleep(1000)
+    machTimeInfo = rpc.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").selector
+    mach_time_factor = machTimeInfo[1] / machTimeInfo[2]
+    requestDeviceGPUInfo = rpc.call('com.apple.instruments.server.services.gpu','requestDeviceGPUInfo').selector
 
+    min_collection_interval = requestDeviceGPUInfo[0].get('min-collection-interval')
+    print(rpc.call("com.apple.instruments.server.services.gpu", "configureCounters:counterProfile:interval:windowLimit:tracingPID:",RawInt64sl(min_collection_interval, 3, 1,0),RawInt32sl(-1)).selector)
+    print(rpc.call('com.apple.instruments.server.services.gpu', 'startCollectingCounters').selector)
+    time.sleep(30)
+
+    print(rpc.call('com.apple.instruments.server.services.gpu', 'stopCollectingCounters').selector)
+    data = rpc.call('com.apple.instruments.server.services.gpu', 'flushRemainingData').selector
+    js_env.dump_trace(TraceData(*data[0][2:]))
+    time.sleep(2)
     rpc.stop()
 
 

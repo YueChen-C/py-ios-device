@@ -42,6 +42,16 @@ class RawInt32sl(Raw):
         self.data = data
 
 
+class RawInt64(Raw):
+    def __init__(self, *data):
+        self.data = data
+
+
+class RawInt32(Raw):
+    def __init__(self, *data):
+        self.data = data
+
+
 class PlistAdapter(Adapter, ABC):
     def _decode(self, obj, context, path):
         return unarchive(obj)
@@ -74,7 +84,7 @@ dtx_message_aux = Struct(
         'magic' / Select(Const(0xa, Int32ul), Int32ul),
         'type' / Int32ul,
         'value' / Switch(this.type,
-                         {2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)), 3: Int32ul, 4: Int64ul, 5: Int32sl,
+                         {2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)), 3: Int32sl, 4: Int64ul, 5: Int32ul,
                           6: Int64sl},
                          default=GreedyBytes),
     )))
@@ -95,7 +105,7 @@ class MessageAux:
 
     def append_signed_int(self, value: int):
         """ 有符号 int """
-        self.values.append({'type': 5, 'value': value})
+        self.values.append({'type': 3, 'value': value})
         return self
 
     def append_signed_long(self, value: int):
@@ -217,6 +227,14 @@ def object_to_aux(arg, aux: MessageAux):
         if isinstance(arg, RawInt64sl):
             for i in arg.data:
                 aux.append_signed_long(i)
+
+        if isinstance(arg, RawInt64):
+            for i in arg.data:
+                aux.append_long(i)
+
+        if isinstance(arg, RawInt32):
+            for i in arg.data:
+                aux.append_int(i)
     else:
         aux.append_obj(arg)
 

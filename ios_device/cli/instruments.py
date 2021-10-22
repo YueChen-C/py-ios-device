@@ -245,6 +245,8 @@ def cmd_monitor(udid, network, format, filter: str):
                     data = dict(zip(rpc.system_attributes, row['System']))
                 if "SystemCPUUsage" in row:
                     SystemCPUUsage = row["SystemCPUUsage"]
+            if not data:
+                return
             if 'disk' == filter.lower():
                 print("Disk    >>", disk.decode(data))
             if 'network' == filter.lower():

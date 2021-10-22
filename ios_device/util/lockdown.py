@@ -105,9 +105,9 @@ class LockdownClient:
             log.debug(f'{E}')
             log.debug(f'No iTunes pairing record found for device {self.identifier}')
             log.debug('Getting pair record from usbmuxd')
-        finally:
-            with UsbmuxdClient() as usb:
-                return usb.get_pair_record(self.udid)
+        with UsbmuxdClient() as usb:
+            return usb.get_pair_record(self.udid)
+
 
     def _validate_pairing(self):
         pair_record = self._get_pair_record() or {}
@@ -311,8 +311,8 @@ class LockdownClient:
                     "12.4": "12.4 (16G73).zip",
                 }
                 zip_name = _alias.get(version, f"{version}.zip")
-                origin_url = f"https://github.com/filsv/iPhoneOSDeviceSupport/raw/master/{zip_name}"
-                mirror_url = f"https://tool.appetizer.io/iGhibli/iOS-DeviceSupport/raw/master/DeviceSupport/{zip_name}"
+                origin_url = f"https://github.com/JinjunHan/iOSDeviceSupport/tree/master/DeviceSupport/{zip_name}"
+                mirror_url = f"https://github.com/filsv/iPhoneOSDeviceSupport/raw/master/{zip_name}"
                 log.info("Download %s -> %s", origin_url, image_zip_path)
                 try:
                     self._urlretrieve(mirror_url, image_zip_path)

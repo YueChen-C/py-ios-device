@@ -570,14 +570,14 @@ class Archive:
             self.archive(self.input)
 
         d = {
-            '$archiver': 'NSKeyedArchiver',
             '$version': NSKeyedArchiveVersion,
-            '$objects': self.objects,
-            '$top': {'root': plistlib.UID(1)}
+            '$archiver': 'NSKeyedArchiver',
+            '$top': {'root': plistlib.UID(1)},
+            '$objects': self.objects
         }
         # pylint: disable=no-member
         return plistlib.dumps(
-            d, fmt=plistlib.FMT_BINARY)  # type: ignore
+            d, fmt=plistlib.FMT_BINARY,sort_keys=False)  # type: ignore
         # pylint: enable=no-member
 
 
