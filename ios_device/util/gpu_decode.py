@@ -28,7 +28,7 @@ class GRCDisplayOrder:
     """ 最终展示显示编码序列
     """
     display: str
-    val: int
+    scale: int
     content: str
     method: str
     mix: int
@@ -46,7 +46,9 @@ class GRCDisplayOrder:
 class TraceData:
     """ 返回 bytes 数据流
     """
+    type: int
     time: int
+    time_stamp: int
     trace_num: int  # 组数量，每组根据 GRCDecodeOrder 序列进行相关逻辑解析
     trace_data: bytes
 
@@ -91,12 +93,15 @@ class JSEvn:
     def __init__(self, js_str, display_key_list, decode_key_list, mach_time_factor):
         self.display_key_list = display_key_list # 显示顺序
         self.decode_key_list = decode_key_list # 解码顺序
-
-        js = self.format_js(js_str, display_key_list, decode_key_list)
-        self.ctx = execjs.compile(js)
         self.mach_time_factor = mach_time_factor
         self.counter_list = None
         self.long_list = None
+        self.fast_counter_time = 0
+
+        js = self.format_js(js_str, display_key_list, decode_key_list)
+        self.ctx = execjs.compile(js)
+
+
 
 
     def trace_decode(self,trace_data:TraceData) -> typing.List[GPUTraceData]:
@@ -159,6 +164,7 @@ class JSEvn:
     def counter_to_js(counter_list:typing.List[GUPCounterData]):
         js_counter_list=[]
         for i in counter_list:
+            js_counter_list.append(i.last_counter_time)
             for k in i.counter_data_list:
                 js_counter_list.append(k.val)
         return js_counter_list
@@ -166,12 +172,14 @@ class JSEvn:
     def ex_js(self,trace_data:TraceData):
         counter_list = self.get_counter_list(trace_data)
         js_val_list = self.counter_to_js(counter_list)
-        counter_result = self.ctx.call('EvaluateCounter', len(counter_list), js_val_list)
+        counter_result = self.ctx.call('EvaluateGPUCounter', len(counter_list), js_val_list)
         return counter_result,counter_list
 
     def dump_trace(self,trace_data):
+
+
         counter_result,counter_list = self.ex_js(trace_data)
-        self.fast_counter_time = 0
+
         for i, key in enumerate(counter_list):
             if not self.fast_counter_time :
                 self.fast_counter_time  = key.fast_counter_time
@@ -179,8 +187,7 @@ class JSEvn:
             timestamp = round(timestamp/1000000000,6)
             start = i * len(self.display_key_list)
             for index, k in enumerate(self.display_key_list):
-                formatted_data =f'{timestamp:<10}'+f'{k.display:<45}'+f'{round(counter_result[start + index] * 100, 2):<6}'
-
+                formatted_data =f'{timestamp:<10}'+f'{k.display:<45}'+f'{round(counter_result[start + index] * k.mix, 2):<6}'
                 print(formatted_data)
             print("-----------------------------------------------------------")
 
@@ -191,20 +198,24 @@ class JSEvn:
 
         for i in decode_key_list:
             stringBuilder += f'var {i.key} = 0;\n'
+        stringBuilder += f"var MACH_TIME_FACTOR = {self.mach_time_factor};\n"
+        stringBuilder += f"var lastTimestamp = 0;\n"
+        stringBuilder += f"var MTLStat_nSec = 0;\n"
 
-        stringBuilder += 'function EvaluateCounter(counterNum,counterResult) {\n'
+        stringBuilder += 'function EvaluateGPUCounter(counterNum,counterResult) {\n'
         stringBuilder += 'var _CounterResult = [];\n'
         stringBuilder += 'for (var index = 0; index < counterNum; ++index) {\n'
-        stringBuilder += f'var startIndex = index * {len(decode_key_list)};\n'
+        stringBuilder += f'var startIndex = index * {len(decode_key_list)+1} + 1;\n'
+        stringBuilder += f'var timestamp = (counterResult[0 + index * {len(decode_key_list)+1}]) * MACH_TIME_FACTOR;\n'
+        stringBuilder += f'MTLStat_nSec = timestamp - lastTimestamp;\n'
         stringBuilder += f'var grcGPUCycles = counterResult[1 + startIndex];\n'
-
         for index, k in enumerate(decode_key_list):
             stringBuilder += f'{k.key} = counterResult[{index} + startIndex];\n'
             stringBuilder += f'{k.key}_norm = counterResult[{index} + startIndex] / grcGPUCycles\n'
 
         for i in display_key_list:
             stringBuilder += 'try {' + f'value = {i.method}(); ' + '_CounterResult.push(value);} catch(err) {console.error(err); _CounterResult.push(0);}\n'
-
+        stringBuilder += 'lastTimestamp = timestamp\n'
         stringBuilder += '}\n'
         stringBuilder += 'return _CounterResult\n'
         stringBuilder += '}\n'

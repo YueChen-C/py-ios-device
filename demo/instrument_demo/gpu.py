@@ -1,7 +1,7 @@
 """
 获取 gup 数据，返回时间序列还没琢磨出来怎么解析
 
-startCollectingCounters 之后会返回参数详解之类的， 一些解析方式，但是看起来依然很费劲
+正常情况下应该是 1000 组数据返回一次，每个设备都不同，也有可能是几万返回一次
 """
 import os
 import sys
@@ -28,7 +28,7 @@ def gup(rpc):
     def dropped_message(res):
         nonlocal js_env,decode_key_list,display_key_list
         if res.selector[0]==1:
-            js_env.dump_trace(TraceData(*res.selector[2:]))
+            js_env.dump_trace(TraceData(*res.selector))
         elif res.selector[0] == 0:
             # # print(res.selector)
             _data = res.selector[4]
@@ -48,7 +48,7 @@ def gup(rpc):
 
     print(rpc.call('com.apple.instruments.server.services.gpu', 'stopCollectingCounters').selector)
     data = rpc.call('com.apple.instruments.server.services.gpu', 'flushRemainingData').selector
-    js_env.dump_trace(TraceData(*data[0][2:]))
+    js_env.dump_trace(TraceData(*data[0]))
     time.sleep(2)
     rpc.stop()
 
