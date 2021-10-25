@@ -156,7 +156,7 @@ class JSEvn:
                 if counter.require:
                     counter_data.append(counter)
                 else:
-                    counter.val = counter.val - fast_counter.get(index).val
+                    # counter.val = counter.val - fast_counter.get(index).val
                     counter_data.append(counter.val - fast_counter.get(index).val)
         return counter_data
 
