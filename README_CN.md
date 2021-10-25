@@ -30,6 +30,7 @@ python 版本: 3.7 +
 - [x] 运行 xcuitest 启动 wda
 - [x] 导出内核堆栈快照
 - [x] 解析内核数据流
+- [x] 获取 iOS GPU Counters 
 
 
 ### 其他功能列表
@@ -146,6 +147,25 @@ SealTalk(1107)             PERF_THD_CSwitch (0x25010014)                        
 SealTalk(1107)             MACH_DISPATCH (0x1400080)                                   DBG_MACH          DBG_MACH_SCHED                DBG_FUNC_NONE  
 SealTalk(1107)             DecrSet (0x1090004)                                         DBG_MACH          DBG_MACH_EXCP_DECI            DBG_FUNC_NONE  
 
+```
+
+#### 获取 Metal GPU Counters
+```bash
+$ instruments gup_counters
+15.132907 ALU Limiter                                  93.77 
+15.132907 Texture Sample Limiter                       39.62 
+15.132907 Texture Write Limiter                        13.87 
+15.132907 Buffer Read Limiter                          0.01  
+15.132907 Buffer Write Limiter                         0     
+15.132907 Threadgroup/Imageblock Load Limiter          17.16 
+15.132907 Threadgroup/Imageblock Store Limiter         10.9  
+15.132907 Fragment Input Interpolation Limiter         15.74 
+15.132907 GPU Last Level Cache Limiter                 6.24  
+15.132907 Vertex Occupancy                             0     
+15.132907 Fragment Occupancy                           91.44 
+15.132907 Compute Occupancy                            0     
+15.132907 GPU Read Bandwidth                           2.65  
+15.132907 GPU Write Bandwidth                          1.25  
 ```
 
 
