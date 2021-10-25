@@ -13,8 +13,9 @@ from ios_device.servers.testmanagerd import TestManagerdLockdown
 from ios_device.util import Log
 from ios_device.util.bpylist2 import NSUUID, NSURL, XCTestConfiguration
 from ios_device.util.bpylist2 import archive
-from ios_device.util.dtx_msg import RawObj
+from ios_device.util.dtx_msg import RawObj, RawInt32sl, RawInt64sl
 from ios_device.util.exceptions import InstrumentRPCParseError
+from ios_device.util.gpu_decode import JSEvn, TraceData
 from ios_device.util.kperf_data import KperfData
 from ios_device.util.lockdown import LockdownClient
 from ios_device.util.variables import InstrumentsService, LOG
@@ -333,6 +334,27 @@ class InstrumentsBase:
         while not stopSignal.wait(1):
             pass
         self.instruments.call(InstrumentsService.CoreProfileSessionTap, "stop")
+
+
+    def gup_counters(self,
+                    callback: callable,
+                    stopSignal: threading.Event = threading.Event(),
+                    js_env:JSEvn = None ):
+
+        self.instruments.register_undefined_callback(callback)
+        requestDeviceGPUInfo = self.instruments.call(InstrumentsService.GPU, 'requestDeviceGPUInfo').selector
+
+        min_collection_interval = requestDeviceGPUInfo[0].get('min-collection-interval')
+        self.instruments.call(InstrumentsService.GPU,
+                       "configureCounters:counterProfile:interval:windowLimit:tracingPID:",
+                       RawInt64sl(min_collection_interval, 3, 1, 0), RawInt32sl(-1))
+        self.instruments.call(InstrumentsService.GPU, 'startCollectingCounters')
+        while not stopSignal.wait(1):
+            pass
+        self.instruments.call(InstrumentsService.GPU, 'stopCollectingCounters')
+        data = self.instruments.call(InstrumentsService.GPU, 'flushRemainingData').selector
+        js_env.dump_trace(TraceData(*data[0]))
+
 
     def screenshot(self):
         var = self.instruments.call(InstrumentsService.Screenshot, "takeScreenshot").selector

@@ -12,6 +12,7 @@ from ios_device.cli.base import InstrumentsBase
 from ios_device.cli.cli import Command, print_json
 from ios_device.util import Log, api_util
 from ios_device.util.exceptions import InstrumentRPCParseError
+from ios_device.util.gpu_decode import JSEvn, TraceData, GRCDecodeOrder, GRCDisplayOrder
 from ios_device.util.kc_data import kc_data_parse
 from ios_device.util.utils import DumpDisk, DumpNetwork, DumpMemory
 from ios_device.util.variables import LOG
@@ -371,3 +372,27 @@ def stackshot(udid, network, format,pid,process_name):
                  'bm': 0,
              }
         rpc.core_profile(config,pid,process_name)
+
+
+
+@instruments.command('gup_counters', cls=Command)
+def gup_counters(udid, network, format):
+    """ Metal GPU Counters """
+    with InstrumentsBase(udid=udid, network=network) as rpc:
+        decode_key_list = []
+        js_env:JSEvn = None
+        display_key_list = []
+
+        def dropped_message(res):
+            nonlocal js_env, decode_key_list, display_key_list
+            if res.selector[0] == 1:
+                js_env.dump_trace(TraceData(*res.selector))
+            elif res.selector[0] == 0:
+                _data = res.selector[4]
+                decode_key_list = GRCDecodeOrder.decode(_data.get(1))
+                display_key_list = GRCDisplayOrder.decode(_data.get(0))
+                js_env = JSEvn(_data.get(2), display_key_list, decode_key_list, mach_time_factor)
+
+        machTimeInfo = rpc.device_info.machTimeInfo()
+        mach_time_factor = machTimeInfo[1] / machTimeInfo[2]
+        rpc.gup_counters(callback=dropped_message,js_env=js_env)

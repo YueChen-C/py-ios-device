@@ -114,3 +114,4 @@ class InstrumentsService(str, enum.Enum):
     # - disableConditionWithIdentifier:
     # - enableConditionWithIdentifier: profileIdentifier:
     XcodeEnergy = 'com.apple.xcode.debug-gauge-data-providers.Energy'
+    GPU = 'com.apple.instruments.server.services.gpu'
