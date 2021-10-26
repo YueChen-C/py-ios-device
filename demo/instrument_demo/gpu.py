@@ -42,9 +42,9 @@ def gup(rpc):
     requestDeviceGPUInfo = rpc.call('com.apple.instruments.server.services.gpu','requestDeviceGPUInfo').selector
 
     min_collection_interval = requestDeviceGPUInfo[0].get('min-collection-interval')
-    print(rpc.call("com.apple.instruments.server.services.gpu", "configureCounters:counterProfile:interval:windowLimit:tracingPID:",RawInt64sl(min_collection_interval, 3, 1,0),RawInt32sl(-1)).selector)
-    print(rpc.call('com.apple.instruments.server.services.gpu', 'startCollectingCounters').selector)
-    time.sleep(30)
+    rpc.call("com.apple.instruments.server.services.gpu", "configureCounters:counterProfile:interval:windowLimit:tracingPID:",RawInt64sl(min_collection_interval, 3, 1,0),RawInt32sl(-1))
+    rpc.call('com.apple.instruments.server.services.gpu', 'startCollectingCounters')
+    time.sleep(5)
 
     print(rpc.call('com.apple.instruments.server.services.gpu', 'stopCollectingCounters').selector)
     data = rpc.call('com.apple.instruments.server.services.gpu', 'flushRemainingData').selector

@@ -51,6 +51,7 @@ class TraceData:
     time_stamp: int
     trace_num: int  # 组数量，每组根据 GRCDecodeOrder 序列进行相关逻辑解析
     trace_data: bytes
+    padding:int = field(default=None, repr=False) # 未知填充
 
 
 
@@ -156,8 +157,8 @@ class JSEvn:
                 if counter.require:
                     counter_data.append(counter)
                 else:
-                    # counter.val = counter.val - fast_counter.get(index).val
-                    counter_data.append(counter.val - fast_counter.get(index).val)
+                    counter.val = counter.val - fast_counter.get(index).val
+                    counter_data.append(counter)
         return counter_data
 
     @staticmethod
