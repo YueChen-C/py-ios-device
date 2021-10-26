@@ -119,10 +119,10 @@ class JSEvn:
             if not d:
                 break
             _temp_val_list = []
-            tmp_data = GPUTraceData(struct.unpack('L', d)[0])
+            tmp_data = GPUTraceData(struct.unpack('Q', d)[0])
             for i in self.decode_key_list:
                 d = data_io.read(8)
-                i.val = struct.unpack('L', d)[0]
+                i.val = struct.unpack('Q', d)[0]
                 tmp_data.append(deepcopy(i))
             data_list.append(tmp_data)
         return data_list
