@@ -304,15 +304,8 @@ class LockdownClient:
             local_device_support = get_app_dir("device-support")
             image_zip_path = os.path.join(local_device_support, version + ".zip")
             if not os.path.isfile(image_zip_path):
-                _alias = {
-                    "12.0": "12.0 (16A366).zip",
-                    "12.1": "12.1 (16B91).zip",
-                    "12.2": "12.2 (16E5212e).zip",
-                    "12.4": "12.4 (16G73).zip",
-                }
-                zip_name = _alias.get(version, f"{version}.zip")
-                origin_url = f"https://github.com/JinjunHan/iOSDeviceSupport/tree/master/DeviceSupport/{zip_name}"
-                mirror_url = f"https://github.com/filsv/iPhoneOSDeviceSupport/raw/master/{zip_name}"
+                origin_url = f"https://github.com/JinjunHan/iOSDeviceSupport/tree/master/DeviceSupport/{version}.zip"
+                mirror_url = f"https://github.com/filsv/iPhoneOSDeviceSupport/blob/master/{version}.zip"
                 log.info("Download %s -> %s", origin_url, image_zip_path)
                 try:
                     self._urlretrieve(mirror_url, image_zip_path)
