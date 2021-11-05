@@ -1,3 +1,4 @@
+import json
 import os
 import plistlib
 import threading
@@ -190,11 +191,20 @@ class InstrumentsBase:
         return InstrumentDeviceInfo(rpc)
 
     def launch_app(self, bundle_id,
-                   app_env: dict = {},
+                   app_env = None,
                    app_args: list = [],
                    app_path: str = "",
                    options: dict = {},
                    callback: callable = None):
+
+        if app_env is None:
+            app_env = {}
+        else:
+            app_env = json.loads(app_env)
+            if not isinstance(app_env,dict):
+                log.info('app_env 参数异常应为 Json 格式')
+                return
+
         options = options or {
             "StartSuspendedKey": 0,
             "KillExisting": False,
