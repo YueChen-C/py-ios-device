@@ -80,6 +80,7 @@ class InstallationProxyService(object):
                "ApplicationIdentifier": bid}
         if options:
             cmd.update({"ClientOptions": options})
+        self.service.send_plist(cmd)
         self.logger.info("%s : %s\n", cmd, self.watch_completion(handler, *args))
 
     def uninstall(self, bid, options=None, handler=None, *args):
