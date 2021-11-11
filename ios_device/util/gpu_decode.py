@@ -175,10 +175,6 @@ class JSEvn:
         counter_list = self.get_counter_list(trace_data)
         js_val_list = self.counter_to_js(counter_list)
         counter_result = self.ctx.call('EvaluateGPUCounter', len(counter_list), js_val_list)
-        print(len(counter_list))
-        with open('test.log','w') as e:
-            e.write(f'{js_val_list}')
-
         return counter_result,counter_list
 
     def dump_trace(self,trace_data):
