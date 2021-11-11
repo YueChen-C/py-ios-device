@@ -375,8 +375,8 @@ def stackshot(udid, network, format,pid,process_name):
 
 
 
-@instruments.command('gup_counters', cls=Command)
-def gup_counters(udid, network, format):
+@instruments.command('gpu_counters', cls=Command)
+def gpu_counters(udid, network, format):
     """ Metal GPU Counters """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         decode_key_list = []

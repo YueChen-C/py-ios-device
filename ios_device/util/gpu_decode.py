@@ -133,12 +133,13 @@ class JSEvn:
         fast_counter = None
         trace_list = self.trace_decode(trace_data)
         while index < len(trace_list):
-            _counter = trace_list[index]
+            _counter = deepcopy(trace_list[index])
+            tmp_counter =  deepcopy(trace_list[index])
             if index == 0:
                 counter_list.append(self._calculation(_counter, _counter))
             else:
                 counter_list.append(self._calculation(fast_counter, _counter))
-            fast_counter = _counter
+            fast_counter = tmp_counter
             index += 1
         return counter_list
 
@@ -174,6 +175,10 @@ class JSEvn:
         counter_list = self.get_counter_list(trace_data)
         js_val_list = self.counter_to_js(counter_list)
         counter_result = self.ctx.call('EvaluateGPUCounter', len(counter_list), js_val_list)
+        print(len(counter_list))
+        with open('test.log','w') as e:
+            e.write(f'{js_val_list}')
+
         return counter_result,counter_list
 
     def dump_trace(self,trace_data):

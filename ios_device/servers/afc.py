@@ -443,6 +443,8 @@ class AFCShell(Cmd):
 
     def do_rm(self, p):
         f = self.afc.get_file_info(self.curdir + "/" + p)
+        if not f:
+            return
         if f['st_ifmt'] == 'S_IFDIR':
             d = self.afc.remove_directory(self.curdir + "/" + p)
         else:

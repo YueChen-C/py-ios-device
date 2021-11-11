@@ -1,5 +1,5 @@
 """
-获取 gup 数据，返回时间序列还没琢磨出来怎么解析
+获取 gpu 数据，返回时间序列还没琢磨出来怎么解析
 
 正常情况下应该是 1000 组数据返回一次，每个设备都不同，也有可能是几万返回一次
 """
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 
-def gup(rpc):
+def gpu(rpc):
     decode_key_list = []
     js_env:JSEvn
     display_key_list = []
@@ -42,7 +42,7 @@ def gup(rpc):
     requestDeviceGPUInfo = rpc.call('com.apple.instruments.server.services.gpu','requestDeviceGPUInfo').selector
 
     min_collection_interval = requestDeviceGPUInfo[0].get('min-collection-interval')
-    rpc.call("com.apple.instruments.server.services.gpu", "configureCounters:counterProfile:interval:windowLimit:tracingPID:",RawInt64sl(min_collection_interval, 3, 1,0),RawInt32sl(-1))
+    rpc.call("com.apple.instruments.server.services.gpu", "configureCounters:counterProfile:interval:windowLimit:tracingPID:",RawInt64sl(min_collection_interval, 3, 0,0),RawInt32sl(-1))
     rpc.call('com.apple.instruments.server.services.gpu', 'startCollectingCounters')
     time.sleep(5)
 
@@ -55,5 +55,5 @@ def gup(rpc):
 
 if __name__ == '__main__':
     rpc = InstrumentServer().init()
-    gup(rpc)
+    gpu(rpc)
     rpc.stop()
