@@ -149,7 +149,7 @@ SealTalk(1107)             DecrSet (0x1090004)                                  
 
 #### Get Metal GPU Counters
 ```bash
-$ instruments gup_counters
+$ instruments gpu_counters
 15.132907 ALU Limiter                                  93.77 
 15.132907 Texture Sample Limiter                       39.62 
 15.132907 Texture Write Limiter                        13.87 
