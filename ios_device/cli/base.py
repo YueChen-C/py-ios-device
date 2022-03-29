@@ -163,7 +163,9 @@ class InstrumentsBase:
         pid = None
         if bundle_id:
             app = self.application_listing(bundle_id)
-            name = app.get('ExecutableName')
+            if app:
+                name = app.get('ExecutableName')
+
         if name:
             processes = self.device_info.runningProcesses()
             for p in processes:
