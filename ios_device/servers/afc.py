@@ -33,7 +33,6 @@ from construct.core import Struct
 from construct.lib.containers import Container
 from construct import Const, Int64ul
 
-
 from cmd import Cmd
 from six import PY3
 from pprint import pprint
@@ -357,6 +356,20 @@ class AFCClient(object):
             return
         d = self.file_write(h, data)
         self.file_close(h)
+
+    def set_upload_dir(self, path, afc_path):
+        if os.path.isdir(path):
+            self.make_directory(afc_path)
+            dir_list = os.listdir(path)
+            for _dir in dir_list:
+                _path = f'{path}/{_dir}'
+                if os.path.isdir(_path):
+                    self.set_upload_dir(_path, f'{afc_path}/{_dir}')
+                else:
+                    with open(_path, "rb") as f:
+                        self.set_file_contents(f'{afc_path}/{_dir}', f.read())
+        else:
+            raise Exception(f"{path} must be a folder")
 
     def dir_walk(self, dirname):
         dirs = []
