@@ -85,7 +85,7 @@ def cmd_devices(udid, network, format):
 
 @cli.command('deviceinfo', cls=Command)
 def cmd_deviceinfo(udid, network, format):
-    """ open an AFC shell for given bundle_id, assuming its profile is installed """
+    """ show basic device attributes """
     device_info = LockdownClient(udid=udid, network=network).get_value()
     print_json(device_info,format=format)
 
