@@ -1,9 +1,4 @@
-import os
-import sys
-
 import click
-sys.path.append(os.getcwd())
-
 from ios_device.cli.instruments import cli as instruments_cli
 from ios_device.cli.mobile import cli as mobile_cli
 

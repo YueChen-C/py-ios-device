@@ -28,7 +28,8 @@ coloredlogs.DEFAULT_FIELD_STYLES = {'asctime': {'color': 'green'}, 'hostname': {
 
 class Log:
     __instances = {}
-    def __init__(self,level = None):
+
+    def __init__(self, level=None):
         self.level = level
 
     @classmethod
