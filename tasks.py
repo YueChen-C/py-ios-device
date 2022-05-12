@@ -58,7 +58,7 @@ def install(ctx):
 
 @task
 def uninstall(ctx):
-    ctx.run(f"pip uninstall py-ios-device -y", hide="out")
+    ctx.run(f"pip3 uninstall py-ios-device -y", hide="out")
 
 
 @task

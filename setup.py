@@ -2,20 +2,14 @@
 @Date    : 2020-12-18
 @Author  : liyachao
 """
-import os
 from setuptools import setup, find_packages
+from ios_device import __version__
 
 REQUIREMENTS = [i.strip() for i in open("requirements.txt").readlines()]
 
-about = {}
-with open(os.path.join("ios_device", "__version__.py")) as f:
-    exec(f.read(), about)
-
-VERSION = about["__version__"]
-
 
 setup(name='py_ios_device',
-      version=VERSION,
+      version=__version__,
       description='Get ios data and operate ios devices',
       author='chenpeijie & liyachao',
       author_email='cpjsf@163.com',
@@ -37,4 +31,4 @@ setup(name='py_ios_device',
               'pyidevice=ios_device.main:cli'
           }
       },
-      )
+)
