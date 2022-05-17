@@ -2,10 +2,9 @@
 @Date    : 2021-01-28
 @Author  : liyachao
 """
-import time
 import uuid
 from datetime import datetime
-
+from numpy import long, mean
 
 from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.servers.Installation import InstallationProxyService
@@ -462,7 +461,6 @@ def stop_xcuitest(xcuitest):
 
 
 def start_get_fps(device_id: str = None, rpc_channel: InstrumentServer = None, callback: callable = None):
-    from numpy import long, mean
 
     """
     开始获取 fps 相关数据
@@ -685,80 +683,3 @@ def start_forward(pair_ports=None, device_id: str = None):
 
 def stop_forward(forward: ForwardPorts):
     forward.stop()
-
-
-def te1st(res):
-    # print(res[0]["PerCPUUsage"])
-    print(res)
-
-
-if __name__ == "__main__":
-    print(get_processes())
-    # print(get_netstat(216))
-    # channel = PyiOSDevice()
-    # print(channel.get_netstat(216))
-    # channel.stop()
-    # c = start_get_mobile_notifications(callback=te1st)
-    # time.sleep(5)
-    # stop_get_mobile_notifications(c)
-    # time.sleep(3)
-    # print("asdasdasd")
-    # c.stop()
-
-    # channel = start_get_fps(callback=te1st)
-    # time.sleep(10)
-    # stop_get_fps(channel)
-    # channel.stop()
-
-    # x = start_xcuitest("cn.rongcloud.rce.autotest.xctrunner", te1st,app_env={'USE_PORT': '8111'})
-    # time.sleep(10)
-    # stop_xcuitest(x)
-    # rpc_channel = init_wireless()
-    # system = start_get_system(callback=te1st, rpc_channel=rpc_channel)
-    # time.sleep(100)
-    # stop_get_system(system)
-    # processes = channel.start_get_gpu_data(callba)
-    # print(processes)
-    # channel.stop_channel()
-
-    # 有开始 有结束的demo
-    # channel = init()
-    # start_get_network(rpc_channel=channel, callback=te1st)
-    # time.sleep(10)
-    # stop_get_network(rpc_channel=channel)
-    # channel.stop()
-
-    # 普通的demo
-    # channel = get_channel()
-    # print(channel)
-    # get_device()
-
-    # channel = PyiOSDevice()
-    # print(channel.get_channel())
-
-    # channel = start_get_power_data(callback=test)
-    # # time.sleep(10)
-    # stop_get_system_data(channel)
-    # channel.stop()
-
-    # device = get_device()
-    # print(device.get_apps_bid())
-
-    # f = start_forward(["8200:8200"])
-    # time.sleep(30)
-    # stop_forward(f)
-    pass
-
-    # channel.register_unhandled_callback(test)
-    # channel.register_callback("_notifyOfPublishedCapabilities:", lambda a: print(1))
-    # start_get_gpu_data(rpc_channel=channel, callback=test)
-    # time.sleep(2)
-    # stop_get_gpurpc_channel=channel,_data(channel)
-    # channel.get_processes()
-    # process = channel.get_processes()
-    # print(process)
-    # channel.start_activity(242)
-    # print(get_channel(rpc_channel=channel))
-    # dc = channel.get_processes()
-    # print(dc)
-    # channel.stop_channel()
