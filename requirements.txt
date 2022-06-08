@@ -1,8 +1,7 @@
 cffi==1.14.4
 construct==2.10.56
-cryptography==3.3.2
 pyasn1==0.4.8
-pyOpenSSL==20.0.0
+pyOpenSSL>=22.0.0
 six==1.15.0
 requests>=2.25.1
 click>=7.1.2
