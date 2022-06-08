@@ -50,10 +50,11 @@ class DTXClient:
             if not header_buffer:
                 return None
             header = dtx_message_header.parse(header_buffer)
+            key = (header.channel, header.identifier)
 
             if header.fragment_id == 0:
-                if header.channel not in self._dtx_manager:
-                    self._dtx_manager[header.channel] = (header_buffer, payload)
+                if key not in self._dtx_manager:
+                    self._dtx_manager[key] = (header_buffer, payload)
 
                 if header.fragment_count > 1:
                     continue
@@ -61,14 +62,18 @@ class DTXClient:
             body_buffer = self.recv(client, header.payload_length)
             if not body_buffer:
                 break
-            self._dtx_manager.get(header.channel)[1].extend(body_buffer)
+
+            if not self._dtx_manager.get(key):  # if there is no header, discard it
+                continue
+
+            self._dtx_manager.get(key)[1].extend(body_buffer)
 
             if header.fragment_id == header.fragment_count - 1:
                 break
 
-        data = self._dtx_manager.get(header.channel)
+        data = self._dtx_manager.get(key)
 
-        self._dtx_manager.pop(header.channel)
+        self._dtx_manager.pop(key)
         return DTXMessage.decode(data[0], data[1])
 
 
