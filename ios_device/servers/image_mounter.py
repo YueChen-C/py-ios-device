@@ -99,3 +99,6 @@ class MobileImageMounter(object):
         if 'DetailedError' in ret:
             if 'is already mounted at /Developer' in ret['DetailedError']:
                 raise Exception("DeveloperImage is already mounted")
+            if 'Developer mode is not enabled' in ret['DetailedError']:
+                raise Exception('Developer mode is not enabled. try `pyidevice enable_developer_mode`')
+

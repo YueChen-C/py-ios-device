@@ -258,6 +258,11 @@ $ pyidevice battery
 
 ```
 
+#### enable developer mode
+```bash
+$ pyidevice enable_developer_mode
+```
+
 
 QQ ：37042417
 

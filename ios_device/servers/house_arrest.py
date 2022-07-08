@@ -8,12 +8,12 @@ from ..util.lockdown import LockdownClient
 
 
 class HouseArrestService(AFCClient):
-    serviceName = "com.apple.mobile.house_arrest"
+    SERVICE_NAME = "com.apple.mobile.house_arrest"
 
     def __init__(self, lockdown=None, udid=None, network=None,logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown if lockdown else LockdownClient(udid=udid,network=network)
-        super(HouseArrestService, self).__init__(lockdown, self.serviceName)
+        super(HouseArrestService, self).__init__(lockdown, self.SERVICE_NAME)
 
     def stop_session(self):
         self.logger.info("Disconecting...")

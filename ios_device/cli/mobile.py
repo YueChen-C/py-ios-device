@@ -7,6 +7,7 @@ import click
 from ios_device.cli.base import InstrumentsBase
 from ios_device.cli.cli import Command, print_json
 from ios_device.servers.Installation import InstallationProxyService
+from ios_device.servers.amfi import AmfiService
 from ios_device.servers.crash_log import CrashLogService
 from ios_device.servers.diagnostics_relay import DiagnosticsRelayService
 from ios_device.servers.house_arrest import HouseArrestService
@@ -87,7 +88,7 @@ def cmd_devices(udid, network, format):
 def cmd_deviceinfo(udid, network, format):
     """ show basic device attributes """
     device_info = LockdownClient(udid=udid, network=network).get_value()
-    print_json(device_info,format=format)
+    print_json(device_info, format=format)
 
 
 #######################################################################
@@ -153,7 +154,7 @@ def apps_list(udid, network, format, user, system):
         app_types.append('System')
     if not app_types:
         app_types = ['User', 'System']
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).get_apps(app_types),format=format)
+    print_json(InstallationProxyService(udid=udid, network=network, logger=log).get_apps(app_types), format=format)
 
 
 @apps.command('uninstall', cls=Command)
@@ -164,7 +165,7 @@ def uninstall(udid, network, format, bundle_id):
 
 
 @apps.command('install', cls=Command)
-@click.argument('ipa_path', required=True,type=click.Path(exists=True))
+@click.argument('ipa_path', required=True, type=click.Path(exists=True))
 def install(udid, network, format, ipa_path):
     """ install given .ipa """
     print_json(InstallationProxyService(udid=udid, network=network, logger=log).install(ipa_path))
@@ -178,7 +179,7 @@ def upgrade(udid, network, format, ipa_path):
 
 
 @apps.command('shell', cls=Command)
-@click.option('-b', '--bundle_id', default=None,required=True, help='Process app bundleId to filter')
+@click.option('-b', '--bundle_id', default=None, required=True, help='Process app bundleId to filter')
 @click.option('-a', '--access_type', default='VendDocuments', type=click.Choice(['VendDocuments', 'VendContainer']),
               help='filter VendDocuments or VendContainer')
 def shell(udid, network, format, bundle_id, access_type):
@@ -268,9 +269,11 @@ def cmd_battery(udid, network, format):
     log.info(
         f"[Battery] time={update_time}, current={current}, voltage={voltage}, power={power}, temperature={temperature}")
 
-#
-# @information.command('battery', cls=Command)
-# def cmd_battery(udid, network, format):
-#     """ get device battery
-#     """
-#     return
+
+@cli.command('enable_developer_mode', cls=Command)
+@click.option('-m', '--mode', type=click.Choice(['1', '2']), default=1, help='')
+def cmd_enable_developer_mode(udid, network, format, mode):
+    """ enable developer mode """
+    serve = AmfiService(udid=udid, network=network, logger=log)
+    serve.enable_developer_mode() if int(mode) == 1 else serve.enable_developer_mode_turn_on()
+

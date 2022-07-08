@@ -269,6 +269,11 @@ $ pyidevice battery
 
 ```
 
+#### 开启开发者模式
+```bash
+$ pyidevice enable_developer_mode
+```
+
 
 QQ 交流群：37042417
 
