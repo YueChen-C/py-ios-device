@@ -382,7 +382,7 @@ def read_home_file(foldername: str, filename: str) -> Optional[bytes]:
 
 def write_home_file(foldername: str, filename: str, data: bytes) -> str:
     path = get_home_path(foldername, filename)
-    log.info(f'save path :{path}')
+    log.debug(f'save path :{path}')
     with path.open('wb') as f:
         f.write(data)
     return path.as_posix()

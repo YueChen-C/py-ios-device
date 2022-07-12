@@ -5,7 +5,6 @@ import threading
 import uuid
 from distutils.version import LooseVersion
 
-
 from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.servers.dvt import DTXEnum
@@ -193,7 +192,7 @@ class InstrumentsBase:
         return InstrumentDeviceInfo(rpc)
 
     def launch_app(self, bundle_id,
-                   app_env = None,
+                   app_env=None,
                    app_args: list = [],
                    app_path: str = "",
                    options: dict = {},
@@ -203,7 +202,7 @@ class InstrumentsBase:
             app_env = {}
         else:
             app_env = json.loads(app_env)
-            if not isinstance(app_env,dict):
+            if not isinstance(app_env, dict):
                 log.info('app_env 参数异常应为 Json 格式')
                 return
 
@@ -337,36 +336,33 @@ class InstrumentsBase:
         self.instruments.register_channel_callback(InstrumentsService.CoreProfileSessionTap,
                                                    callback)
         self.instruments.call(InstrumentsService.CoreProfileSessionTap, "setConfig:",
-                                    {'rp': 10,
-                                     'tc': [{'kdf2': {630784000, 833617920, 830472456},
-                                             'tk': 3,
-                                             'uuid': str(uuid.uuid4()).upper()}],
-                                     'ur': 500})
+                              {'rp': 10,
+                               'tc': [{'kdf2': {630784000, 833617920, 830472456},
+                                       'tk': 3,
+                                       'uuid': str(uuid.uuid4()).upper()}],
+                               'ur': 500})
         self.instruments.call(InstrumentsService.CoreProfileSessionTap, "start")
         while not stopSignal.wait(1):
             pass
         self.instruments.call(InstrumentsService.CoreProfileSessionTap, "stop")
 
-
-    def gup_counters(self,
-                    callback: callable,
-                    stopSignal: threading.Event = threading.Event(),
-                    js_env:JSEvn = None ):
-
+    def gpu_counters(self,
+                     callback: callable,
+                     stopSignal: threading.Event = threading.Event()):
         self.instruments.register_undefined_callback(callback)
         requestDeviceGPUInfo = self.instruments.call(InstrumentsService.GPU, 'requestDeviceGPUInfo').selector
 
         min_collection_interval = requestDeviceGPUInfo[0].get('min-collection-interval')
         self.instruments.call(InstrumentsService.GPU,
-                       "configureCounters:counterProfile:interval:windowLimit:tracingPID:",
-                       RawInt64sl(min_collection_interval, 3, 1, 0), RawInt32sl(-1))
+                              "configureCounters:counterProfile:interval:windowLimit:tracingPID:",
+                              RawInt64sl(min_collection_interval, 3, 1, 0), RawInt32sl(-1))
         self.instruments.call(InstrumentsService.GPU, 'startCollectingCounters')
+        log.info('Wait for gup counters data ...')
         while not stopSignal.wait(1):
             pass
         self.instruments.call(InstrumentsService.GPU, 'stopCollectingCounters')
         data = self.instruments.call(InstrumentsService.GPU, 'flushRemainingData').selector
-        js_env.dump_trace(TraceData(*data[0]))
-
+        return data
 
     def screenshot(self):
         var = self.instruments.call(InstrumentsService.Screenshot, "takeScreenshot").selector
@@ -383,9 +379,9 @@ class InstrumentsBase:
         print("[!] wait a few seconds, be patient...")
         while not stopSignal.wait(1):
             pass
-        log.info(f"stop{ self.instruments.call(channel, 'endStreamTransfer:', float(stream_num)).selector}")
+        log.info(f"stop{self.instruments.call(channel, 'endStreamTransfer:', float(stream_num)).selector}")
 
-    def xcode_energy(self, pid, stopSignal:threading.Event = threading.Event()):
+    def xcode_energy(self, pid, stopSignal: threading.Event = threading.Event()):
         self.instruments.call(InstrumentsService.XcodeEnergy, "startSamplingForPIDs:", {pid})
         while not stopSignal.wait(1):
             ret = self.instruments.call(InstrumentsService.XcodeEnergy, "sampleAttributes:forPIDs:", {}, {pid})
@@ -568,7 +564,7 @@ class InstrumentsBase:
             result = ManagerdLockdown1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',
                 identifier,
-                RawObj(pid),RawObj(XCODE_VERSION)).selector
+                RawObj(pid), RawObj(XCODE_VERSION)).selector
             log.info("_IDE_authorizeTestSessionWithProcessID: %s", result)
 
         while not quit_event.wait(.1):
@@ -578,21 +574,19 @@ class InstrumentsBase:
         ManagerdLockdown2.stop()
         ManagerdLockdown1.stop()
 
-
-    def core_profile(self,config,pid,name,stopSignal: threading.Event = threading.Event()):
+    def core_profile(self, config, pid, name, stopSignal: threading.Event = threading.Event()):
         def on_graphics_message(res):
             if type(res.selector) is InstrumentRPCParseError:
                 for args in Kperf.to_str(res.selector.data):
                     print(args)
+
         self.instruments.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap",
-                                      on_graphics_message)
+                                                   on_graphics_message)
         traceCodesFile = self.device_info.traceCodesFile()
-        Kperf = KperfData(traceCodesFile,pid,name)
-        self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "setConfig:",config)
+        Kperf = KperfData(traceCodesFile, pid, name)
+        self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "setConfig:", config)
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "start")
         while not stopSignal.wait(1):
             pass
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop")
         self.instruments.stop()
-
-
