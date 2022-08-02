@@ -27,15 +27,19 @@ log = Log.getLogger(LOG.Instrument.value)
 class Raw:
     """特殊参数类型判断"""
 
+
 class RawObj(Raw):
     """ 某些情况 int 类型需要转成 obj
     """
+
     def __init__(self, *data):
         self.data = data
+
 
 class RawInt64sl(Raw):
     def __init__(self, *data):
         self.data = data
+
 
 class RawInt32sl(Raw):
     def __init__(self, *data):
@@ -84,7 +88,20 @@ dtx_message_aux = Struct(
         'magic' / Select(Const(0xa, Int32ul), Int32ul),
         'type' / Int32ul,
         'value' / Switch(this.type,
-                         {2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)), 3: Int32sl, 4: Int64ul, 5: Int32ul,
+                         {1: Prefixed(Int32ul, GreedyBytes), 2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)), 3: Int32sl,
+                          4: Int64ul, 5: Int32ul,
+                          6: Int64sl},
+                         default=GreedyBytes),
+    )))
+)
+
+server_push_dtx_message_aux = Struct(
+    'magic' / Default(Int64ul, 0x1f0),
+    'data' / Prefixed(Int64ul, GreedyRange(Struct(
+        'type' / Int32ul,
+        'value' / Switch(this.type,
+                         {1: Prefixed(Int32ul, GreedyBytes), 2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)), 3: Int32sl,
+                          4: Int64ul, 5: Int32ul,
                           6: Int64sl},
                          default=GreedyBytes),
     )))
@@ -149,19 +166,25 @@ class DTXMessage:
         if ret._payload_header.total_length == 0:
             return ret
         if ret._payload_header.aux_length:
-            auxiliaries = dtx_message_aux.parse(payload_io.read(ret._payload_header.aux_length)).data
+            if ret._payload_header.flags == 0x0:
+                auxiliaries = server_push_dtx_message_aux.parse(payload_io.read(ret._payload_header.aux_length)).data
+            else:
+                auxiliaries = dtx_message_aux.parse(payload_io.read(ret._payload_header.aux_length)).data
             ret.auxiliaries = [i.value for i in auxiliaries]
         else:
             ret.auxiliaries = []
 
         data = payload_io.read()
-        for fun in (unarchive, plistlib.loads):  # NSKeyedArchived or Plist
-            try:
-                ret._selector = fun(data)
-            except:
-                ret._selector = InstrumentRPCParseError(data)
-            else:
-                break
+        ret._selector = data
+        if data:
+            for fun in (unarchive, plistlib.loads):  # NSKeyedArchived or Plist
+                try:
+                    ret._selector = fun(data)
+                except:
+                    ret._selector = InstrumentRPCParseError(data)
+                else:
+                    break
+
         payload_io.close()
         log.debug(f'DTX msg decode: {ret.selector} :{ret.auxiliaries}')
         return ret
