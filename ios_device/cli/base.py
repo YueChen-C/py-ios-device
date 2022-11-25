@@ -258,7 +258,7 @@ class InstrumentsBase:
             'procAttrs': self.process_attributes,  # 输出所有进程信息字段，字段顺序与自定义相同（全量自字段，按需使用）
             'sysAttrs': self.system_attributes,  # 系统信息字段
             'cpuUsage': True,
-            'sampleInterval': 1000000000})
+            'sampleInterval': time * 1000000})
         self.instruments.register_channel_callback(InstrumentsService.Sysmontap, callback)
         self.instruments.call(InstrumentsService.Sysmontap, "start")
         log.info(f'Sysmontap start ...')

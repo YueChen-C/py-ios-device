@@ -226,6 +226,8 @@ def cmd_sysmontap(udid, network, format, time, pid, name, bundle_id, processes, 
 
         if bundle_id:
             app = rpc.application_listing(bundle_id)
+            if not app:
+                print(f"not find {bundle_id}")
             name = app.get('ExecutableName')
         rpc.sysmontap(on_callback_message, time)
 
