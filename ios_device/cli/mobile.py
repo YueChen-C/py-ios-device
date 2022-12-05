@@ -81,7 +81,8 @@ def sandbox(udid, network, format, bundle_id, access_type):
 @cli.command('devices', cls=Command)
 def cmd_devices(udid, network, format):
     """ get device list """
-    print_json(USBMux().get_devices(network), format)
+    with USBMux() as usb_mux:
+        print_json(usb_mux.get_devices(network), format)
 
 
 @cli.command('deviceinfo', cls=Command)
