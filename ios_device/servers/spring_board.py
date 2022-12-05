@@ -8,7 +8,7 @@ class SBServiceClient(object):
 
     def __init__(self, lockdown=None, udid=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
+        self.lockdown = lockdown or LockdownClient(udid=udid)
         self.service = self.lockdown.start_service(self.SERVICE_NAME)
 
     def get_icon_state(self, format_version="2"):

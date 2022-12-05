@@ -9,7 +9,7 @@ class MCInstallService(object):
 
     def __init__(self, lockdown=None, udid=None, network=None,logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid,network=network)
+        self.lockdown = lockdown or LockdownClient(udid=udid,network=network)
         self.service = self.lockdown.start_service(self.SERVICE_NAME)
 
     def get_profile_list(self):

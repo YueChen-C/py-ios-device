@@ -136,7 +136,7 @@ class AFCClient(object):
     def __init__(self, lockdown=None, serviceName="com.apple.afc", service=None, udid=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.serviceName = serviceName
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
+        self.lockdown = lockdown or LockdownClient(udid=udid)
         self.service = service if service else self.lockdown.start_service(self.serviceName)
         self.packet_num = 0
 
