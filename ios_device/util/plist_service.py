@@ -31,7 +31,7 @@ class PlistService:
     ):
         self.port = port
         self.device = device
-        if not device:
+        if not self.device:
             with USBMux() as usb_mux:
                 self.device = usb_mux.find_device(udid, network)
         log.debug(f'Connecting to device: {self.device.serial}')
