@@ -39,7 +39,7 @@ from pprint import pprint
 class MobileConfigService(object):
     def __init__(self, lockdown, udid=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
+        self.lockdown = lockdown or LockdownClient(udid=udid)
         self.service = lockdown.start_service("com.apple.mobile.MCInstall")
 
     def GetProfileList(self):

@@ -13,7 +13,7 @@ from ios_device.util.lockdown import LockdownClient
 class crashLog(object):
     def __init__(self, lockdown=None, udid=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
+        self.lockdown = lockdown or LockdownClient(udid=udid)
         self.crash_server = AFCCrashLog(lockdown=self.lockdown)
 
     def get_list(self):

@@ -66,7 +66,7 @@ class OsTraceService(object):
 
     def __init__(self, lockdown: LockdownClient=None):
         self.logger = logging.getLogger(__name__)
-        self.lockdown = lockdown if lockdown else LockdownClient()
+        self.lockdown = lockdown or LockdownClient()
         self.c = self.lockdown.start_service(self.SERVICE_NAME)
 
     def get_pid_list(self):

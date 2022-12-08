@@ -30,7 +30,10 @@ class PlistService:
             network=None
     ):
         self.port = port
-        self.device = device or USBMux().find_device(udid, network)
+        self.device = device
+        if not self.device:
+            with USBMux() as usb_mux:
+                self.device = usb_mux.find_device(udid, network)
         log.debug(f'Connecting to device: {self.device.serial}')
         self.sock = self.device.connect(port)  # type: socket
         if ssl_file:

@@ -37,7 +37,7 @@ from ios_device.util.lockdown import LockdownClient
 class screenshotr(object):
     def __init__(self, lockdown=None, serviceName='com.apple.mobile.screenshotr', udid=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
+        self.lockdown = lockdown or LockdownClient(udid=udid)
         self.service = self.lockdown.start_service(serviceName)
         DLMessageVersionExchange = self.service.recv_plist()
         version_major = DLMessageVersionExchange[1]

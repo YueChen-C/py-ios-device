@@ -12,7 +12,7 @@ log = Log.getLogger(LOG.Instrument.value)
 class InstrumentServer(DTXServer):
     def __init__(self, lockdown=None, udid=None, network=None, *args, **kw):
         super().__init__(*args, **kw)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid, network=network)
+        self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
 
     def init(self, _cli=None):
         """

@@ -8,7 +8,7 @@ from ..util.lockdown import LockdownClient
 class TestManagerdLockdown(DTXServer):
     def __init__(self, lockdown=None,udid=None,*args, **kw):
         super().__init__(*args, **kw)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
+        self.lockdown = lockdown or LockdownClient(udid=udid)
 
     def init(self,_cli=None):
         """

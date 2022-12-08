@@ -140,12 +140,12 @@ class InstrumentDeviceInfo:
 
 
 class InstrumentsBase:
-    def __init__(self, udid=None, network=None):
+    def __init__(self, udid=None, network=None, lockdown=None):
         self.udid = udid
         self.network = network
         self.instruments_rcp = None
         self.manager_rpc = None
-        self.lock_down = LockdownClient(udid=udid, network=network)
+        self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
         self.process_attributes = None
         self.system_attributes = None
 
@@ -176,14 +176,14 @@ class InstrumentsBase:
     def instruments(self):
         if self.instruments_rcp:
             return self.instruments_rcp
-        self.instruments_rcp = InstrumentServer(lockdown=self.lock_down).init()
+        self.instruments_rcp = InstrumentServer(lockdown=self.lockdown).init()
         return self.instruments_rcp
 
     @property
     def manager_lockdown(self):
         if self.manager_rpc:
             return self.manager_rpc
-        self.manager_rpc = TestManagerdLockdown(lockdown=self.lock_down).init()
+        self.manager_rpc = TestManagerdLockdown(lockdown=self.lockdown).init()
         return self.manager_rpc
 
     @property
@@ -425,22 +425,22 @@ class InstrumentsBase:
         def _callback(res):
             log.info(f" {res.selector} : {res.auxiliaries}")
 
-        with InstallationProxyService(lockdown=self.lock_down) as install:
+        with InstallationProxyService(lockdown=self.lockdown) as install:
             app_info = install.find_bundle_id(bundle_id)
             if not app_info:
                 log.warning(f"No app matches {bundle_id}")
                 return
 
         log.info("BundleID: %s", bundle_id)
-        log.info("DeviceIdentifier: %s", self.lock_down.device_info.get('UniqueDeviceID'))
+        log.info("DeviceIdentifier: %s", self.lockdown.device_info.get('UniqueDeviceID'))
         sign_identity = app_info.get("SignerIdentity", "")
         log.info("SignIdentity: %r", sign_identity)
         XCODE_VERSION = 29
         session_identifier = NSUUID(bytes=os.urandom(16), version=4)
-        ManagerdLockdown1 = TestManagerdLockdown(self.lock_down).init()
+        ManagerdLockdown1 = TestManagerdLockdown(self.lockdown).init()
 
         ManagerdLockdown1.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
-        if self.lock_down.ios_version > LooseVersion('11.0'):
+        if self.lockdown.ios_version > LooseVersion('11.0'):
             result = ManagerdLockdown1.call(
                 "dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface",
                 "_IDE_initiateControlSessionWithProtocolVersion:", RawObj(XCODE_VERSION)).selector
@@ -448,7 +448,7 @@ class InstrumentsBase:
         ManagerdLockdown1.register_selector_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
         ManagerdLockdown1.register_undefined_callback(_callback)
 
-        ManagerdLockdown2 = TestManagerdLockdown(self.lock_down).init()
+        ManagerdLockdown2 = TestManagerdLockdown(self.lockdown).init()
         ManagerdLockdown2.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
         ManagerdLockdown2.register_selector_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
         ManagerdLockdown2.register_undefined_callback(_callback)
@@ -492,7 +492,7 @@ class InstrumentsBase:
             "sessionIdentifier": session_identifier,
         }))
 
-        fsync = HouseArrestService(self.lock_down)
+        fsync = HouseArrestService(self.lockdown)
         fsync.send_command(bundle_id)
         for fname in fsync.read_directory("/tmp"):
             if fname.endswith(".xctestconfiguration"):
@@ -500,7 +500,7 @@ class InstrumentsBase:
                 fsync.file_remove("/tmp/" + fname)
         fsync.set_file_contents(xctest_path, xctest_content)
 
-        conn = InstrumentServer(self.lock_down).init()
+        conn = InstrumentServer(self.lockdown).init()
         conn.call('com.apple.instruments.server.services.processcontrol', 'processIdentifierForBundleIdentifier:',
                   bundle_id)
 
@@ -525,11 +525,11 @@ class InstrumentsBase:
             'MJPEG_SERVER_PORT': '',
             'USE_PORT': str(USE_PORT),
         }
-        if self.lock_down.ios_version > LooseVersion('11.0'):
+        if self.lockdown.ios_version > LooseVersion('11.0'):
             app_env['DYLD_INSERT_LIBRARIES'] = '/Developer/usr/lib/libMainThreadChecker.dylib'
             app_env['OS_ACTIVITY_DT_MODE'] = 'YES'
         app_options = {'StartSuspendedKey': False}
-        if self.lock_down.ios_version > LooseVersion('12.0'):
+        if self.lockdown.ios_version > LooseVersion('12.0'):
             app_options['ActivateSuspended'] = True
 
         app_args = [
@@ -552,7 +552,7 @@ class InstrumentsBase:
         if quit_event:
             conn.register_selector_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
 
-        if self.lock_down.ios_version > LooseVersion('12.0'):
+        if self.lockdown.ios_version > LooseVersion('12.0'):
             identifier = '_IDE_authorizeTestSessionWithProcessID:'
             result = ManagerdLockdown1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',

@@ -10,8 +10,8 @@ class MobileImageMounter(object):
     def __init__(self, lockdown=None, udid=None, logger=None,service=None):
         from ..util.lockdown import LockdownClient
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid)
-        self.service = service if service else self.lockdown.start_service(self.SERVICE_NAME)
+        self.lockdown = lockdown or LockdownClient(udid=udid)
+        self.service = service or self.lockdown.start_service(self.SERVICE_NAME)
 
         if not self.lockdown:
             raise Exception("Unable to start lockdown")

@@ -337,7 +337,7 @@ def stackshot(udid, network, format, out):
     """ Dump stack snapshot information. """
     with InstrumentsBase(udid=udid, network=network) as rpc:
 
-        if rpc.lock_down.ios_version < LooseVersion('12.0'):
+        if rpc.lockdown.ios_version < LooseVersion('12.0'):
             log.warn('The interface requires iOS version 12+')
             return
         stopSignal = threading.Event()

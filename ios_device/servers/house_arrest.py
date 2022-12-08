@@ -12,8 +12,8 @@ class HouseArrestService(AFCClient):
 
     def __init__(self, lockdown=None, udid=None, network=None,logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown if lockdown else LockdownClient(udid=udid,network=network)
-        super(HouseArrestService, self).__init__(lockdown, self.SERVICE_NAME)
+        self.lockdown = lockdown or LockdownClient(udid=udid,network=network)
+        super(HouseArrestService, self).__init__(self.lockdown, self.SERVICE_NAME)
 
     def stop_session(self):
         self.logger.info("Disconecting...")
