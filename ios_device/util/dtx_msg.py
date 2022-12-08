@@ -156,7 +156,7 @@ class DTXMessage:
     @classmethod
     def decode(cls, header_data: bytes, payload_data: bytes):
         ret = DTXMessage()
-        ret._buf = payload_data
+        ret._buf = header_data + payload_data
         payload_io = io.BytesIO(payload_data)
         ret._message_header = dtx_message_header.parse(header_data)
         if not ret._message_header.payload_length > 0:

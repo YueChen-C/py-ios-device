@@ -62,6 +62,7 @@ class DataclassArchiver:
         int_field: int = 0
         str_field: str = ""
     """
+
     def __init_subclass__(cls, ignore_unmapped=False):
         setattr(cls, _IGNORE_UNMAPPED_KEY, ignore_unmapped)
 
@@ -577,7 +578,7 @@ class Archive:
         }
         # pylint: disable=no-member
         return plistlib.dumps(
-            d, fmt=plistlib.FMT_BINARY,sort_keys=False)  # type: ignore
+            d, fmt=plistlib.FMT_BINARY, sort_keys=False)  # type: ignore
         # pylint: enable=no-member
 
 
@@ -744,11 +745,10 @@ class NSUUID(uuid.UUID):
 
 class DTKTraceTapMessage:
     def decode_archive(archive):
-        if archive._object.get('$0'):
-            s = archive.decode('$0')
-        else:
-            s = archive.decode('DTTapMessagePlist')
-        return s
+        if hasattr(archive, '_object'):
+            if archive._object.get('$0'):
+                return archive.decode('$0')
+        return archive.decode('DTTapMessagePlist')
 
 class MutableDataArchive:
     "Delegate for packing/unpacking NSMutableData objects"
@@ -785,6 +785,7 @@ UNARCHIVE_CLASS_MAP = {
     'XCTCapabilities': XCTCapabilities,
     'DTTapHeartbeatMessage': DTTapMessageArchive,
     'DTSysmonTapMessage': DTTapMessageArchive,
+    'DTTapMessage': DTTapMessageArchive,
 
 }
 

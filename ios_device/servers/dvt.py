@@ -50,7 +50,7 @@ class DTXClient:
             if not header_buffer:
                 return None
             header = dtx_message_header.parse(header_buffer)
-            key = (header.channel, header.identifier)
+            key = header.channel
 
             if header.fragment_id == 0:
                 if key not in self._dtx_manager:
