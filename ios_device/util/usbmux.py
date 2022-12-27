@@ -103,7 +103,7 @@ class MuxConnection:
             self.proto.TYPE_CONNECT, {'DeviceID': device, 'PortNumber': ((port & 0xFF) << 8) | (port >> 8)}
         )
         if ret['Number'] != 0:
-            raise MuxError('Connect failed: error %d' % ret)
+            raise MuxError('Connect failed: error %d' % ret['Number'])
         self.proto.connected = True
         return self.socket.sock
 
