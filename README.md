@@ -38,6 +38,7 @@ python version: 3.7 +
 - [x] Get the captured packet traffic and forward it to wireshark
 - [x] App install and uninstall 
 - [x] Get device battery 
+- [x] Set simulate-location options
 
 
 ## Usage：
