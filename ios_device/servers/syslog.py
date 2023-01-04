@@ -28,9 +28,9 @@ import re
 import sys
 from optparse import OptionParser
 from sys import exit
+
 sys.path.append(os.getcwd())
 from ios_device.util.lockdown import LockdownClient
-
 
 TIME_FORMAT = '%H:%M:%S'
 
@@ -41,15 +41,15 @@ class SyslogServer(object):
     """
     SERVICE_NAME = "com.apple.syslog_relay"
 
-    def __init__(self, lockdown=None, udid=None, network=None,logger=None):
+    def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown or LockdownClient(udid=udid,network=network)
+        self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
         self.c = self.lockdown.start_service(self.SERVICE_NAME)
 
-    def watch(self,log_file=None, filter=None):
+    def watch(self, log_file=None, filter=None):
         """View log
-        :param logFile: full path to the log file
-        :param filter: filter strings
+        :param log_file: full path to the log file
+        :param filter: filter strings
         """
         while True:
             d = self.c.recv(4096)
@@ -61,7 +61,7 @@ class SyslogServer(object):
             s = d.strip("\n\x00\x00")
             print(s)
             if log_file:
-                if isinstance(log_file,str):
+                if isinstance(log_file, str):
                     with open(log_file, 'wt') as f:
                         f.write(d.replace("\x00", ""))
                 else:
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             logging.basicConfig(level=logging.INFO)
             lckdn = LockdownClient(options.device_udid)
             syslog = SyslogServer(lockdown=lckdn)
-            syslog.watch( filter=options.procName, log_file=options.logFile)
+            syslog.watch(filter=options.procName, log_file=options.logFile)
         except KeyboardInterrupt:
             print("KeyboardInterrupt caught")
             raise

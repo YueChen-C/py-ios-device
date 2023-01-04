@@ -13,6 +13,7 @@ from ios_device.servers.diagnostics_relay import DiagnosticsRelayService
 from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.mc_install import MCInstallService
 from ios_device.servers.pcapd import PcapdService, PCAPPacketDumper
+from ios_device.servers.simulate_location import SimulateLocation
 from ios_device.servers.syslog import SyslogServer
 from ios_device.util import Log
 from ios_device.util.lockdown import LockdownClient
@@ -278,3 +279,24 @@ def cmd_enable_developer_mode(udid, network, format, mode):
     serve = AmfiService(udid=udid, network=network, logger=log)
     serve.enable_developer_mode() if int(mode) == 1 else serve.enable_developer_mode_turn_on()
 
+
+@cli.group('simulate-location')
+def simulate_location():
+    """ simulate-location options. """
+    pass
+
+
+@simulate_location.command('clear', cls=Command)
+def simulate_location_clear(udid, network, format, mode):
+    """ clear simulated location """
+    SimulateLocation(udid=udid, network=network, logger=log).clear()
+
+
+@simulate_location.command('set', cls=Command)
+@click.argument('latitude', type=click.FLOAT)
+@click.argument('longitude', type=click.FLOAT)
+def simulate_location_set(udid, network, format, latitude, longitude):
+    """
+    set a simulated location.
+    """
+    SimulateLocation(udid=udid, network=network, logger=log).set(latitude, longitude)

@@ -222,6 +222,11 @@ class InstrumentsBase:
         parsed = self.instruments.call(InstrumentsService.ProcessControl, "killPid:", str(pid)).selector
         return parsed
 
+    def signal_app(self, sig, pid):
+        parsed = self.instruments.call(InstrumentsService.ProcessControl, "sendSignal:toPid", str(sig),
+                                       str(pid)).selector
+        return parsed
+
     def application_listing(self, bundle_id=None):
         """ _selector
             - installedApplicationsMatching:registerUpdateToken:
@@ -472,7 +477,8 @@ class InstrumentsBase:
                 log.info("Test runner ready detected")
                 _start_executing()
 
-        ManagerdLockdown2.register_selector_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:', _start_executing)
+        ManagerdLockdown2.register_selector_callback('_XCT_testBundleReadyWithProtocolVersion:minimumVersion:',
+                                                     _start_executing)
         ManagerdLockdown2.register_selector_callback('_XCT_logDebugMessage:', _show_log_message)
         ManagerdLockdown2.register_selector_callback('_XCT_didFinishExecutingTestPlan', lambda _: quit_event.set())
 
