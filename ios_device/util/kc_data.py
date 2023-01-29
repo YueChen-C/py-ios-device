@@ -12,8 +12,10 @@ from ios_device.util import Log
 
 log = Log.getLogger(__name__)
 
+
 class Globals(object):
     pass
+
 
 G = Globals()
 G.accept_incomplete_data = False
@@ -482,7 +484,7 @@ class KCObject(object):
         if self.i_type in KNOWN_TYPES_COLLECTION:
             return KNOWN_TYPES_COLLECTION[self.i_type].GetJsonRepr(self.i_data, self.i_flags)
         if self.is_naked_type:
-            if isinstance(self.obj,map):
+            if isinstance(self.obj, map):
                 self.obj = list(self.obj)
             return json.dumps(self.obj)
         if self.nested_kcdata:
@@ -597,9 +599,9 @@ class KCObject(object):
             log.debug("0x%08x: %s%s" % (self.offset, INDENT(), self.i_name))
         else:
             self.is_naked_type = True
-            # self.obj = "data of len %d" % len(self.i_data)
-            # self.obj = ''.join(["%x" % ki for ki in struct.unpack('%dB' % len(self.i_data), self.i_data)])
-            self.obj = map(ord, self.i_data)
+            self.obj = "data of len %d" % len(self.i_data)
+            self.obj = ''.join(["%x" % ki for ki in struct.unpack('%dB' % len(self.i_data), self.i_data)])
+            # self.obj = map(ord, self.i_data)
             log.debug("0x%08x: %s%s" % (self.offset, INDENT(), self.i_name))
 
 
@@ -1704,10 +1706,9 @@ def prettify(data):
 
 
 def kc_data_parse(data):
-    json_obj=[]
+    json_obj = []
     for i, kcdata_buffer in enumerate(iterate_kcdatas(data)):
         str_data = "{" + kcdata_buffer.GetJsonRepr() + "}"
         str_data = str_data.replace("\t", "    ")
         json_obj.append(prettify(json.loads(str_data)))
     return json_obj
-
