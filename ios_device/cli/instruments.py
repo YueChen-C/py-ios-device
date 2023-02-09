@@ -16,7 +16,7 @@ from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.util.gpu_decode import JSEvn, TraceData, GRCDecodeOrder, GRCDisplayOrder
 from ios_device.util.kc_data import kc_data_parse
 from ios_device.util.utils import DumpDisk, DumpNetwork, DumpMemory
-from ios_device.util.variables import LOG
+from ios_device.util.variables import LOG, InstrumentsService
 
 log = Log.getLogger(LOG.Instrument.value)
 
@@ -325,7 +325,16 @@ def cmd_notifications(udid, network, format):
     """Get mobile notifications
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
+        machTimeInfo = rpc.instruments.call(InstrumentsService.DeviceInfo.value, "machTimeInfo").selector
+        mach_absolute_time = machTimeInfo[0]
+        numer = machTimeInfo[1]
+        denom = machTimeInfo[2]
+        usecs_since_epoch = rpc.lockdown.get_value(key='TimeIntervalSince1970') * 1000000
+
         def on_callback_message(res):
+            data = res.auxiliaries[0]
+            tim = (data['mach_absolute_time'] - mach_absolute_time) * numer / denom / 1000
+            data['time'] = str(datetime.fromtimestamp((usecs_since_epoch + tim) / 1000000))
             print_json(res.auxiliaries, format)
 
         rpc.mobile_notifications(on_callback_message)
