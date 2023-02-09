@@ -642,7 +642,7 @@ def stop_get_mobile_notifications(rpc_channel: InstrumentServer):
     """
     rpc_channel.call(
         "com.apple.instruments.server.services.mobilenotifications",
-        'setApplicationStateNotificationsEnabled:', str(True))
+        'setApplicationStateNotificationsEnabled:', str(False))
 
 
 def get_netstat(pid: int, device_id: str = None, rpc_channel: InstrumentServer = None):
