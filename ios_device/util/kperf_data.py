@@ -6,13 +6,15 @@
 import enum
 import io
 import json
+import struct
 
 from construct import Struct, Const, Padding, Int32ul, Int64ul, Array, GreedyRange, Byte, FixedSized, \
-    CString, Prefixed, GreedyBytes, Bytes, Select, Aligned, this, Adapter, Optional, Int16ul, Switch, StreamError
-# from pykdebugparser.kd_buf_parser import BplistAdapter
+    CString, GreedyBytes, this, Adapter, Int16ul, Switch, StreamError
 
 from ios_device.util import plistlib
 from ios_device.util.kc_data import kc_data_parse
+
+# from pykdebugparser.kd_buf_parser import BplistAdapter
 
 KDBG_CLASS_MASK = 0xff000000
 KDBG_CLASS_OFFSET = 24
@@ -35,6 +37,7 @@ KDBG_EVENTID_MASK = 0xfffffffc
 KDBG_FUNC_MASK = 0x00000003
 VERSION2_FLAG = b'\x00\x02\xaa\x55'
 VERSION3_FLAG = b'\x00\x03\xaa\x55'
+KD_BUF_FORMAT = '<Q32sQLLQ'
 
 
 def kdbg_extract_class(Debugid):
@@ -795,17 +798,7 @@ class DBG_DAEMON(enum.Enum):
     DBG_DAEMON_POWERD = 0x2
 
 
-# KD_BUF_FORMAT = '<Q32sQLLQ'
 
-# '<QLLQQQQLLQ'
-kperf_data = Struct(
-    'timestamp' / Int64ul,
-    'args' / Array(4, Int64ul),
-    'code' / Int64ul,
-    'debug_id' / Int32ul,
-    'cpu_id' / Int32ul,
-    'unused' / Int64ul,
-)
 
 kd_threadmap = Struct(
     'tid' / Int64ul,
@@ -857,16 +850,18 @@ CLASS_DICT = vars()
 
 class KdBufParser:
 
-    def __init__(self, data):
-        self.timestamp = data.timestamp
-        self.args = data.args
-        self.code = data.code
-        self.debug_id = data.debug_id
-        self.event_id = data.debug_id & KDBG_EVENTID_MASK
-        self.func_code = data.debug_id & KDBG_FUNC_MASK
-        self.class_code = kdbg_extract_class(data.debug_id)
-        self.subclass_code = kdbg_extract_subclass(data.debug_id)
-        self.final_code = kdbg_extract_code(data.debug_id)
+    def __init__(self, timestamp, args_buf, tid, debug_id, cpuid, unused):
+        self.timestamp = timestamp
+        self.args = struct.unpack('<QQQQ', args_buf)
+        self.tid = tid
+        self.cpuid = cpuid
+        self.unused = unused
+        self.debug_id = debug_id
+        self.event_id = debug_id & KDBG_EVENTID_MASK
+        self.func_code = debug_id & KDBG_FUNC_MASK
+        self.class_code = kdbg_extract_class(debug_id)
+        self.subclass_code = kdbg_extract_subclass(debug_id)
+        self.final_code = kdbg_extract_code(debug_id)
 
     @classmethod
     def decode(cls, buf_io: io.BytesIO):
@@ -874,8 +869,7 @@ class KdBufParser:
             buf = buf_io.read(64)
             if not buf:
                 return
-            data = kperf_data.parse(buf)
-            yield cls(data)
+            yield cls(*struct.unpack(KD_BUF_FORMAT, buf))
 
 
 def _format_class(classes, code):
@@ -1032,7 +1026,7 @@ class KperfData:
             if not isinstance(event, KdBufParser):
                 yield event
                 return
-            pid, process_name, process_str = self._format_process(event.code)
+            pid, process_name, process_str = self._format_process(event.tid)
             if self.filter_tid and self.filter_tid != pid:
                 continue
             if self.filter_process and self.filter_process != process_name:
