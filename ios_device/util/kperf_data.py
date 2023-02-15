@@ -996,7 +996,7 @@ class KperfData:
                 continue
             elif raw_events.tag == CONFIG_TAG:
                 self.ktrace_config = raw_events
-                buf_io.read(1)
+                GreedyRange(Const(0, Byte)).parse_stream(buf_io)
             elif raw_events.tag == KERNEL_TAG:
                 self.report_config = raw_events
                 GreedyRange(Const(0, Byte)).parse_stream(buf_io)
