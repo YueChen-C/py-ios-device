@@ -29,6 +29,7 @@ python version: 3.7 +
 - [x] Dump core profile stack snapshot 
 - [x] Analyze the core profile data stream
 - [x] Get Metal GPU Counters
+- [x] Get App Launch Lifecycle
 
 
 ### Other 
@@ -165,6 +166,19 @@ $ instruments gpu_counters
 15.132907 Compute Occupancy                            0     
 15.132907 GPU Read Bandwidth                           2.65  
 15.132907 GPU Write Bandwidth                          1.25  
+```
+
+#### Get App Launch Lifecycle
+```bash
+$ instruments app_lifecycle -b cn.rongcloud.im
+  31.20 ms   Initializing-System Interface Initialization (Dyld init)
+  14.33 ms   Initializing-Static Runtime Initialization
+  35.68 ms   Launching-UIKit Initialization
+ 810.46 us   Launching-UIKit Scene Creation
+ 100.64 ms   Launching-didFinishLaunchingWithOptions()
+   2.91 ms   Launching-UIKit Scene Creation
+  21.85 ms   Launching-Initial Frame Rendering
+App Thread Process ID:6506076, Total Time:207.41 ms
 ```
 
 ### Other

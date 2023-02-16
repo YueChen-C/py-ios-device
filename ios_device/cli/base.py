@@ -11,12 +11,12 @@ from ios_device.servers.dvt import DTXEnum
 from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.testmanagerd import TestManagerdLockdown
 from ios_device.util import Log
+from ios_device.util.lifecycle import AppLifeCycle
 from ios_device.util.bpylist2 import NSUUID, NSURL, XCTestConfiguration
 from ios_device.util.bpylist2 import archive
 from ios_device.util.dtx_msg import RawObj, RawInt32sl, RawInt64sl
 from ios_device.util.exceptions import InstrumentRPCParseError
-from ios_device.util.gpu_decode import JSEvn, TraceData
-from ios_device.util.kperf_data import KperfData
+from ios_device.util.kperf_data import KperfData, KdBufParser
 from ios_device.util.lockdown import LockdownClient
 from ios_device.util.variables import InstrumentsService, LOG
 
@@ -592,6 +592,56 @@ class InstrumentsBase:
         Kperf = KperfData(traceCodesFile, pid, name)
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "setConfig:", config)
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "start")
+        while not stopSignal.wait(1):
+            pass
+        self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop")
+        self.instruments.stop()
+
+    def app_launch_lifecycle(self, bundleid, stopSignal: threading.Event = threading.Event()):
+        traceCodesFile = self.device_info.traceCodesFile()
+        Kperf = KperfData(traceCodesFile)
+        machTimeInfo = self.instruments.call("com.apple.instruments.server.services.deviceinfo",
+                                             "machTimeInfo").selector
+        usecs_since_epoch = self.lockdown.get_value(key='TimeIntervalSince1970') * 1000000
+        LifeCycle = AppLifeCycle(machTimeInfo, usecs_since_epoch)
+
+        def demo(data):
+            for event in Kperf.to_dict(data):
+                if isinstance(event, KdBufParser):
+                    _, process_name = Kperf.threads_pids.get(event.tid, (None, None))
+                    if event.class_code in (0x1f, 0x2b, 0x31) and process_name not in ('SpringBoard',):
+                        LifeCycle.decode_app_lifecycle(event, process_name or event.tid)
+                    if event.debug_id == 835321862:
+                        LifeCycle.format_str()
+
+        def on_graphics_message(res):
+            if type(res.selector) is InstrumentRPCParseError:
+                demo(res.selector.data)
+
+        self.instruments.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap",
+                                                   on_graphics_message)
+        self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "setConfig:",
+                              {'rp': 100,
+                               'bm': 1,
+                               'tc': [{'kdf2': {735576064, 835321856, 735838208, 730267648,
+                                                520552448},
+                                       'csd': 128,
+                                       'tk': 3,
+                                       'ta': [[3], [0], [2], [1, 1, 0]],
+                                       'uuid': str(uuid.uuid4()).upper()}],
+                               })
+        self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "start")
+        channel = "com.apple.instruments.server.services.processcontrol"
+        pid = self.instruments.call(channel,
+                                    'launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:',
+                                    '',
+                                    bundleid,
+                                    {'OS_ACTIVITY_DT_MODE': '1',
+                                     'HIPreventRefEncoding': '1',
+                                     'DYLD_PRINT_TO_STDERR': '1'}, [],
+                                    {'StartSuspendedKey': 0}).selector
+        print(f'start {bundleid} pid:{pid} [!] wait a few seconds, being analysed...')
+
         while not stopSignal.wait(1):
             pass
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop")

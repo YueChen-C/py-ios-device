@@ -32,6 +32,7 @@ python 版本: 3.7 +
 - [x] 解析内核数据流
 - [x] 获取 iOS GPU Counters 
 - [x] 设置虚拟位置信息 
+- [x] 获取 APP 启动时间
 
 
 ### 其他功能列表
@@ -169,6 +170,18 @@ $ instruments gup_counters
 15.132907 GPU Write Bandwidth                          1.25  
 ```
 
+#### 获取 App 启动时间以及生命周期
+```bash
+$ instruments app_lifecycle -b cn.rongcloud.im
+  31.20 ms   Initializing-System Interface Initialization (Dyld init)
+  14.33 ms   Initializing-Static Runtime Initialization
+  35.68 ms   Launching-UIKit Initialization
+ 810.46 us   Launching-UIKit Scene Creation
+ 100.64 ms   Launching-didFinishLaunchingWithOptions()
+   2.91 ms   Launching-UIKit Scene Creation
+  21.85 ms   Launching-Initial Frame Rendering
+App Thread Process ID:6506076, Total Time:207.41 ms
+```
 
 ### 其他功能示例
 #### 描述文件管理 

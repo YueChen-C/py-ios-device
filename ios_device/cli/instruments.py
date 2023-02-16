@@ -410,3 +410,11 @@ def gpu_counters(udid, network, format):
         mach_time_factor = machTimeInfo[1] / machTimeInfo[2]
         data = rpc.gpu_counters(callback=dropped_message, stopSignal=stopSignal)
         js_env.dump_trace(TraceData(*data[0]))
+
+
+@instruments.command('app_lifecycle', cls=Command)
+@click.option('-b', '--bundle_id', default=None, help='Process app bundleId')
+def cmd_app_lifecycle(udid, network, format, bundle_id):
+    with InstrumentsBase(udid=udid, network=network) as rpc:
+        rpc.app_launch_lifecycle(bundle_id)
+
