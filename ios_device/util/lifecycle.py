@@ -57,7 +57,7 @@ class AppLifeCycle:
                             del _tmp_sub_state[val.sub_state]
                         else:
                             end_time = self.format_timestamp(val.time)
-                            _tmp_time = end_time - _tmp_sub_state[events[index-1].sub_state]
+                            _tmp_time = end_time - self.format_timestamp(events[index-1].time)
                             print(f'{convertTime(_tmp_time):>10} {val.period}-{val.sub_state}')
 
                 total_time = self.format_timestamp(events[-1].time) - self.format_timestamp(events[0].time)

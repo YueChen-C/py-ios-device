@@ -650,4 +650,3 @@ class InstrumentsBase:
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop")
         self.instruments.stop()
         rpc2.stop()
-        print(12131313)
