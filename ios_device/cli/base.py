@@ -613,6 +613,7 @@ class InstrumentsBase:
                         LifeCycle.decode_app_lifecycle(event, process_name or event.tid)
                     if event.debug_id == 835321862:
                         LifeCycle.format_str()
+                        stopSignal.set()
 
         def on_graphics_message(res):
             if type(res.selector) is InstrumentRPCParseError:
@@ -623,8 +624,9 @@ class InstrumentsBase:
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "setConfig:",
                               {'rp': 100,
                                'bm': 1,
-                               'tc': [{'kdf2': {735576064, 835321856, 735838208, 730267648,
-                                                520552448},
+                               'tc': [{'kdf2': {735576064, 19202048, 67895296, 835321856, 735838208, 554762240,
+                                                730267648, 520552448, 117440512, 19922944, 17563648, 17104896, 17367040,
+                                                771686400, 520617984, 20971520, 520421376},
                                        'csd': 128,
                                        'tk': 3,
                                        'ta': [[3], [0], [2], [1, 1, 0]],
@@ -632,17 +634,20 @@ class InstrumentsBase:
                                })
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "start")
         channel = "com.apple.instruments.server.services.processcontrol"
-        pid = self.instruments.call(channel,
-                                    'launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:',
-                                    '',
-                                    bundleid,
-                                    {'OS_ACTIVITY_DT_MODE': '1',
-                                     'HIPreventRefEncoding': '1',
-                                     'DYLD_PRINT_TO_STDERR': '1'}, [],
-                                    {'StartSuspendedKey': 0}).selector
+        rpc2 = InstrumentServer(lockdown=self.lockdown).init()
+        pid = rpc2.call(channel,
+                        'launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:',
+                        '',
+                        bundleid,
+                        {'OS_ACTIVITY_DT_MODE': '1',
+                         'HIPreventRefEncoding': '1',
+                         'DYLD_PRINT_TO_STDERR': '1'}, [],
+                        {'StartSuspendedKey': 0}).selector
         print(f'start {bundleid} pid:{pid} [!] wait a few seconds, being analysed...')
 
         while not stopSignal.wait(1):
             pass
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop")
         self.instruments.stop()
+        rpc2.stop()
+        print(12131313)

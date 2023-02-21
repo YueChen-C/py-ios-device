@@ -33,8 +33,9 @@ def app_launch_lifecyle(rpc, bundleid):
     rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "setConfig:",
              {'rp': 100,
               'bm': 1,
-              'tc': [{'kdf2': {735576064, 835321856, 735838208, 730267648,
-                               520552448},
+              'tc': [{'kdf2': {735576064, 19202048, 67895296, 835321856, 735838208, 554762240,
+                               730267648, 520552448, 117440512, 19922944, 17563648, 17104896, 17367040,
+                               771686400, 520617984, 20971520, 520421376},
                       'csd': 128,
                       'tk': 3,
                       'ta': [[3], [0], [2], [1, 1, 0]],
@@ -42,7 +43,8 @@ def app_launch_lifecyle(rpc, bundleid):
               })
     rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "start")
     channel = "com.apple.instruments.server.services.processcontrol"
-    pid = rpc.call(channel, 'launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:',
+    rpc1 = InstrumentServer().init()
+    pid = rpc1.call(channel, 'launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:',
                     '',
                     bundleid,
                     {'OS_ACTIVITY_DT_MODE': '1', 'HIPreventRefEncoding': '1', 'DYLD_PRINT_TO_STDERR': '1'}, [],

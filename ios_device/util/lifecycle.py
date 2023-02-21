@@ -43,22 +43,25 @@ class AppLifeCycle:
         return ((timestamp - self.mach_absolute_time) * self.numer) / self.denom
 
     def format_str(self):
-        total_time = 0
         _tmp_sub_state = {}
         for key, events in self.events.items():
             if events and events[-1].sub_state == 'Initial Frame Rendering':
-                for i in events:
-                    if i.kind == 'BEGIN':
-                        _tmp_sub_state[i.sub_state] = self.format_timestamp(i.time)
-                    elif i.kind == 'END':
-                        if i.sub_state in _tmp_sub_state:
-                            end_time = self.format_timestamp(i.time)
-                            _tmp_time = end_time - _tmp_sub_state[i.sub_state]
-                            total_time += _tmp_time
-                            print(f'{convertTime(_tmp_time):>10}   {i.period}-{i.sub_state}')
-                            del _tmp_sub_state[i.sub_state]
-                print(f'App Thread Process ID:{key}, Total Time:{convertTime(total_time)}')
+                for index, val in enumerate(events):
+                    if val.kind == 'BEGIN':
+                        _tmp_sub_state[val.sub_state] = self.format_timestamp(val.time)
+                    elif val.kind == 'END':
+                        if val.sub_state in _tmp_sub_state:
+                            end_time = self.format_timestamp(val.time)
+                            _tmp_time = end_time - _tmp_sub_state[val.sub_state]
+                            print(f'{convertTime(_tmp_time):>10}   {val.period}-{val.sub_state}')
+                            del _tmp_sub_state[val.sub_state]
+                        else:
+                            end_time = self.format_timestamp(val.time)
+                            _tmp_time = end_time - _tmp_sub_state[events[index-1].sub_state]
+                            print(f'{convertTime(_tmp_time):>10} {val.period}-{val.sub_state}')
 
+                total_time = self.format_timestamp(events[-1].time) - self.format_timestamp(events[0].time)
+                print(f'App Thread Process ID:{key}, Total Time:{convertTime(total_time)}')
                 self.events[key].clear()
 
     def decode_app_lifecycle(self, event: KdBufParser, thread):
@@ -142,9 +145,9 @@ class AppLifeCycle:
 
             elif event.subclass_code == 0x87:  # UIKit application launch phases
                 if event.final_code == 90 and event.args[0] == 0x32:
-                    self.update_app_period(AppLifeEvent('Launching',
-                                                        'UIKit Initialization', event.timestamp, thread, 'BEGIN',
-                                                        event.debug_id))
+                    self.update_start_period(AppLifeEvent('Launching',
+                                                          'UIKit Initialization', event.timestamp, thread, 'BEGIN',
+                                                          event.debug_id))
                     self.main_ui_thread = 'UIKIT'
 
                 elif event.final_code == 21:
