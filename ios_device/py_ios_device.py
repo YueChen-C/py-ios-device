@@ -4,7 +4,7 @@
 """
 import uuid
 from datetime import datetime
-from numpy import long, mean
+from numpy import *
 
 from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.servers.Installation import InstallationProxyService
