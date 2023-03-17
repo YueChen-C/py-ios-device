@@ -2401,6 +2401,4 @@ def kc_data_parse(data):
             json_obj.append(prettify(json.loads(str_data), True))
         return json_obj
     except Exception as E:
-        import traceback
-        print(traceback.print_exc())
         return json_obj

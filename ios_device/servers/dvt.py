@@ -79,9 +79,7 @@ class DTXClient:
 
 class DTXServer:
 
-    def __init__(self, lockdown=None, udid=None):
-        self.udid = udid
-        self.lockdown = lockdown
+    def __init__(self):
         self._cli = None
         self._recv_thread = None
         self._running = False

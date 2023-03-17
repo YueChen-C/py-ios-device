@@ -61,7 +61,7 @@ class AppLifeCycle:
                             print(f'{convertTime(_tmp_time):>10} {val.period}-{val.sub_state}')
 
                 total_time = self.format_timestamp(events[-1].time) - self.format_timestamp(events[0].time)
-                print(f'App Thread Process ID:{key}, Total Time:{convertTime(total_time)}')
+                print(f'App Thread Process ID:{key[0]} Name:{key[1]}, Process Total Time:{convertTime(total_time)}')
                 self.events[key].clear()
 
     def decode_app_lifecycle(self, event: KdBufParser, thread):

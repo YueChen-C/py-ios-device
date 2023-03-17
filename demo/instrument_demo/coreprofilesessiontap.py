@@ -3,11 +3,8 @@ import sys
 import time
 import uuid
 from datetime import datetime
-
-
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util.exceptions import InstrumentRPCParseError
-from ios_device.util.kperf_data import KperfData
 from ios_device.util.utils import kperf_data
 
 sys.path.append(os.getcwd())
@@ -17,8 +14,7 @@ MOVIE_FRAME_COST = 1 / 24
 
 
 def graphics_display(rpc):
-    from numpy import mean
-    from numpy.core import long
+    from statistics import mean
 
     def dropped_message(res):
         print("[DROP]", res.selector, res.raw.channel_code)
@@ -44,9 +40,9 @@ def graphics_display(rpc):
                 if code == 830472984:
                     # time_count = 0
                     if not last_frame:
-                        last_frame = long(_time)
+                        last_frame = _time
                     else:
-                        this_frame_cost = (long(_time) - last_frame) * mach_time_factor
+                        this_frame_cost = (_time - last_frame) * mach_time_factor
                         if all([last_3_frame_cost != 0, last_2_frame_cost != 0, last_1_frame_cost != 0]):
                             if this_frame_cost > mean([last_3_frame_cost, last_2_frame_cost, last_1_frame_cost]) * 2 \
                                     and this_frame_cost > MOVIE_FRAME_COST * NANO_SECOND * 2:
@@ -59,11 +55,8 @@ def graphics_display(rpc):
 
                         last_3_frame_cost, last_2_frame_cost, last_1_frame_cost = last_2_frame_cost, last_1_frame_cost, this_frame_cost
                         time_count += this_frame_cost
-                        last_frame = long(_time)
+                        last_frame = _time
                         frame_count += 1
-                # else:
-                #     time_count = (datetime.now().timestamp() - count_time) * NANO_SECOND
-                    # print(time_count)
 
                 if time_count > NANO_SECOND:
                     print(
@@ -75,14 +68,9 @@ def graphics_display(rpc):
                     time_count = 0
                     count_time = datetime.now().timestamp()
 
-                # else:
-                #     last_time = datetime.now().timestamp()
-
     rpc.register_undefined_callback(dropped_message)
     rpc.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap", on_graphics_message)
     # 获取mach time比例
-    Kperf = KperfData(rpc)
-
     machTimeInfo = rpc.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").selector
     mach_time_factor = machTimeInfo[1] / machTimeInfo[2]
 

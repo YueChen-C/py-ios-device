@@ -798,6 +798,80 @@ class DBG_DAEMON(enum.Enum):
     DBG_DAEMON_POWERD = 0x2
 
 
+# 0x7000004	TRACE_DATA_NEWTHREAD
+# 0x7000008	TRACE_DATA_EXEC
+# 0x700000c	TRACE_DATA_THREAD_TERMINATE
+# 0x7000010	TRACE_DATA_THREAD_TERMINATE_PID
+# 0x7010000	TRACE_STRING_GLOBAL
+# 0x7010004	TRACE_STRING_NEWTHREAD
+# 0x7010008	TRACE_STRING_EXEC
+# 0x701000c	TRACE_STRING_PROC_EXIT
+# 0x7010010	TRACE_STRING_THREADNAME
+# 0x7010014	TRACE_STRING_THREADNAME_PREV
+
+def trace_data_new_thread(parser, data):
+    parser.threads_pids[data.args[0]] = data.args[1]
+
+
+def trace_data_exec(parser, data):
+    parser.threads_pids[data.tid] = data.args[0]
+
+
+def trace_string_new_thread(parser, data):
+    name = data.buf_data.replace(b'\x00', b'').decode()
+    pid = parser.threads_pids[data.tid]
+    parser.pid_names[pid] = name
+    parser.tid_names[data.tid] = name
+
+
+def trace_string_exec(parser, data):
+    name = data.buf_data.replace(b'\x00', b'').decode()
+    pid = parser.threads_pids[data.tid]
+    parser.pid_names[pid] = name
+    parser.tid_names[data.tid] = name
+
+
+def trace_string_proc_exit(parser, data):
+    name = data.buf_data.replace(b'\x00', b'').decode()
+    return name
+
+
+def trace_string_thread_name(parser, data):
+    name = data.buf_data.replace(b'\x00', b'').decode()
+    parser.tids_names[data.tid] = name
+
+
+def trace_string_thread_name_prev(parser, data):
+    name = data.buf_data.replace(b'\x00', b'').decode()
+    parser.tids_names[data.tid] = name
+
+
+def trace_unknown(parser, data):
+    pass
+
+
+trace_handlers = {
+    0x7000004: trace_data_new_thread,
+    0x7000008: trace_data_exec,
+    # 0x700000c: trace_unknown,
+    # 0x7000010: trace_unknown,
+    # 0x7010000: trace_unknown,
+    0x7010004: trace_string_new_thread,
+    0x7010008: trace_string_exec,
+    0x701000c: trace_string_proc_exit,
+    0x7010010: trace_string_thread_name,
+    0x7010014: trace_string_thread_name_prev,
+    # 0x7020000: trace_unknown,
+    # 0x7020004: trace_unknown,
+    # 0x7020008: trace_unknown
+}
+
+
+def decode_trace_data(parser, data):
+    if isinstance(data, KdBufParser):
+        fun = trace_handlers.get(data.debug_id)
+        if fun:
+            fun(parser, data)
 
 
 kd_threadmap = Struct(
@@ -848,11 +922,13 @@ kd_header_v3 = Struct(
 
 CLASS_DICT = vars()
 
+
 class KdBufParser:
 
     def __init__(self, timestamp, args_buf, tid, debug_id, cpuid, unused):
         self.timestamp = timestamp
         self.args = struct.unpack('<QQQQ', args_buf)
+        self.buf_data = args_buf
         self.tid = tid
         self.cpuid = cpuid
         self.unused = unused
@@ -864,12 +940,14 @@ class KdBufParser:
         self.final_code = kdbg_extract_code(debug_id)
 
     @classmethod
-    def decode(cls, buf_io: io.BytesIO):
+    def decode(cls, parser, buf_io: io.BytesIO):
         while True:
             buf = buf_io.read(64)
             if not buf:
                 return
-            yield cls(*struct.unpack(KD_BUF_FORMAT, buf))
+            _cls = cls(*struct.unpack(KD_BUF_FORMAT, buf))
+            decode_trace_data(parser, _cls)
+            yield _cls
 
 
 def _format_class(classes, code):
@@ -952,16 +1030,21 @@ class KperfData:
         self.stack_shot = None
         self.trace_codes = traceCodesFile
         self.threads_pids = {}
+        self.pid_names = {}
+        self.tid_names = {}
         self.version = None
         self.filter_tid = filter_pid
         self.filter_process = filter_process
 
     def set_threads_pids(self, threads):
         for thread in threads:
-            self.threads_pids[thread.tid] = (thread.pid, thread.process)
+            self.pid_names[thread.pid] = thread.process
+            self.tid_names[thread.tid] = thread.process
+            self.threads_pids[thread.tid] = thread.pid
 
     def _format_process(self, tid):
-        pid, process_name = self.threads_pids.get(tid, (None, None))
+        pid = self.threads_pids.get(tid)
+        process_name = self.tid_names.get(tid)
         return pid, process_name, f'{process_name}({pid})' if pid else f'Error: tid {tid}'
 
     def parse(self, kd_buf: bytes):
@@ -970,22 +1053,18 @@ class KperfData:
         if version == b'\x07X\xa2Y':
             yield kc_data_parse(buf_io.read())
         elif version == VERSION2_FLAG:
-            for event in self.parse_v2(buf_io):
-                yield event
+            yield from self._parse_v2(buf_io)
         elif version == VERSION3_FLAG:
-            for event in self.parse_v3(buf_io):
-                yield event
+            yield from self._parse_v2(buf_io)
         else:
-            for event in KdBufParser.decode(buf_io):
-                yield event
+            yield from KdBufParser.decode(self, buf_io)
 
-    def parse_v2(self, buf_io: io.BytesIO):
+    def _parse_v2(self, buf_io: io.BytesIO):
         parsed_header = kd_header_v2.parse_stream(buf_io)
         self.set_threads_pids(parsed_header.threadmap)
-        for event in KdBufParser.decode(buf_io):
-            yield event
+        yield from KdBufParser.decode(self, buf_io)
 
-    def parse_v3(self, buf_io: io.BytesIO):
+    def _parse_v3(self, buf_io: io.BytesIO):
         self.kd_header_v3 = kd_header_v3.parse_stream(buf_io)
         while True:
             try:
@@ -1014,8 +1093,7 @@ class KperfData:
             elif raw_events.tag == V3_RAW_EVENTS:
                 events_buf = io.BytesIO(raw_events.data)
                 events_buf.read(8)  # Future events timestamp struct.pack('Q', 0)
-                for event in KdBufParser.decode(events_buf):
-                    yield event
+                yield from KdBufParser.decode(self, buf_io)
 
     def to_dict(self, kd_buf):
         for event in self.parse(kd_buf):

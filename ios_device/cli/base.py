@@ -604,16 +604,20 @@ class InstrumentsBase:
                                              "machTimeInfo").selector
         usecs_since_epoch = self.lockdown.get_value(key='TimeIntervalSince1970') * 1000000
         LifeCycle = AppLifeCycle(machTimeInfo, usecs_since_epoch)
+        filter_pid = None
 
         def demo(data):
             for event in Kperf.to_dict(data):
                 if isinstance(event, KdBufParser):
-                    _, process_name = Kperf.threads_pids.get(event.tid, (None, None))
-                    if event.class_code in (0x1f, 0x2b, 0x31) and process_name not in ('SpringBoard',):
-                        LifeCycle.decode_app_lifecycle(event, process_name or event.tid)
-                    if event.debug_id == 835321862:
-                        LifeCycle.format_str()
-                        stopSignal.set()
+                    _process_name = Kperf.tid_names.get(event.tid)
+                    _pid = Kperf.threads_pids.get(event.tid)
+                    process_key = (_pid, _process_name)
+                    if filter_pid == _pid:
+                        if event.class_code in (0x1f, 0x2b, 0x31):
+                            LifeCycle.decode_app_lifecycle(event, process_key)
+                        if event.debug_id == 835321862:
+                            LifeCycle.format_str()
+                            stopSignal.set()
 
         def on_graphics_message(res):
             if type(res.selector) is InstrumentRPCParseError:
@@ -631,19 +635,23 @@ class InstrumentsBase:
                                        'tk': 3,
                                        'ta': [[3], [0], [2], [1, 1, 0]],
                                        'uuid': str(uuid.uuid4()).upper()}],
-                               })
+                               }, {'tsf': [65537],
+                                   'ta': [[0], [2], [1, 1, 0]],
+                                   'si': 5000000,
+                                   'tk': 1,
+                                   'uuid': str(uuid.uuid4()).upper()})
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "start")
         channel = "com.apple.instruments.server.services.processcontrol"
         rpc2 = InstrumentServer(lockdown=self.lockdown).init()
-        pid = rpc2.call(channel,
-                        'launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:',
-                        '',
-                        bundleid,
-                        {'OS_ACTIVITY_DT_MODE': '1',
-                         'HIPreventRefEncoding': '1',
-                         'DYLD_PRINT_TO_STDERR': '1'}, [],
-                        {'StartSuspendedKey': 0}).selector
-        print(f'start {bundleid} pid:{pid} [!] wait a few seconds, being analysed...')
+        filter_pid = rpc2.call(channel,
+                               'launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:',
+                               '',
+                               bundleid,
+                               {'OS_ACTIVITY_DT_MODE': '1',
+                                'HIPreventRefEncoding': '1',
+                                'DYLD_PRINT_TO_STDERR': '1'}, [],
+                               {'StartSuspendedKey': 0}).selector
+        print(f'start {bundleid} pid:{filter_pid} [!] wait a few seconds, being analysed...')
 
         while not stopSignal.wait(1):
             pass

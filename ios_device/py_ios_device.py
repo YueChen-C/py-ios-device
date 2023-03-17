@@ -4,7 +4,7 @@
 """
 import uuid
 from datetime import datetime
-from numpy import long, mean
+
 
 from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.servers.Installation import InstallationProxyService
@@ -461,7 +461,7 @@ def stop_xcuitest(xcuitest):
 
 
 def start_get_fps(device_id: str = None, rpc_channel: InstrumentServer = None, callback: callable = None):
-
+    from statistics import mean
     """
     开始获取 fps 相关数据
     :param device_id:
@@ -498,9 +498,9 @@ def start_get_fps(device_id: str = None, rpc_channel: InstrumentServer = None, c
                 _time, code = args[0], args[7]
                 if code == 830472984:
                     if not last_frame:
-                        last_frame = long(_time)
+                        last_frame = _time
                     else:
-                        this_frame_cost = (long(_time) - last_frame) * mach_time_factor
+                        this_frame_cost = (_time - last_frame) * mach_time_factor
                         if all([last_3_frame_cost != 0, last_2_frame_cost != 0, last_1_frame_cost != 0]):
                             if this_frame_cost > mean([last_3_frame_cost, last_2_frame_cost, last_1_frame_cost]) * 2 \
                                     and this_frame_cost > MOVIE_FRAME_COST * NANO_SECOND * 2:
@@ -513,7 +513,7 @@ def start_get_fps(device_id: str = None, rpc_channel: InstrumentServer = None, c
 
                         last_3_frame_cost, last_2_frame_cost, last_1_frame_cost = last_2_frame_cost, last_1_frame_cost, this_frame_cost
                         time_count += this_frame_cost
-                        last_frame = long(_time)
+                        last_frame = _time
                         frame_count += 1
                 # else:
                 #     time_count = (datetime.now().timestamp() - count_time) * NANO_SECOND
