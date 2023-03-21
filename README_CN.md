@@ -138,13 +138,13 @@ $ pyidevice instruments notifications
 #### 内核堆栈快照信息
 导出内核堆栈快照信息
 ```bash
-$ instruments stackshot --out stackshot.log
+$ pyidevice instruments stackshot --out stackshot.log
 
 ```
 
 #### 解析 core_profile 内核数据流 
 ```bash
-$ instruments instruments core_profile --pid=1107
+$ pyidevice instruments instruments core_profile --pid=1107
 SealTalk(1107)             PERF_THD_CSwitch (0x25010014)                               DBG_PERF          PERF_DATA                     DBG_FUNC_NONE  
 SealTalk(1107)             MACH_DISPATCH (0x1400080)                                   DBG_MACH          DBG_MACH_SCHED                DBG_FUNC_NONE  
 SealTalk(1107)             DecrSet (0x1090004)                                         DBG_MACH          DBG_MACH_EXCP_DECI            DBG_FUNC_NONE  
@@ -153,7 +153,7 @@ SealTalk(1107)             DecrSet (0x1090004)                                  
 
 #### 获取 Metal GPU Counters
 ```bash
-$ instruments gup_counters
+$ pyidevice instruments gup_counters
 15.132907 ALU Limiter                                  93.77 
 15.132907 Texture Sample Limiter                       39.62 
 15.132907 Texture Write Limiter                        13.87 
@@ -172,7 +172,7 @@ $ instruments gup_counters
 
 #### 获取 App 启动时间以及生命周期
 ```bash
-$ instruments app_lifecycle -b cn.rongcloud.im
+$ pyidevice instruments app_lifecycle -b cn.rongcloud.im
   31.20 ms   Initializing-System Interface Initialization (Dyld init)
   14.33 ms   Initializing-Static Runtime Initialization
   35.68 ms   Launching-UIKit Initialization

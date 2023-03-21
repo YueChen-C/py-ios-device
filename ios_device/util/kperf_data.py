@@ -819,16 +819,18 @@ def trace_data_exec(parser, data):
 
 def trace_string_new_thread(parser, data):
     name = data.buf_data.replace(b'\x00', b'').decode()
-    pid = parser.threads_pids[data.tid]
-    parser.pid_names[pid] = name
     parser.tid_names[data.tid] = name
+    pid = parser.threads_pids.get(data.tid)
+    if pid:
+        parser.pid_names[pid] = name
 
 
 def trace_string_exec(parser, data):
     name = data.buf_data.replace(b'\x00', b'').decode()
-    pid = parser.threads_pids[data.tid]
-    parser.pid_names[pid] = name
     parser.tid_names[data.tid] = name
+    pid = parser.threads_pids.get(data.tid)
+    if pid:
+        parser.pid_names[pid] = name
 
 
 def trace_string_proc_exit(parser, data):

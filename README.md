@@ -135,13 +135,13 @@ $ pyidevice instruments notifications
 
 #### Dump core profile stack snapshot 
 ```bash
-$ instruments stackshot --out stackshot.log
+$ pyidevice instruments stackshot --out stackshot.log
 
 ```
 
 #### Analyze the core profile data stream 
 ```bash
-$ instruments instruments core_profile --pid=1107
+$ pyidevice instruments instruments core_profile --pid=1107
 SealTalk(1107)             PERF_THD_CSwitch (0x25010014)                               DBG_PERF          PERF_DATA                     DBG_FUNC_NONE  
 SealTalk(1107)             MACH_DISPATCH (0x1400080)                                   DBG_MACH          DBG_MACH_SCHED                DBG_FUNC_NONE  
 SealTalk(1107)             DecrSet (0x1090004)                                         DBG_MACH          DBG_MACH_EXCP_DECI            DBG_FUNC_NONE  
@@ -151,7 +151,7 @@ SealTalk(1107)             DecrSet (0x1090004)                                  
 
 #### Get Metal GPU Counters
 ```bash
-$ instruments gpu_counters
+$ pyidevice instruments gpu_counters
 15.132907 ALU Limiter                                  93.77 
 15.132907 Texture Sample Limiter                       39.62 
 15.132907 Texture Write Limiter                        13.87 
@@ -170,7 +170,7 @@ $ instruments gpu_counters
 
 #### Get App Launch Lifecycle
 ```bash
-$ instruments app_lifecycle -b cn.rongcloud.im
+$ pyidevice instruments app_lifecycle -b cn.rongcloud.im
   31.20 ms   Initializing-System Interface Initialization (Dyld init)
   14.33 ms   Initializing-Static Runtime Initialization
   35.68 ms   Launching-UIKit Initialization
@@ -254,7 +254,7 @@ $ pyidevice apps shell
 
 ```
 
-#### packet traffic
+#### packet capture
 ```bash
 $ pyidevice pcapd ./test/test.pacp
 
