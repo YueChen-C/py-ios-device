@@ -15,7 +15,6 @@ class InstrumentServer(DTXServer):
         self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
 
     def init(self, cli=None):
-        log.info('InstrumentServer init ...')
         if not cli:
             if self.lockdown.ios_version >= LooseVersion('14.0'):
                 cli = self.lockdown.start_service("com.apple.instruments.remoteserver.DVTSecureSocketProxy")

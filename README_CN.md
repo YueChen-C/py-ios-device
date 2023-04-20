@@ -76,14 +76,21 @@ Memory  >> {'App Memory': '699.69 MiB', 'Cached Files': '1.48 GiB', 'Compressed'
 
 ```
 
-#### 获取应用性能数据
+#### 获取单个应用性能数据
+```bash
+$ pyidevice instruments appmonitor  -b cn.rongcloud.im
+{'Pid': 30897, 'Name': 'SealTalk', 'CPU': '0 %', 'Memory': '35.72 MiB', 'DiskReads': '24.12 MiB', 'DiskWrites': '2.28 MiB', 'Threads': 13}
+{'Pid': 30897, 'Name': 'SealTalk', 'CPU': '3.4 %', 'Memory': '35.72 MiB', 'DiskReads': '24.12 MiB', 'DiskWrites': '2.30 MiB', 'Threads': 13}
 
+```
+
+#### 获取自定义返回数据内容的应用性能数据
 ```bash
 $ pyidevice instruments sysmontap --help
-$ pyidevice instruments sysmontap  -b com.tencent.xin --proc_filter memVirtualSize,cpuUsage --processes --sort cpuUsage # 只显示 memVirtualSize,cpuUsage 参数的进程列表，且根据 cpuUsage 字段排序 
+$ pyidevice instruments sysmontap  -b com.tencent.xin --proc_filter physFootprint,cpuUsage --processes --sort cpuUsage # 只显示 memVirtualSize,cpuUsage 参数的进程列表，且根据 cpuUsage 字段排序 
 
-[('WeChat', {'cpuUsage': 0.03663705586691998, 'memVirtualSize': 2179284992, 'name': 'WeChat', 'pid': 99269})]
-[('WeChat', {'cpuUsage': 0.036558268613227536, 'memVirtualSize': 2179284992, 'name': 'WeChat', 'pid': 99269})]
+[('WeChat', {'cpuUsage': 0.03663705586691998, 'physFootprint': 2179284992, 'name': 'WeChat', 'pid': 99269})]
+[('WeChat', {'cpuUsage': 0.036558268613227536, 'physFootprint': 2179284992, 'name': 'WeChat', 'pid': 99269})]
 
 ```
 

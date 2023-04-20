@@ -1,14 +1,13 @@
 from distutils.version import LooseVersion
 
 from ..servers.dvt import DTXServer
-from ..util.exceptions import StartServiceError
 from ..util.lockdown import LockdownClient
 
 
 class TestManagerdLockdown(DTXServer):
-    def __init__(self, lockdown=None, udid=None, *args, **kw):
-        super().__init__(*args, **kw)
-        self.lockdown = lockdown or LockdownClient(udid=udid)
+    def __init__(self, lockdown=None, udid=None,network=None):
+        super().__init__()
+        self.lockdown = lockdown or LockdownClient(udid=udid,network=network)
 
     def init(self, cli=None):
         if not cli:

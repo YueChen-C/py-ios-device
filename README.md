@@ -18,7 +18,7 @@ Java link: https://github.com/YueChen-C/java-ios-device)
 python version: 3.7 +
 ### Instruments：
 - [x] Get system Memory and CPU data
-- [x] Get processes Memory and CPU data
+- [x] Get application Memory and CPU data
 - [x] Get FPS data
 - [x] Get network data
 - [x] Set the device network status. eg: 2G, 3G ,100% Loss
@@ -75,16 +75,21 @@ Memory  >> {'App Memory': '699.69 MiB', 'Cached Files': '1.48 GiB', 'Compressed'
 
 ```
 
-
-
-#### Get Processes performance data
+#### Get application performance data
 
 ```bash
-$ pyidevice instruments sysmontap --help
-$ pyidevice instruments sysmontap  -b com.tencent.xin --proc_filter memVirtualSize,cpuUsage --processes --sort cpuUsage # 只显示 memVirtualSize,cpuUsage 参数的进程列表，且根据 cpuUsage 字段排序 
+$ pyidevice instruments appmonitor  -b cn.rongcloud.im
+{'Pid': 30897, 'Name': 'SealTalk', 'CPU': '0 %', 'Memory': '35.72 MiB', 'DiskReads': '24.12 MiB', 'DiskWrites': '2.28 MiB', 'Threads': 13}
+{'Pid': 30897, 'Name': 'SealTalk', 'CPU': '3.4 %', 'Memory': '35.72 MiB', 'DiskReads': '24.12 MiB', 'DiskWrites': '2.30 MiB', 'Threads': 13}
+```
 
-[('WeChat', {'cpuUsage': 0.03663705586691998, 'memVirtualSize': 2179284992, 'name': 'WeChat', 'pid': 99269})]
-[('WeChat', {'cpuUsage': 0.036558268613227536, 'memVirtualSize': 2179284992, 'name': 'WeChat', 'pid': 99269})]
+#### Get custom application performance data
+```bash
+$ pyidevice instruments sysmontap --help
+$ pyidevice instruments sysmontap  -b com.tencent.xin --proc_filter physFootprint,cpuUsage --processes --sort cpuUsage # 只显示 memVirtualSize,cpuUsage 参数的进程列表，且根据 cpuUsage 字段排序 
+
+[('WeChat', {'cpuUsage': 0.03663705586691998, 'physFootprint': 2179284992, 'name': 'WeChat', 'pid': 99269})]
+[('WeChat', {'cpuUsage': 0.036558268613227536, 'physFootprint': 2179284992, 'name': 'WeChat', 'pid': 99269})]
 
 
 ```

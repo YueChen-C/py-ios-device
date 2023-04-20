@@ -162,7 +162,7 @@ class DTXServer:
         :param channel:
         :param callback
         """
-        log.info(f'set {channel} callback ...')
+        log.debug(f'set {channel} callback ...')
         channel_id = self.make_channel(channel)
         self._channel_callbacks[channel_id] = callback
 

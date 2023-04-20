@@ -236,12 +236,11 @@ class InstrumentsBase:
         applist = self.instruments.call(InstrumentsService.ApplicationListing,
                                         "installedApplicationsMatching:registerUpdateToken:",
                                         {}, "").selector
-        # ret = applist
         if bundle_id:
             for app in applist:
                 if app.get('CFBundleIdentifier') == bundle_id:
                     return app
-        # return ret
+        return applist
 
     def sysmontap(self,
                   callback: callable,
@@ -253,17 +252,18 @@ class InstrumentsBase:
         :param callback:
         :return:
         """
-        self.process_attributes = self.process_attributes or list(self.device_info.sysmonProcessAttributes())
-        self.system_attributes = self.system_attributes or list(self.device_info.sysmonSystemAttributes())
 
         log.info(f'Sysmontap setConfig ...')
-        self.instruments.call(InstrumentsService.Sysmontap, "setConfig:", {
+        config = {
             'ur': time,  # 输出频率 ms
             'bm': 0,
-            'procAttrs': self.process_attributes,  # 输出所有进程信息字段，字段顺序与自定义相同（全量自字段，按需使用）
-            'sysAttrs': self.system_attributes,  # 系统信息字段
             'cpuUsage': True,
-            'sampleInterval': time * 1000000})
+            'sampleInterval': time * 1000000}
+        if self.system_attributes:  # 系统信息字段
+            config['sysAttrs'] = self.system_attributes
+        if self.process_attributes:  # 进程信息字段
+            config['procAttrs'] = self.process_attributes
+        self.instruments.call(InstrumentsService.Sysmontap, "setConfig:", config)
         self.instruments.register_channel_callback(InstrumentsService.Sysmontap, callback)
         self.instruments.call(InstrumentsService.Sysmontap, "start")
         log.info(f'Sysmontap start ...')

@@ -15,7 +15,7 @@ from ios_device.util import Log, api_util
 from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.util.gpu_decode import JSEvn, TraceData, GRCDecodeOrder, GRCDisplayOrder
 from ios_device.util.kc_data import kc_data_parse
-from ios_device.util.utils import DumpDisk, DumpNetwork, DumpMemory
+from ios_device.util.utils import DumpDisk, DumpNetwork, DumpMemory, convertBytes
 from ios_device.util.variables import LOG, InstrumentsService
 
 log = Log.getLogger(LOG.Instrument.value)
@@ -153,6 +153,46 @@ def cmd_networking(udid, network, format):
         rpc.networking(_callback)
 
 
+@instruments.command('appmonitor', cls=Command)
+@click.option('-t', '--time', type=click.INT, default=1000, help='Output interval time (ms)')
+@click.option('-b', '--bundle_id', required=True, help='Process app bundleId to filter')
+def cmd_appmonitor(udid, network, format, time, bundle_id):
+    """ Get application performance data """
+    proc_filter = ['Pid','Name', 'CPU', 'Memory','DiskReads','DiskWrites','Threads']
+    process_attributes = dataclasses.make_dataclass('SystemProcessAttributes', proc_filter)
+    ios_version = 0
+
+    def on_callback_message(res):
+        if isinstance(res.selector, list):
+            for index, row in enumerate(res.selector):
+                if 'Processes' in row:
+                    for _pid, process in row['Processes'].items():
+                        attrs = process_attributes(*process)
+                        if name and attrs.Name != name:
+                            continue
+                        if not attrs.CPU:
+                            attrs.CPU = 0
+                        if ios_version < LooseVersion('14.0'):
+                            attrs.CPU = attrs.CPU * 40
+                        attrs.CPU = f'{round(attrs.CPU, 2)} %'
+                        attrs.Memory = convertBytes(attrs.Memory)
+                        attrs.DiskReads = convertBytes(attrs.DiskReads)
+                        attrs.DiskWrites = convertBytes(attrs.DiskWrites)
+                        print_json(attrs.__dict__, format)
+
+    with InstrumentsBase(udid=udid, network=network) as rpc:
+        ios_version = rpc.lockdown.ios_version
+        rpc.process_attributes = ['pid','name', 'cpuUsage', 'physFootprint',
+                                  'diskBytesRead','diskBytesWritten','threadCount']
+        if bundle_id:
+            app = rpc.application_listing(bundle_id)
+            if not app:
+                print(f"not find {bundle_id}")
+                return
+            name = app.get('ExecutableName')
+        rpc.sysmontap(on_callback_message, time)
+
+
 @instruments.command('sysmontap', cls=Command)
 @click.option('-t', '--time', type=click.INT, default=1000, help='Output interval time (ms)')
 @click.option('-p', '--pid', type=click.INT, default=None, help='Process ID to filter')
@@ -164,7 +204,7 @@ def cmd_networking(udid, network, format):
 @click.option('--sys_filter', help='System param to filter split by ",". Omit show all')
 def cmd_sysmontap(udid, network, format, time, pid, name, bundle_id, processes, sort, proc_filter,
                   sys_filter):
-    """ Get performance data """
+    """ Get more performance data """
 
     def on_callback_message(res):
         if isinstance(res.selector, list):
@@ -267,6 +307,7 @@ def cmd_monitor(udid, network, format, filter: str):
 
     with InstrumentsBase(udid=udid, network=network) as rpc:
         rpc.process_attributes = ['name', 'pid']
+        rpc.system_attributes = rpc.device_info.sysmonProcessAttributes()
         rpc.sysmontap(on_callback_message)
 
 
@@ -417,4 +458,3 @@ def gpu_counters(udid, network, format):
 def cmd_app_lifecycle(udid, network, format, bundle_id):
     with InstrumentsBase(udid=udid, network=network) as rpc:
         rpc.app_launch_lifecycle(bundle_id)
-
