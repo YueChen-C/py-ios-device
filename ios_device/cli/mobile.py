@@ -147,16 +147,18 @@ def apps():
 @apps.command('list', cls=Command)
 @click.option('-u', '--user', is_flag=True, help='include user apps')
 @click.option('-s', '--system', is_flag=True, help='include system apps')
-def apps_list(udid, network, format, user, system):
-    """ list installed apps """
-    app_types = []
+@click.option('--size', is_flag=True, help='get app size')
+def apps_list(udid, network, format, user, system, size):
+    """ list installed apps `-size` get app size """
+    options = {}
     if user:
-        app_types.append('User')
+        options['ApplicationType'] = 'User'
     if system:
-        app_types.append('System')
-    if not app_types:
-        app_types = ['User', 'System']
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).get_apps(app_types), format=format)
+        options['ApplicationType'] = 'System'
+    if size:
+        options['ReturnAttributes'] = ['CFBundleIdentifier', 'CFBundleVersion', 'CFBundleDisplayName',
+                                       'StaticDiskUsage', 'DynamicDiskUsage']
+    print_json(InstallationProxyService(udid=udid, network=network, logger=log).apps_info(options), format=format)
 
 
 @apps.command('uninstall', cls=Command)
