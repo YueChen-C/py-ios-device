@@ -31,76 +31,78 @@ class InstrumentDeviceInfo:
         self.rpc = rpc
 
     def runningProcesses(self):
-        """ 获取当前运行应用
+        """ Get a list of running applications; 获取当前运行应用
         :return:
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "runningProcesses").selector
         return parsed
 
-    def execnameForPid(self, pid):
-        """ 获取应用路径
+    def execnameForPid(self, pid: str):
+        """ Get the application name running pid; 获取 pid 应用名称
         :param pid:
         :return:
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "execnameForPid:", str(pid)).selector
         return parsed
 
-    def isRunningPid(self, pid):
-        """ 应用是否运行
+    def isRunningPid(self, pid: str):
+        """ Is the app running ; 应用是否运行
         :param pid:
         :return:
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "isRunningPid:", str(pid)).selector
         return parsed
 
-    def nameForUID(self, uid):
+    def nameForUID(self, uid: str):
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "nameForUID:", str(uid)).selector
         return parsed
 
     def machTimeInfo(self):
         """ 时间校准，获取
-        :return: mach time 比例
+        :return: [mach_absolute_time, numer, denom]
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "machTimeInfo").selector
         return parsed
 
     def traceCodesFile(self):
-        """ traceCodes 堆栈 code 码
-        :return:
+        """ code for stack data
+        :return: {code: name}
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "traceCodesFile").selector
         return {int(k, 16): v for k, v in map(lambda l: l.split(), parsed.splitlines())}
 
     def networkInformation(self):
         """ 当前网络信息
-        :return:
+        :return: {'en0': 'Wi-Fi', 'en1': 'Ethernet Adaptor (en1)', 'lo0': 'Loopback'}
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "networkInformation").selector
         return parsed
 
     def systemInformation(self):
-        """ 设备基本信息
+        """ system information
         :return:
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "systemInformation").selector
         return parsed
 
     def hardwareInformation(self):
-        """ 硬件数据
+        """ hardware Information
         :return:
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "hardwareInformation").selector
         return parsed
 
     def sysmonProcessAttributes(self):
-        """ 获取应用性能数据所需的参数
+        """ Parameters required to obtain application performance data, 获取应用性能数据所需的参数
+        for the 'com.apple.instruments.server.services.sysmontap' service.
         :return:
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "sysmonProcessAttributes").selector
         return parsed
 
     def sysmonSystemAttributes(self):
-        """ 获取系统性能数据所需的参数
+        """ Parameters needed to obtain system performance data; 获取系统性能数据所需的参数
+        for the 'com.apple.instruments.server.services.sysmontap' service.
         :return:
         """
         parsed = self.rpc.call(InstrumentsService.DeviceInfo, "sysmonSystemAttributes").selector
@@ -135,7 +137,7 @@ class InstrumentDeviceInfo:
         return plistlib.loads(parsed)
 
     def machKernelName(self):
-        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "cpKDebugEventsAsXML").selector
+        parsed = self.rpc.call(InstrumentsService.DeviceInfo, "machKernelName").selector
         return parsed
 
 
@@ -192,46 +194,60 @@ class InstrumentsBase:
         return InstrumentDeviceInfo(rpc)
 
     def launch_app(self, bundle_id,
-                   app_env=None,
-                   app_args: list = [],
+                   app_env: dict = None,
+                   app_args: list = None,
                    app_path: str = "",
-                   options: dict = {},
+                   options: {} = None,
                    callback: callable = None):
-
-        if app_env is None:
-            app_env = {}
-        else:
-            app_env = json.loads(app_env)
-            if not isinstance(app_env, dict):
-                log.info('app_env 参数异常应为 Json 格式')
-                return
-
+        """
+        launch app ; 启动应用
+        @param bundle_id: bundle id
+        @param app_env:  App running environment variables; 应用运行环境变量
+        @param app_args: Parameters required when the app starts; 应用启动时所需参数
+        @param app_path: The absolute path of the app usually does not need this parameter,which is used to prevent the
+        same bundle id
+        @param options:  startup options; 启动选项
+        @param callback: callback function will return the app log; 回调函数会持续返回 app 日志
+        @return:
+        """
         options = options or {
             "StartSuspendedKey": 0,
             "KillExisting": False,
         }
         if callback:
-            self.instruments.register_channel_callback(InstrumentsService.ProcessControl, callable)
+            self.instruments.register_channel_callback(InstrumentsService.ProcessControl, callback)
         pid = self.instruments.call(InstrumentsService.ProcessControl,
                                     "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments"
                                     ":options:",
-                                    app_path, bundle_id, app_env, app_args, options).selector
+                                    app_path, bundle_id, app_env or {}, app_args or [], options or {}).selector
+        log.info(f'launch {bundle_id} pid: {pid}')
         return pid
 
-    def kill_app(self, pid):
+    def kill_app(self, pid: str):
+        """
+        kill app; 杀死应用
+        @param pid:
+        @return:
+        """
         parsed = self.instruments.call(InstrumentsService.ProcessControl, "killPid:", str(pid)).selector
         return parsed
 
-    def signal_app(self, sig, pid):
+    def signal_app(self, sig: str, pid: str):
+        """
+        send signal to app; 向应用发送信号
+        @param sig:
+        @param pid:
+        @return:
+        """
         parsed = self.instruments.call(InstrumentsService.ProcessControl, "sendSignal:toPid", str(sig),
                                        str(pid)).selector
         return parsed
 
     def application_listing(self, bundle_id=None):
-        """ _selector
-            - installedApplicationsMatching:registerUpdateToken:
-            - unregisterUpdateToken:
-        :return:
+        """
+        Get the list of installed applications; 获取已安装应用列表
+        @param bundle_id:  bundle id
+        @return:
         """
         applist = self.instruments.call(InstrumentsService.ApplicationListing,
                                         "installedApplicationsMatching:registerUpdateToken:",
@@ -245,24 +261,27 @@ class InstrumentsBase:
     def sysmontap(self,
                   callback: callable,
                   time: int = 1000,
-                  stopSignal: threading.Event = threading.Event()):
+                  stopSignal: threading.Event = threading.Event(),
+                  system_attributes=None,
+                  process_attributes=None):
         """
-        :param time: 获取时间间隔（ms）
-        :param stopSignal:
-        :param callback:
-        :return:
+        Get application performance data ; 获取性能数据
+        @param process_attributes:
+        @param system_attributes:
+        @param callback:
+        @param time: Output frequency (ms)
+        @param stopSignal:
+        @return:
         """
-
-        log.info(f'Sysmontap setConfig ...')
         config = {
-            'ur': time,  # 输出频率 ms
+            'ur': time,
             'bm': 0,
             'cpuUsage': True,
             'sampleInterval': time * 1000000}
-        if self.system_attributes:  # 系统信息字段
-            config['sysAttrs'] = self.system_attributes
-        if self.process_attributes:  # 进程信息字段
-            config['procAttrs'] = self.process_attributes
+        _system_attributes = self.system_attributes or system_attributes
+        config['sysAttrs'] = _system_attributes
+        process_attributes = self.process_attributes or process_attributes
+        config['procAttrs'] = process_attributes
         self.instruments.call(InstrumentsService.Sysmontap, "setConfig:", config)
         self.instruments.register_channel_callback(InstrumentsService.Sysmontap, callback)
         self.instruments.call(InstrumentsService.Sysmontap, "start")
@@ -276,8 +295,9 @@ class InstrumentsBase:
                  callback: callable,
                  time=1000,
                  stopSignal: threading.Event = threading.Event()):
-        """ 获取 FPS 等数据
-        :param time: 获取时间间隔（ms）
+        """
+        get graphics
+        :param time: Output frequency (ms)
         :param callback:
         :param stopSignal:
         :return:
@@ -295,6 +315,12 @@ class InstrumentsBase:
         self.instruments.call(InstrumentsService.GraphicsOpengl, "stopSampling")
 
     def xcode_network(self, pid, stopSignal: threading.Event = threading.Event()):
+        """
+        Get the network data of the launched application
+        @param pid:
+        @param stopSignal:
+        @return:
+        """
         channel = "com.apple.xcode.debug-gauge-data-providers.NetworkStatistics"
         attr = {}
         self.instruments.call(channel, "startSamplingForPIDs:", {pid})
@@ -305,10 +331,11 @@ class InstrumentsBase:
     def networking(self,
                    callback: callable,
                    stopSignal: threading.Event = threading.Event()):
-        """ 获取网络数据
-        :param callback:
-        :param stopSignal:
-        :return:
+        """
+        Get system network data
+        @param callback:
+        @param stopSignal:
+        @return:
         """
         self.instruments.register_channel_callback(InstrumentsService.Networking, callback)
 
@@ -325,6 +352,12 @@ class InstrumentsBase:
     def mobile_notifications(self,
                              callback: callable,
                              stopSignal: threading.Event = threading.Event()):
+        """
+        get mobile notifications
+        @param callback:
+        @param stopSignal:
+        @return:
+        """
 
         self.instruments.register_undefined_callback(callback)
         self.instruments.call(InstrumentsService.MobileNotifications,
@@ -354,6 +387,12 @@ class InstrumentsBase:
     def gpu_counters(self,
                      callback: callable,
                      stopSignal: threading.Event = threading.Event()):
+        """
+        get gpu counters
+        @param callback:
+        @param stopSignal:
+        @return:
+        """
         self.instruments.register_undefined_callback(callback)
         requestDeviceGPUInfo = self.instruments.call(InstrumentsService.GPU, 'requestDeviceGPUInfo').selector
 
@@ -370,12 +409,22 @@ class InstrumentsBase:
         return data
 
     def screenshot(self):
+        """
+        screenshot
+        @return:
+        """
         var = self.instruments.call(InstrumentsService.Screenshot, "takeScreenshot").selector
         return var
 
     def power(self,
               callback: callable,
               stopSignal: threading.Event = threading.Event()):
+        """
+        get power  ios < 14
+        @param callback:
+        @param stopSignal:
+        @return:
+        """
         channel = "com.apple.instruments.server.services.power"
         self.instruments.register_channel_callback(channel, callback)
         stream_num = self.instruments.call(channel, "openStreamForPath:", "live/level.dat").selector
@@ -387,13 +436,19 @@ class InstrumentsBase:
         log.info(f"stop{self.instruments.call(channel, 'endStreamTransfer:', float(stream_num)).selector}")
 
     def xcode_energy(self, pid, stopSignal: threading.Event = threading.Event()):
+        """
+        get energy
+        @param pid:
+        @param stopSignal:
+        @return:
+        """
         self.instruments.call(InstrumentsService.XcodeEnergy, "startSamplingForPIDs:", {pid})
         while not stopSignal.wait(1):
             ret = self.instruments.call(InstrumentsService.XcodeEnergy, "sampleAttributes:forPIDs:", {}, {pid})
             print(ret.selector)
 
     def get_condition_inducer(self):
-        """ 获取网络配置参数，用于 condition_inducer
+        """ Get condition data configuration 获取压力数据配置数据
         :return:
         """
         ret = self.instruments.call(InstrumentsService.ConditionInducer, "availableConditionInducers").selector
@@ -403,9 +458,11 @@ class InstrumentsBase:
                               condition_identifier,
                               profile_identifier,
                               stopSignal: threading.Event = threading.Event()):
-        """ 设置手机状态，模拟网络，手机压力数据等
-        :param condition_identifier:
-        :param profile_identifier:
+        """ Set mobile phone status, simulated network, mobile cpu pressure, etc; 设置手机状态，模拟网络，手机压力数据等
+        @param condition_identifier:
+        @param profile_identifier:
+        @param stopSignal: thread event control
+
         :return:
         """
         ret = self.instruments.call(InstrumentsService.ConditionInducer,

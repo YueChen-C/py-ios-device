@@ -296,6 +296,24 @@ $ pyidevice enable_developer_mode
 ```
 
 
+#### using python api
+```python
+
+from ios_device.cli.base import InstrumentsBase
+from ios_device.util.dtx_msg import DTXMessage
+
+with InstrumentsBase() as rpc:
+    def sysmontap_callback(res: DTXMessage):
+        print(res.selector, res.auxiliaries)
+
+    rpc.process_attributes = ['name', 'pid']
+    rpc.system_attributes = rpc.device_info.sysmonSystemAttributes()
+    rpc.sysmontap(sysmontap_callback)
+
+
+```
+
+
 QQ 交流群：37042417
 
 
