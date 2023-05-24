@@ -307,7 +307,7 @@ def cmd_monitor(udid, network, format, filter: str):
 
     with InstrumentsBase(udid=udid, network=network) as rpc:
         rpc.process_attributes = ['name', 'pid']
-        rpc.system_attributes = rpc.device_info.sysmonProcessAttributes()
+        rpc.system_attributes = rpc.device_info.sysmonSystemAttributes()
         rpc.sysmontap(on_callback_message)
 
 
