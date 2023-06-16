@@ -121,7 +121,7 @@ def kperf_data(messages):
 def convertBytes(_bytes):
     lst = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB']
     i = 0
-    if _bytes:
+    if isinstance(_bytes, int) and (_bytes > 0):
         i = int(math.floor(  # 舍弃小数点，取小
             math.log(_bytes, 1024)  # 求对数(对数：若 a**b = N 则 b 叫做以 a 为底 N 的对数)
         ))
