@@ -69,7 +69,7 @@ def crash_shell(udid, network, format):
 #######################################################################
 
 @cli.command('sandbox', cls=Command)
-@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
+@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter', required=True)
 @click.option('-a', '--access_type', default='VendDocuments', type=click.Choice(['VendDocuments', 'VendContainer']),
               help='Type of access sandbox')
 def sandbox(udid, network, format, bundle_id, access_type):
