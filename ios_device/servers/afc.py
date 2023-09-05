@@ -145,6 +145,8 @@ class AFCClient(object):
         self.service.close()
 
     def dispatch_packet(self, operation, data, this_length=0):
+        if isinstance(data, str):
+            data = data.encode('utf-8')
         afcpack = Container(magic=AFCMAGIC,
                             entire_length=40 + len(data),
                             this_length=40 + len(data),
@@ -154,8 +156,6 @@ class AFCClient(object):
             afcpack.this_length = this_length
         header = AFCPacket.build(afcpack)
         self.packet_num += 1
-        if PY3 and isinstance(data, str):
-            data = data.encode('utf-8')
         self.service.sock.send(header + data)
 
     def receive_data(self):
