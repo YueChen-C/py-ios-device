@@ -252,10 +252,12 @@ class InstrumentsBase:
         applist = self.instruments.call(InstrumentsService.ApplicationListing,
                                         "installedApplicationsMatching:registerUpdateToken:",
                                         {}, "").selector
-        if bundle_id:
+        if bundle_id is not None:
             for app in applist:
                 if app.get('CFBundleIdentifier') == bundle_id:
                     return app
+            else:
+                return None
         return applist
 
     def sysmontap(self,
@@ -279,9 +281,11 @@ class InstrumentsBase:
             'cpuUsage': True,
             'sampleInterval': time * 1000000}
         _system_attributes = self.system_attributes or system_attributes
-        config['sysAttrs'] = _system_attributes
+        if _system_attributes:
+            config['sysAttrs'] = _system_attributes
         process_attributes = self.process_attributes or process_attributes
-        config['procAttrs'] = process_attributes
+        if process_attributes:
+            config['procAttrs'] = process_attributes
         self.instruments.call(InstrumentsService.Sysmontap, "setConfig:", config)
         self.instruments.register_channel_callback(InstrumentsService.Sysmontap, callback)
         self.instruments.call(InstrumentsService.Sysmontap, "start")

@@ -158,7 +158,7 @@ def cmd_networking(udid, network, format):
 @click.option('-b', '--bundle_id', required=True, help='Process app bundleId to filter')
 def cmd_appmonitor(udid, network, format, time, bundle_id):
     """ Get application performance data """
-    proc_filter = ['Pid','Name', 'CPU', 'Memory','DiskReads','DiskWrites','Threads']
+    proc_filter = ['Pid', 'Name', 'CPU', 'Memory', 'DiskReads', 'DiskWrites', 'Threads']
     process_attributes = dataclasses.make_dataclass('SystemProcessAttributes', proc_filter)
     ios_version = 0
 
@@ -182,8 +182,8 @@ def cmd_appmonitor(udid, network, format, time, bundle_id):
 
     with InstrumentsBase(udid=udid, network=network) as rpc:
         ios_version = rpc.lockdown.ios_version
-        rpc.process_attributes = ['pid','name', 'cpuUsage', 'physFootprint',
-                                  'diskBytesRead','diskBytesWritten','threadCount']
+        rpc.process_attributes = ['pid', 'name', 'cpuUsage', 'physFootprint',
+                                  'diskBytesRead', 'diskBytesWritten', 'threadCount']
         if bundle_id:
             app = rpc.application_listing(bundle_id)
             if not app:
