@@ -440,7 +440,7 @@ def gpu_counters(udid, network, format):
         def dropped_message(res):
             nonlocal js_env, decode_key_list, display_key_list
             if res.selector[0] == 1:
-                js_env.dump_trace(TraceData(*res.selector))
+                js_env.dump_trace(TraceData(*res.selector[:6]))
             elif res.selector[0] == 0:
                 _data = res.selector[4]
                 decode_key_list = GRCDecodeOrder.decode(_data.get(1))
@@ -450,7 +450,7 @@ def gpu_counters(udid, network, format):
         machTimeInfo = rpc.device_info.machTimeInfo()
         mach_time_factor = machTimeInfo[1] / machTimeInfo[2]
         data = rpc.gpu_counters(callback=dropped_message, stopSignal=stopSignal)
-        js_env.dump_trace(TraceData(*data[0]))
+        js_env.dump_trace(TraceData(*data[0][:6]))
 
 
 @instruments.command('app_lifecycle', cls=Command)

@@ -69,7 +69,7 @@ class GPUTraceData:
         return self.data_list[index]
 
 
-class GUPCounterData:
+class GPUCounterData:
 
     def __init__(self, fast_counter_time, last_counter_time):
         self.fast_counter_time = fast_counter_time
@@ -122,7 +122,7 @@ class JSEvn:
             data_list.append(tmp_data)
         return data_list
 
-    def get_counter_list(self, trace_data: TraceData) -> typing.List[GUPCounterData]:
+    def get_counter_list(self, trace_data: TraceData) -> typing.List[GPUCounterData]:
         counter_list = list()
         index = 0
         fast_counter = None
@@ -139,13 +139,13 @@ class JSEvn:
         return counter_list
 
     @staticmethod
-    def _calculation(fast_counter: GPUTraceData, last_counter: GPUTraceData) -> GUPCounterData:
+    def _calculation(fast_counter: GPUTraceData, last_counter: GPUTraceData) -> GPUCounterData:
         """ 二次处理数据，某些情况需要处理数据差值
         :param fast_counter:
         :param last_counter:
         :return:
         """
-        counter_data = GUPCounterData(fast_counter.time, last_counter.time)
+        counter_data = GPUCounterData(fast_counter.time, last_counter.time)
         for index, counter in enumerate(last_counter.data_list):
             if not counter.key.startswith('_'):
                 counter_data.append(counter)
@@ -158,7 +158,7 @@ class JSEvn:
         return counter_data
 
     @staticmethod
-    def counter_to_js(counter_list: typing.List[GUPCounterData]):
+    def counter_to_js(counter_list: typing.List[GPUCounterData]):
         js_counter_list = []
         for i in counter_list:
             js_counter_list.append(i.last_counter_time)
