@@ -45,7 +45,15 @@ class AppLifeCycle:
     def format_str(self):
         _tmp_sub_state = {}
         for key, events in self.events.items():
-            if events and events[-1].sub_state == 'Initial Frame Rendering':
+            finish = False
+            # 兼容有些 App 先收到 Initial Frame Rendering 的 END，然后再收到 BEIGIN 的问题
+            for event in events:
+                if event.sub_state == 'Initial Frame Rendering' and event.kind == 'BEGIN':
+                    finish = True
+            if len(events) == 0:
+                continue
+            last_event = events[-1]
+            if events and last_event.sub_state == 'Initial Frame Rendering' and last_event.kind == 'END' and finish:
                 for index, val in enumerate(events):
                     if val.kind == 'BEGIN':
                         _tmp_sub_state[val.sub_state] = self.format_timestamp(val.time)
