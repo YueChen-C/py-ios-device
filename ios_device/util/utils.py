@@ -11,6 +11,8 @@ ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 import struct
 
 _NotSet = object()
+NANO_SECOND = 1e9  # ns
+MOVIE_FRAME_COST = 1 / 24
 
 
 class cached_property(object):
@@ -206,13 +208,16 @@ class DumpMemory:
         self.kernel_page_size = 16384  # core_profile_session_tap get kernel_page_size
 
     def decode(self, system: dict):
-        App_Memory = convertBytes((system.get('vmIntPageCount') - system.get("vmPurgeableCount")) * self.kernel_page_size)
-        Cached_Files = convertBytes((system.get('vmExtPageCount') + system.get("vmPurgeableCount")) * self.kernel_page_size)
+        App_Memory = convertBytes(
+            (system.get('vmIntPageCount') - system.get("vmPurgeableCount")) * self.kernel_page_size)
+        Cached_Files = convertBytes(
+            (system.get('vmExtPageCount') + system.get("vmPurgeableCount")) * self.kernel_page_size)
         Compressed = convertBytes(system.get('vmCompressorPageCount') * self.kernel_page_size)
-        Memory_Used = convertBytes((system.get('vmUsedCount')-system.get('vmExtPageCount')) * self.kernel_page_size)
+        Memory_Used = convertBytes((system.get('vmUsedCount') - system.get('vmExtPageCount')) * self.kernel_page_size)
         Wired_Memory = convertBytes(system.get("vmWireCount") * self.kernel_page_size)
         Swap_Used = convertBytes(system.get("__vmSwapUsage"))
         Free_Memory = convertBytes(system.get("vmFreeCount") * self.kernel_page_size)
-        data = {"App Memory": App_Memory, "Free Memory":Free_Memory,"Cached Files": Cached_Files, "Compressed": Compressed,
-                "Memory Used": Memory_Used, "Wired Memory":Wired_Memory,"Swap Used":Swap_Used}
+        data = {"App Memory": App_Memory, "Free Memory": Free_Memory, "Cached Files": Cached_Files,
+                "Compressed": Compressed,
+                "Memory Used": Memory_Used, "Wired Memory": Wired_Memory, "Swap Used": Swap_Used}
         return data

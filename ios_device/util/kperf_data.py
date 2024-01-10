@@ -56,6 +56,13 @@ def kdbg_extract_code(Debugid):
     return (Debugid & KDBG_CODE_MASK) >> KDBG_CODE_OFFSET
 
 
+def kdbg_extract_all(Debugid):
+    class_extracted = (Debugid & KDBG_CLASS_MASK) >> KDBG_CLASS_OFFSET
+    subclass_extracted = (Debugid & KDBG_SUBCLASS_MASK) >> KDBG_SUBCLASS_OFFSET
+    code_extracted = (Debugid & KDBG_CODE_MASK) >> KDBG_CODE_OFFSET
+    return class_extracted, subclass_extracted, code_extracted
+
+
 class DgbFuncQual(enum.Enum):
     """
     ## /* function qualifiers  */

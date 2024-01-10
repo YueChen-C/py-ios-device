@@ -374,15 +374,17 @@ class InstrumentsBase:
 
     def core_profile_session(self,
                              callback: callable,
-                             stopSignal: threading.Event = threading.Event()):
+                             stopSignal: threading.Event = threading.Event(),
+                             config=None):
+        if config is None:
+            config = {'rp': 10,
+                      'tc': [{'kdf2': {630784000, 833617920, 830472456},
+                              'tk': 3,
+                              'uuid': str(uuid.uuid4()).upper()}],
+                      'ur': 500}
         self.instruments.register_channel_callback(InstrumentsService.CoreProfileSessionTap,
                                                    callback)
-        self.instruments.call(InstrumentsService.CoreProfileSessionTap, "setConfig:",
-                              {'rp': 10,
-                               'tc': [{'kdf2': {630784000, 833617920, 830472456},
-                                       'tk': 3,
-                                       'uuid': str(uuid.uuid4()).upper()}],
-                               'ur': 500})
+        self.instruments.call(InstrumentsService.CoreProfileSessionTap, "setConfig:", config)
         self.instruments.call(InstrumentsService.CoreProfileSessionTap, "start")
         while not stopSignal.wait(1):
             pass
@@ -405,7 +407,7 @@ class InstrumentsBase:
                               "configureCounters:counterProfile:interval:windowLimit:tracingPID:",
                               RawInt64sl(min_collection_interval, 3, 1, 0), RawInt32sl(-1))
         self.instruments.call(InstrumentsService.GPU, 'startCollectingCounters')
-        log.info('Wait for gup counters data ...')
+        log.info('Wait for gpu counters data ...')
         while not stopSignal.wait(1):
             pass
         self.instruments.call(InstrumentsService.GPU, 'stopCollectingCounters')

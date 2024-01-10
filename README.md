@@ -19,7 +19,8 @@ python version: 3.7 +
 ### Instruments：
 - [x] Get system Memory and CPU data
 - [x] Get application Memory and CPU data
-- [x] Get FPS data
+- [x] Get FPS data FPS <= 60
+- [x] Get FPS and Jank data  FPS <= 120
 - [x] Get network data
 - [x] Set the device network status. eg: 2G, 3G ,100% Loss
 - [x] Set the device behaves as though under a high thermal state
@@ -59,7 +60,7 @@ $ pyidevice devices
 #### Get device info
 
 ```bash
-$ pyidevice --udid=xxxxxx deviceinfo
+$ pyidevice  deviceinfo --udid=xxxxxx
 ```
 
 #### Get System performance data
@@ -93,13 +94,20 @@ $ pyidevice instruments sysmontap  -b com.tencent.xin --proc_filter physFootprin
 
 
 ```
-#### Get FPS data
+#### Get FPS data FPS <= 60
 
 ```bash
 $ pyidevice instruments fps
 
 {'currentTime': '2021-05-11 14:14:40.259059', 'fps': 52}
 {'currentTime': '2021-05-11 14:14:40.259059', 'fps': 56}
+```
+
+#### Get FPS display data  FPS <= 120
+
+```bash
+$ pyidevice instruments display
+{'time': 1.393329, 'fps': 103.999274047912838, 'jank': 0, 'big_jank': 0, 'stutter': 0.0}
 ```
 
 #### Get network data

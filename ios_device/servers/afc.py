@@ -282,7 +282,7 @@ class AFCClient(object):
         return status
 
     def file_read(self, handle, sz):
-        MAXIMUM_READ_SIZE = 1 << 16
+        MAXIMUM_READ_SIZE = 1 << 26
         data = ""
         if PY3:
             data = b""
@@ -308,8 +308,9 @@ class AFCClient(object):
         return data
 
     def file_write(self, handle, data):
-        MAXIMUM_WRITE_SIZE = 1 << 15
+        MAXIMUM_WRITE_SIZE = 1 << 26
         hh = struct.pack("<Q", handle)
+        _len = len(data)
         segments = int(len(data) / MAXIMUM_WRITE_SIZE)
         try:
             for i in range(segments):
@@ -320,6 +321,7 @@ class AFCClient(object):
                 if s != AFC_E_SUCCESS:
                     self.logger.error("file_write error: %d", s)
                     break
+                print(f'total: {_len / 1024 / 1024} MB write: {(i + 1) * MAXIMUM_WRITE_SIZE / 1024 / 1024} MB')
             if len(data) % MAXIMUM_WRITE_SIZE:
                 self.dispatch_packet(AFC_OP_WRITE,
                                      hh + data[segments * MAXIMUM_WRITE_SIZE:],

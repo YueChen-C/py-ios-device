@@ -21,7 +21,8 @@ python 版本: 3.7 +
 ### instruments 相关功能列表：
 - [x] 获取系统的 内存、cpu 数据
 - [x] 获取应用的 内存、cpu 数据
-- [x] 获取 FPS 数据
+- [x] 获取 FPS 数据 <= 60
+- [x] 获取 FPS 和卡顿等数据支持 FPS <= 120
 - [x] 获取 网络数据
 - [x] 设置模拟真机网络状态，例如 2g 、3g、 lost 等
 - [x] 设置模拟真机设备高压过热状态
@@ -60,7 +61,7 @@ $ pyidevice devices
 #### 获取设备信息
 
 ```bash
-$ pyidevice --udid=xxxxxx deviceinfo
+$ pyidevice  deviceinfo --udid=xxxxxx
 ```
 
 #### 获取系统性能数据
@@ -95,7 +96,7 @@ $ pyidevice instruments sysmontap  -b com.tencent.xin --proc_filter physFootprin
 ```
 
 
-#### 获取 FPS 数据
+#### 获取 FPS 数据 FPS <= 60
 
 ```bash
 $ pyidevice instruments fps
@@ -103,6 +104,14 @@ $ pyidevice instruments fps
 {'currentTime': '2021-05-11 14:14:40.259059', 'fps': 52}
 {'currentTime': '2021-05-11 14:14:40.259059', 'fps': 56}
 ```
+
+#### 获取 FPS display 数据支持更高的 FPS <= 120
+
+```bash
+$ pyidevice instruments display
+{'time': 151.28127908706665, 'fps': 10.999274047912838, 'jank': 0, 'big_jank': 0, 'stutter': 0.0}
+```
+
 
 #### 获取 网络数据
 ```bash
