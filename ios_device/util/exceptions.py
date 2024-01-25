@@ -8,11 +8,15 @@ AFC_TO_OS_ERROR_CODES = {
 }
 
 
-class PyPodException(Exception):
-    """Base exception class for all exceptions in PyPod"""
+class PyiOSDeviceException(Exception):
+    pass
 
 
-class LockdownException(PyPodException):
+class CoreDeviceError(PyiOSDeviceException):
+    pass
+
+
+class LockdownException(PyiOSDeviceException):
     pass
 
 
@@ -44,7 +48,7 @@ class InitializationError(LockdownException):
     pass
 
 
-class MuxError(PyPodException):
+class MuxError(PyiOSDeviceException):
     pass
 
 
@@ -56,7 +60,31 @@ class NoMuxDeviceFound(MuxError):
     pass
 
 
-class iOSError(PyPodException, OSError):
+class NoDeviceConnectedError(PyiOSDeviceException):
+    pass
+
+
+class InvalidServiceError(PyiOSDeviceException):
+    pass
+
+
+class StreamClosedError(PyiOSDeviceException):
+    pass
+
+
+class UserDeniedPairingError(PyiOSDeviceException):
+    pass
+
+
+class AccessDeniedError(PyiOSDeviceException):
+    pass
+
+
+class TunneldConnectionError(PyiOSDeviceException):
+    pass
+
+
+class iOSError(PyiOSDeviceException, OSError):
     """Generic exception for AFC errors or errors that would normally be raised by the OS"""
 
     def __init__(self, errno=None, afc_errno=AFC_E_UNKNOWN_ERROR, *args, **kwargs):
@@ -70,7 +98,7 @@ class iOSError(PyPodException, OSError):
         return f'{self.__class__.__name__}[afc={self.afc_errno}/{name}][os={self.errno}] {self.strerror}'
 
 
-class iFileNotFoundError(PyPodException, FileNotFoundError):
+class iFileNotFoundError(PyiOSDeviceException, FileNotFoundError):
     def __init__(self, *args, **kwargs):
         # noinspection PyArgumentList
         super().__init__(ENOENT, *args, **kwargs)

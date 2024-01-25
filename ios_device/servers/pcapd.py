@@ -5,6 +5,7 @@ import struct
 
 from construct import Struct, Int32ub, Int32ul, Bytes, Byte, this, Padding, Padded, CString
 
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
 from ios_device.util.lockdown import LockdownClient
 
 packet_struct = Struct(
@@ -31,11 +32,14 @@ packet_struct = Struct(
 class PcapdService(object):
     IN_OUT_MAP = {0x01: 'O', 0x10: 'I'}
     SERVICE_NAME = "com.apple.pcapd"
+    RSD_SERVICE_NAME = 'com.apple.pcapd.shim.remote'
 
     def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
-        self.conn = self.lockdown.start_service(self.SERVICE_NAME)
+        SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown,
+                                                           RemoteLockdownClient) else self.SERVICE_NAME
+        self.conn = self.lockdown.start_service(SERVICE_NAME)
 
     def __iter__(self):
 

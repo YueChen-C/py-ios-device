@@ -3,6 +3,9 @@
 """
 import os
 import sys
+
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
+
 sys.path.append(os.getcwd())
 
 from ios_device.servers.Instrument import InstrumentServer
@@ -15,7 +18,6 @@ log = logging.getLogger(__name__)
 
 
 def sysmontap(rpc):
-
     def dropped_message(res):
         print("[DROP]", res.selector, res.raw.channel_code)
 
@@ -49,10 +51,13 @@ def sysmontap(rpc):
 
 
 if __name__ == '__main__':
-    # rpc = InstrumentServer()
-    # addresses, port, psk = rpc.start_wireless()
-    # print('start wireless', addresses, port, psk)
-    # rpc = rpc.init_wireless(addresses, port, psk)
-    rpc = InstrumentServer().init()
-    sysmontap(rpc)
-    rpc.stop()
+    host = 'fdb1:c2d3:d8cd::1'  # randomized
+    port = 60574  # randomized
+    with RemoteLockdownClient((host, port)) as rsd:
+        rpc = InstrumentServer(rsd).init()
+        sysmontap(rpc)
+        rpc.stop()
+    #
+    # rpc = InstrumentServer().init()
+    # sysmontap(rpc)
+    # rpc.stop()

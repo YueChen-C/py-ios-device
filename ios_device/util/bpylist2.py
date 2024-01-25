@@ -113,13 +113,13 @@ class timestamp(float):
 
     @staticmethod
     def encode_archive(obj, archive):
-        "Delegate for packing timestamps back into the NSDate archive format"
+        """Delegate for packing timestamps back into the NSDate archive format"""
         offset = obj - timestamp.unix2apple_epoch_delta
         archive.encode('NS.time', offset)
 
     @staticmethod
     def decode_archive(archive):
-        "Delegate for unpacking NSDate objects from an archiver.Archive"
+        """Delegate for unpacking NSDate objects from an archiver.Archive"""
         offset = archive.decode('NS.time')
         return timestamp(timestamp.unix2apple_epoch_delta + offset)
 
@@ -233,7 +233,7 @@ class MissingClassMapping(ArchiverError):
 
 
 class DictArchive:
-    "Delegate for packing/unpacking NS(Mutable)Dictionary objects"
+    """Delegate for packing/unpacking NS(Mutable)Dictionary objects"""
 
     @staticmethod
     def decode_archive(archive_obj):
@@ -252,7 +252,7 @@ class DictArchive:
 
 
 class ListArchive:
-    "Delegate for packing/unpacking NS(Mutable)Array objects"
+    """Delegate for packing/unpacking NS(Mutable)Array objects"""
 
     @staticmethod
     def decode_archive(archive_obj):
@@ -261,7 +261,7 @@ class ListArchive:
 
 
 class SetArchive:
-    "Delegate for packing/unpacking NS(Mutable)Set objects"
+    """Delegate for packing/unpacking NS(Mutable)Set objects"""
 
     @staticmethod
     def decode_archive(archive_obj):
@@ -290,7 +290,7 @@ class ArchivedObject:
 
 
 class CycleToken:
-    "token used in Unarchive's unpacked_uids cache to help detect cycles"
+    """token used in Unarchive's unpacked_uids cache to help detect cycles"""
 
 
 class Unarchive:
@@ -343,7 +343,7 @@ class Unarchive:
             raise MissingObjectsArray(plist)
 
     def class_for_uid(self, index: plistlib.UID):
-        "use the UNARCHIVE_CLASS_MAP to find the unarchiving delegate of a uid"
+        """use the UNARCHIVE_CLASS_MAP to find the unarchiving delegate of a uid"""
 
         meta = self.objects[index.data]
         if not isinstance(meta, dict):
@@ -452,7 +452,7 @@ class Archive:
         # objects that go directly into the archive, always start with $null
         self.objects = ['$null']
 
-    def uid_for_archiver(self, archiver: type) -> plistlib.UID:
+    def uid_for_archiver(self, archiver: [type, str]) -> plistlib.UID:
         """
         Ensure the class definition for the archiver is included in the arcive.
 
@@ -472,8 +472,6 @@ class Archive:
         val = plistlib.UID(len(self.objects))
         self.class_map[archiver] = val
 
-        # TODO: this is where we might need to include the full class ancestry;
-        #       though the open source code from apple does not appear to check
         self.objects.append({
             '$classes': [archiver],
             '$classname': archiver
@@ -513,7 +511,7 @@ class Archive:
         archive_obj['NS.objects'] = vals
 
     def encode_top_level(self, obj, archive_obj):
-        "Encode obj and store the encoding in archive_obj"
+        """Encode obj and store the encoding in archive_obj"""
 
         cls = obj.__class__
 
@@ -564,7 +562,7 @@ class Archive:
         return index
 
     def to_bytes(self) -> bytes:
-        "Generate the archive and return it as a bytes blob"
+        """Generate the archive and return it as a bytes blob"""
 
         # avoid regenerating
         if len(self.objects) == 1:
@@ -584,23 +582,26 @@ class Archive:
 
 class NullArchive:
 
+    @staticmethod
     def decode_archive(archive):
         return None
 
 
 class XCTCapabilities:
+    @staticmethod
     def decode_archive(archive):
         return archive.decode('capabilities-dictionary')
 
 
 class DTTapMessageArchive:
 
+    @staticmethod
     def decode_archive(archive):
         return archive.decode('DTTapMessagePlist')
 
 
 class ErrorArchive:
-
+    @staticmethod
     def decode_archive(archive):
         domain = archive.decode('NSDomain')
         userinfo = archive.decode('NSUserInfo')
@@ -610,6 +611,7 @@ class ErrorArchive:
 
 class ExceptionArchive:
 
+    @staticmethod
     def decode_archive(archive):
         name = archive.decode('NS.name')
         reason = archive.decode('NS.reason')
@@ -633,11 +635,13 @@ class NSURL:
     def __repr__(self):
         return self.__str__()
 
+    @staticmethod
     def encode_archive(obj, archive):
-        "Delegate for packing timestamps back into the NSDate archive format"
+        """Delegate for packing timestamps back into the NSDate archive format"""
         archive.encode('NS.base', obj._base)
         archive.encode('NS.relative', obj._relative)
 
+    @staticmethod
     def decode_archive(obj, archive):
         base = archive.decode('NS.base')
         relative = archive.decode('NS.relative')
@@ -703,6 +707,7 @@ class XCTestConfiguration:
         assert isinstance(key, str)
         self._kv[key] = val
 
+    @staticmethod
     def encode_archive(objects, archive):
         for (k, v) in objects._kv.items():
             archive.encode(k, v)
@@ -727,6 +732,7 @@ class XCActivityRecord(dict):
 
         return 'XCActivityRecord({})'.format(', '.join(attrs))
 
+    @staticmethod
     def decode_archive(archive):
         ret = XCActivityRecord()
         for key in XCActivityRecord._keys:
@@ -735,34 +741,54 @@ class XCActivityRecord(dict):
 
 
 class NSUUID(uuid.UUID):
+
+    @staticmethod
     def encode_archive(objects, archive):
         archive._archive_obj["NS.uuidbytes"] = objects.bytes
         # archive.encode("NS.uuidbytes", objects.bytes)
 
+    @staticmethod
     def decode_archive(archive):
         uuidbytes = archive.decode('NS.uuidbytes')
         return NSUUID(bytes=bytes(uuidbytes))
 
+
 class DTKTraceTapMessage:
+
+    @staticmethod
     def decode_archive(archive):
         if hasattr(archive, '_object'):
             if archive._object.get('$0'):
                 return archive.decode('$0')
         return archive.decode('DTTapMessagePlist')
 
-class MutableDataArchive:
-    "Delegate for packing/unpacking NSMutableData objects"
 
+class MutableDataArchive:
+    """Delegate for packing/unpacking NSMutableData objects"""
+
+    @staticmethod
     def decode_archive(archive):
         s = archive.decode('NS.data')
         return s
 
-class MutableStringArchive:
-    "Delegate for packing/unpacking NSMutableString objects"
 
+class MutableStringArchive:
+    """Delegate for packing/unpacking NSMutableString objects"""
+
+    @staticmethod
     def decode_archive(archive):
         s = archive.decode('NS.string')
         return s
+
+
+class NSValueArchive:
+    """Delegate for packing/unpacking NSValue objects"""
+
+    @staticmethod
+    def decode_archive(archive):
+        s = archive.decode('NS.rectval')
+        return s
+
 
 UNARCHIVE_CLASS_MAP = {
     'NSDictionary': DictArchive,
@@ -786,6 +812,7 @@ UNARCHIVE_CLASS_MAP = {
     'DTTapHeartbeatMessage': DTTapMessageArchive,
     'DTSysmonTapMessage': DTTapMessageArchive,
     'DTTapMessage': DTTapMessageArchive,
+    'NSValue': NSValueArchive,
 
 }
 
@@ -799,6 +826,7 @@ ARCHIVE_CLASS_MAP = {
     NSUUID: 'NSUUID'
 
 }
+
 
 def update_class_map(new_map: Mapping[str, type]):
     UNARCHIVE_CLASS_MAP.update(new_map)

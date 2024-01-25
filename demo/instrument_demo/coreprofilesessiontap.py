@@ -3,6 +3,8 @@ import sys
 import time
 import uuid
 from datetime import datetime
+
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.util.utils import kperf_data
@@ -88,6 +90,14 @@ def graphics_display(rpc):
 
 
 if __name__ == '__main__':
-    rpc = InstrumentServer().init()
-    graphics_display(rpc)
-    rpc.stop()
+
+    host = 'fd73:3a0d:d4bd::1'  # randomized
+    port = 60558  # randomized
+    with RemoteLockdownClient((host, port)) as rsd:
+        rpc = InstrumentServer(rsd).init()
+        graphics_display(rpc)
+        rpc.stop()
+
+    # rpc = InstrumentServer().init()
+    # graphics_display(rpc)
+    # rpc.stop()

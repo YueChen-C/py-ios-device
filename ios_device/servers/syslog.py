@@ -29,6 +29,8 @@ import sys
 from optparse import OptionParser
 from sys import exit
 
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
+
 sys.path.append(os.getcwd())
 from ios_device.util.lockdown import LockdownClient
 
@@ -40,11 +42,14 @@ class SyslogServer(object):
     View system logs
     """
     SERVICE_NAME = "com.apple.syslog_relay"
+    RSD_SERVICE_NAME = 'com.apple.syslog_relay.shim.remote'
 
     def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
-        self.c = self.lockdown.start_service(self.SERVICE_NAME)
+        SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown,
+                                                           RemoteLockdownClient) else self.SERVICE_NAME
+        self.c = self.lockdown.start_service(SERVICE_NAME)
 
     def watch(self, log_file=None, filter=None):
         """View log

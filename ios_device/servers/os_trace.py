@@ -9,6 +9,7 @@ from datetime import datetime
 
 from construct import Struct, Bytes, Int32ul, CString, Optional, Enum, Byte, Adapter, Int16ul, this, Computed
 
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
 from ios_device.util.lockdown import LockdownClient
 
 CHUNK_SIZE = 4096
@@ -63,32 +64,34 @@ syslog_t = Struct(
 
 class OsTraceService(object):
     SERVICE_NAME = 'com.apple.os_trace_relay'
+    RSD_SERVICE_NAME = 'com.apple.os_trace_relay.shim.remote'
 
-    def __init__(self, lockdown: LockdownClient=None):
+    def __init__(self, lockdown: LockdownClient = None):
         self.logger = logging.getLogger(__name__)
         self.lockdown = lockdown or LockdownClient()
-        self.c = self.lockdown.start_service(self.SERVICE_NAME)
+        SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown,
+                                                           RemoteLockdownClient) else self.SERVICE_NAME
+        self.service = self.lockdown.start_service(SERVICE_NAME)
 
     def get_pid_list(self):
-        self.c.send_plist({'Request': 'PidList'})
-        self.c.recv_exact(1)
-        return self.c.recv_plist()
+        self.service.send_plist({'Request': 'PidList'})
+        self.service.recv_exact(1)
+        return self.service.recv_plist()
 
     def syslog(self, pid=-1):
-        self.c.send_plist({'Request': 'StartActivity', 'MessageFilter': 65535, 'Pid': pid, 'StreamFlags': 60})
+        self.service.send_plist({'Request': 'StartActivity', 'MessageFilter': 65535, 'Pid': pid, 'StreamFlags': 60})
 
-        length_length, = struct.unpack('<I', self.c.recv_exact(4))
-        length = int(self.c.recv_exact(length_length)[::-1].hex(), 16)
-        print("length_length",length)
-        response = plistlib.loads(self.c.recv_exact(length))
+        length_length, = struct.unpack('<I', self.service.recv_exact(4))
+        length = int(self.service.recv_exact(length_length)[::-1].hex(), 16)
+        print("length_length", length)
+        response = plistlib.loads(self.service.recv_exact(length))
 
         if response.get('Status') != 'RequestSuccessful':
             raise Exception(f'got invalid response: {response}')
 
         while True:
-            self.c.recv_exact(1)
-            length, = struct.unpack('<I', self.c.recv_exact(4))
-            line = self.c.recv(length)
+            self.service.recv_exact(1)
+            length, = struct.unpack('<I', self.service.recv_exact(4))
+            line = self.service.recv(length)
             entry = syslog_t.parse(line)
             yield entry
-

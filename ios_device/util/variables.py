@@ -115,3 +115,8 @@ class InstrumentsService(str, enum.Enum):
     # - enableConditionWithIdentifier: profileIdentifier:
     XcodeEnergy = 'com.apple.xcode.debug-gauge-data-providers.Energy'
     GPU = 'com.apple.instruments.server.services.gpu'
+
+
+class TunnelProtocol(enum.Enum):
+    TCP = 'tcp'
+    QUIC = 'quic'

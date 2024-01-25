@@ -2,21 +2,20 @@ import logging
 import os
 import typing
 
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
+
 
 class MobileImageMounter(object):
-
     SERVICE_NAME = 'com.apple.mobile.mobile_image_mounter'
+    RSD_SERVICE_NAME = 'com.apple.mobile.mobile_image_mounter.shim.remote'
 
-    def __init__(self, lockdown=None, udid=None, logger=None,service=None):
+    def __init__(self, lockdown=None, udid=None, logger=None, service=None):
         from ..util.lockdown import LockdownClient
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown or LockdownClient(udid=udid)
-        self.service = service or self.lockdown.start_service(self.SERVICE_NAME)
-
-        if not self.lockdown:
-            raise Exception("Unable to start lockdown")
-        if not self.service:
-            raise Exception("installation_proxy init error : Could not start com.apple.mobile.mobile_image_mounter")
+        SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown,
+                                                           RemoteLockdownClient) else self.SERVICE_NAME
+        self.service = service or self.lockdown.start_service(SERVICE_NAME)
 
     def lookup(self, image_type="Developer") -> typing.List[bytes]:
         """
@@ -101,4 +100,3 @@ class MobileImageMounter(object):
                 raise Exception("DeveloperImage is already mounted")
             if 'Developer mode is not enabled' in ret['DetailedError']:
                 raise Exception('Developer mode is not enabled. try `pyidevice enable_developer_mode`')
-

@@ -7,7 +7,6 @@ from ios_device import __version__
 
 REQUIREMENTS = [i.strip() for i in open("requirements.txt").readlines()]
 
-
 setup(name='py_ios_device',
       version=__version__,
       description='Get ios data and operate ios devices',
@@ -27,8 +26,8 @@ setup(name='py_ios_device',
           "Operating System :: OS Independent",
       ],
       entry_points={
-          'console_scripts':{
+          'console_scripts': {
               'pyidevice=ios_device.main:cli'
           }
       },
-)
+      )

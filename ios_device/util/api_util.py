@@ -4,7 +4,6 @@
 """
 import logging
 import os
-import struct
 import threading
 from distutils.version import LooseVersion
 
