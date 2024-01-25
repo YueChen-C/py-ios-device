@@ -45,6 +45,27 @@ python version: 3.7 +
 
 ## Usage：
 
+### Support iOS 17 (Command line is not supported )
+
+
+```bash
+pip install pymobiledevice3
+sudo python3 -m pymobiledevice3 remote start-tunnel
+```
+
+```python
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
+from ios_device.servers.Instrument import  InstrumentServer
+from demo.instrument_demo.sysmontap import  sysmontap
+host = 'fdb1:c2d3:d8cd::1'
+port = 60574  
+with RemoteLockdownClient((host, port)) as rsd:
+    rpc = InstrumentServer(rsd).init()
+    sysmontap(rpc)
+    rpc.stop()
+```
+
+
 ## pip :
     > pip install py-ios-device
     > pyidevice --help

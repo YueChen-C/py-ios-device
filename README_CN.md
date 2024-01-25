@@ -44,7 +44,30 @@ python 版本: 3.7 +
 - [x] 应用管理:安装、卸载、启动、查询、运行状态等
 - [x] 获取电池信息
 
-## 命令行使用文档：
+## 使用文档：
+
+### 支持 iOS 17  (暂时不支持命令行模式)
+
+```bash
+pip install pymobiledevice3
+```
+```bash
+sudo python3 -m pymobiledevice3 remote start-tunnel
+```
+
+```python
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
+from ios_device.servers.Instrument import  InstrumentServer
+from demo.instrument_demo.sysmontap import  sysmontap
+host = 'fdb1:c2d3:d8cd::1'
+port = 60574  
+with RemoteLockdownClient((host, port)) as rsd:
+    rpc = InstrumentServer(rsd).init()
+    sysmontap(rpc)
+    rpc.stop()
+```
+
+
 
 ## pip 仓库:
     > pip install py-ios-device
