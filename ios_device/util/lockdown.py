@@ -2,29 +2,22 @@ import contextlib
 import os
 import plistlib
 import shutil
-import sys
 import tempfile
 import time
-import uuid
-import platform
-
 import zipfile
-
 from distutils.version import LooseVersion
-from pathlib import Path
 from typing import Optional, Dict, Any, Mapping
 
 import requests
 
-from .exceptions import PairingError, NotTrustedError, FatalPairingError, NotPairedError, CannotStopSessionError
-from .exceptions import StartServiceError, InitializationError
-from .plist_service import PlistService
-from .ca import make_certs_and_key
-from .usbmux import MuxDevice, UsbmuxdClient
-from .utils import DictAttrProperty, cached_property
-from .variables import LOG
-from ..servers.image_mounter import MobileImageMounter
-from ..util import Log, PROGRAM_NAME
+from ios_device.util.ca import make_certs_and_key
+from ios_device.util.exceptions import PairingError, NotTrustedError, FatalPairingError, CannotStopSessionError
+from ios_device.util.exceptions import StartServiceError, InitializationError
+from ios_device.servers.plist_service import PlistService
+from ios_device.util.usbmux import MuxDevice, UsbmuxdClient
+from ios_device.util.utils import DictAttrProperty, cached_property, get_host_id
+from ios_device.util.variables import LOG
+from ios_device.util import Log, PROGRAM_NAME, get_lockdown_dir, write_home_file, get_home_path
 
 __all__ = ['LockdownClient']
 log = Log.getLogger(LOG.LockDown.value)
@@ -42,7 +35,7 @@ def get_app_dir(*paths) -> str:
 
 
 class LockdownClient:
-    label = 'pyMobileDevice'
+    label = 'pyiOSDevice'
     udid = DictAttrProperty('device_info', 'UniqueDeviceID')
     unique_chip_id = DictAttrProperty('device_info', 'UniqueChipID')
     device_id = DictAttrProperty('device_info', 'DeviceID')
@@ -51,26 +44,35 @@ class LockdownClient:
     def __init__(
             self,
             udid: Optional[str] = None,
-            device: Optional[MuxDevice] = None,
-            cache_dir: str = '.cache/pymobiledevice',
-            network=None
+            cache_dir: str = '.cache/pyiOSDevice',
+            network=None,
+            address=None,
     ):
         self.network = network
         self.cache_dir = cache_dir
         self.record = None  # type: Optional[Dict[str, Any]]
         self.sslfile = None
         self.session_id = None
-        self.host_id = str(uuid.uuid3(uuid.NAMESPACE_DNS, platform.node())).upper()
-        self.svc = PlistService(62078, udid, device, network=network)
-        self.udid = self.svc.device.serial
-        self.device = device
+        self.host_id = get_host_id()
+        self.udid = udid
         self.network = network
-        self._verify_query_type()
+        self.paired = None
+        self.product_type: Optional[str] = None
+        self.svc = None
+        self.address = address
+        self.device_info = {}
+        self.connect()
+
+    def connect(self):
+        self.svc = PlistService.create_usbmux(62078, self.udid, self.network)
         self.device_info = self.get_value()
         self.device_info['UniqueDeviceID'] = self.svc.device.serial
         self.device_info['DeviceID'] = self.svc.device.device_id
-        self.paired = None
-        log.info(f"Connecting Device {self.svc.device.serial} ")
+        self.udid = self.svc.device.serial
+
+    def close(self):
+        self.stop_session()
+        self.svc.close()
 
     def _verify_query_type(self):
         query_type = self.svc.plist_request({'Request': 'QueryType'}).get('Type')
@@ -90,13 +92,13 @@ class LockdownClient:
             return True
         self.pair_full()
         self.svc.close()
-        self.svc = PlistService(62078, self.udid, self.svc.device, network=self.network)
+        self.svc = PlistService.create_usbmux(62078, self.udid, self.network)
         if self._validate_pairing():
             return True
         raise FatalPairingError
 
     def _get_pair_record(self) -> Optional[Dict[str, Any]]:
-        lockdown_path = _get_lockdown_dir()
+        lockdown_path = get_lockdown_dir()
         itunes_lockdown_path = lockdown_path.joinpath(f'{self.identifier}.plist')
         try:  # 如果没有 lockdown 权限，则使用自有缓存证书，建议开启 lockdown 权限，避免重复认证
             if itunes_lockdown_path.exists():
@@ -110,7 +112,6 @@ class LockdownClient:
         with UsbmuxdClient() as usb:
             return usb.get_pair_record(self.udid)
 
-
     def _validate_pairing(self):
         pair_record = self._get_pair_record() or {}
         self.record = pair_record
@@ -121,32 +122,29 @@ class LockdownClient:
                 return False
 
         self.host_id = pair_record.get('HostID', self.host_id)
-        system_buid = pair_record.get('SystemBUID') or str(uuid.uuid3(uuid.NAMESPACE_DNS, platform.node())).upper()
+        system_buid = pair_record.get('SystemBUID') or get_host_id()
         resp = self._plist_request('StartSession', HostID=self.host_id, SystemBUID=system_buid)
         self.session_id = resp.get('SessionID')
 
-        if 'Error' in resp:
-            if resp['Error'] == 'InvalidHostID':
-                with UsbmuxdClient() as usb:
-                    usb.delete_pair_record(self.udid)
-                pair_record = self._get_pair_record() or self.pair_full()
-                if not pair_record:
-                    return False
+        if 'Error' in resp and resp['Error'] == 'InvalidHostID':
+            with UsbmuxdClient() as usb:
+                usb.delete_pair_record(self.udid)
+            pair_record = self._get_pair_record() or self.pair_full()
+            if not pair_record:
+                return False
 
         if resp.get('EnableSessionSSL'):
             if not pair_record:
-                self.sslfile = get_home_path(self.cache_dir,f'{self.identifier}.pem')
-
+                self.sslfile = get_home_path(f'{self.identifier}.pem')
             else:
                 self.sslfile = write_home_file(
-                    self.cache_dir,
                     f'{self.identifier}.pem',
                     pair_record['HostCertificate'] + b'\n' + pair_record['HostPrivateKey']
                 )
             try:
                 self.svc.ssl_start(self.sslfile, self.sslfile)
             except OSError:
-                self.svc = PlistService(62078, self.udid, self.device, network=self.network)
+                self.svc = PlistService.create_usbmux(62078, self.udid, network=self.network)
                 return False
         return True
 
@@ -184,7 +182,6 @@ class LockdownClient:
             with UsbmuxdClient() as usb:
                 usb.save_pair_record(self.udid, pair_record, self.device_id)
             write_home_file(
-                self.cache_dir,
                 f'{self.identifier}.pem',
                 pair_record['HostCertificate'] + b'\n' + pair_record['HostPrivateKey']
             )
@@ -261,13 +258,14 @@ class LockdownClient:
                 log.info('try `pyidevice enable_developer_mode`')
             raise StartServiceError(f'Unable to start service={name!r} - {error}')
         log.debug(f'connect port: {resp.get("Port")}')
-        plist_service = PlistService(
+        plist_service = PlistService.create_usbmux(
             resp.get('Port'), self.udid, ssl_file=self.sslfile if resp.get('EnableServiceSSL', False) else None,
             network=self.network)
         return plist_service
 
     @property
     def imagemounter(self):
+        from ios_device.servers.image_mounter import MobileImageMounter
         """
         start_service will call imagemounter, so here should call
         _unsafe_start_service instead
@@ -278,9 +276,8 @@ class LockdownClient:
     def _urlretrieve(self, url, local_filename):
         """ download url to local """
         log.info("Download %s -> %s", url, local_filename)
-
+        tmp_local_filename = local_filename + f".download-{int(time.time() * 1000)}"
         try:
-            tmp_local_filename = local_filename + f".download-{int(time.time() * 1000)}"
             with requests.get(url, stream=True, timeout=DOWN_SUPPORT_TIMEOUT) as r:
                 r.raise_for_status()
                 with open(tmp_local_filename, 'wb') as f:
@@ -364,32 +361,10 @@ class LockdownClient:
     def enter_recovery(self):
         log.debug(self.svc.plist_request({'Request': 'EnterRecovery'}))
 
+    @property
+    def developer_mode_status(self) -> bool:
+        return self.get_value('com.apple.security.mac.amfi', 'DeveloperModeStatus')
 
-def get_home_path(foldername: str, filename: str) -> Path:
-    path = Path('~').expanduser().joinpath(foldername)
-    if not path.exists():
-        path.mkdir(parents=True)
-    return path.joinpath(filename)
-
-
-def read_home_file(foldername: str, filename: str) -> Optional[bytes]:
-    path = get_home_path(foldername, filename)
-    if not path.exists():
-        return None
-    with path.open('rb') as f:
-        return f.read()
-
-
-def write_home_file(foldername: str, filename: str, data: bytes) -> str:
-    path = get_home_path(foldername, filename)
-    log.debug(f'save path :{path}')
-    with path.open('wb') as f:
-        f.write(data)
-    return path.as_posix()
-
-
-def _get_lockdown_dir():
-    if sys.platform == 'win32':
-        return Path(os.environ['ALLUSERSPROFILE'] + '/Apple/Lockdown/')
-    else:
-        return Path('/var/db/lockdown/')
+    def __enter__(self) -> 'LockdownClient':
+        self.connect()
+        return self

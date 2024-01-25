@@ -1,5 +1,6 @@
 import logging
 
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
 from ios_device.util.lockdown import LockdownClient
 
 notifications = ['com.apple.security.secureobjectsync.viewschanged', 'com.apple.AOSNotification.FMIPStateDidChange',
@@ -346,11 +347,14 @@ notifications = ['com.apple.security.secureobjectsync.viewschanged', 'com.apple.
 
 class NotificationProxyService(object):
     SERVICE_NAME = 'com.apple.mobile.notification_proxy'
+    RSD_SERVICE_NAME = 'com.apple.mobile.notification_proxy.shim.remote'
 
     def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
-        self.service = self.lockdown.start_service(self.SERVICE_NAME)
+        SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown,
+                                                           RemoteLockdownClient) else self.SERVICE_NAME
+        self.service = self.lockdown.start_service(SERVICE_NAME)
 
     def notify_post(self, name: str):
         self.service.send_plist({'Command': 'PostNotification',

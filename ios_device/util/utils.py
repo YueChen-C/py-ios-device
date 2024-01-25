@@ -1,18 +1,32 @@
 """
 Utils
 """
-import dataclasses
+import asyncio
 import math
 import os
-
-__all__ = ['DictAttrProperty', 'DictAttrFieldNotFoundError']
-ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-
+import platform
+import socket
 import struct
+import traceback
+import uuid
+
+from functools import wraps
+
+from typing import Callable
+
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 _NotSet = object()
 NANO_SECOND = 1e9  # ns
 MOVIE_FRAME_COST = 1 / 24
+
+DEFAULT_AFTER_IDLE_SEC = 3
+DEFAULT_INTERVAL_SEC = 3
+DEFAULT_MAX_FAILS = 3
+
+_DARWIN_TCP_KEEPALIVE = 0x10
+_DARWIN_TCP_KEEPINTVL = 0x101
+_DARWIN_TCP_KEEPCNT = 0x102
 
 
 class cached_property(object):
@@ -194,11 +208,11 @@ class DumpNetwork:
         self.last_netPacketsIn = netPacketsIn
 
         netPacketsOut = System.get('netPacketsOut')
-        diskWriteOps_sec = netPacketsOut - self.last_netPacketsOut if netPacketsOut - self.last_netPacketsOut > 0 else 0
+        disk_write_ops_sec = netPacketsOut - self.last_netPacketsOut if netPacketsOut - self.last_netPacketsOut > 0 else 0
         self.last_netPacketsOut = netPacketsOut
 
         data = [netBytesIn_str, netBytesIn_qps, netBytesOut_str, netBytesOut_qps, netPacketsOut,
-                netPacketsIn_sec, netPacketsOut, diskWriteOps_sec]
+                netPacketsIn_sec, netPacketsOut, disk_write_ops_sec]
         return dict(zip(self.filter, data))
 
 
@@ -208,16 +222,62 @@ class DumpMemory:
         self.kernel_page_size = 16384  # core_profile_session_tap get kernel_page_size
 
     def decode(self, system: dict):
-        App_Memory = convertBytes(
+        app_memory = convertBytes(
             (system.get('vmIntPageCount') - system.get("vmPurgeableCount")) * self.kernel_page_size)
-        Cached_Files = convertBytes(
+        cached_files = convertBytes(
             (system.get('vmExtPageCount') + system.get("vmPurgeableCount")) * self.kernel_page_size)
-        Compressed = convertBytes(system.get('vmCompressorPageCount') * self.kernel_page_size)
-        Memory_Used = convertBytes((system.get('vmUsedCount') - system.get('vmExtPageCount')) * self.kernel_page_size)
-        Wired_Memory = convertBytes(system.get("vmWireCount") * self.kernel_page_size)
-        Swap_Used = convertBytes(system.get("__vmSwapUsage"))
-        Free_Memory = convertBytes(system.get("vmFreeCount") * self.kernel_page_size)
-        data = {"App Memory": App_Memory, "Free Memory": Free_Memory, "Cached Files": Cached_Files,
-                "Compressed": Compressed,
-                "Memory Used": Memory_Used, "Wired Memory": Wired_Memory, "Swap Used": Swap_Used}
+        compressed = convertBytes(system.get('vmCompressorPageCount') * self.kernel_page_size)
+        memory_used = convertBytes((system.get('vmUsedCount') - system.get('vmExtPageCount')) * self.kernel_page_size)
+        wired_memory = convertBytes(system.get("vmWireCount") * self.kernel_page_size)
+        swap_used = convertBytes(system.get("__vmSwapUsage"))
+        free_memory = convertBytes(system.get("vmFreeCount") * self.kernel_page_size)
+        data = {"App Memory": app_memory, "Free Memory": free_memory, "Cached Files": cached_files,
+                "Compressed": compressed,
+                "Memory Used": memory_used, "Wired Memory": wired_memory, "Swap Used": swap_used}
         return data
+
+
+def set_keepalive(sock: socket.socket, after_idle_sec: int = DEFAULT_AFTER_IDLE_SEC,
+                  interval_sec: int = DEFAULT_INTERVAL_SEC, max_fails: int = DEFAULT_MAX_FAILS) -> None:
+    """
+    set keep-alive parameters on a given socket
+
+    :param sock: socket to operate on
+    :param after_idle_sec: idle time used when SO_KEEPALIVE is enabled
+    :param interval_sec: interval between keepalives
+    :param max_fails: number of keepalives before close
+
+    """
+    plat = platform.system()
+    if plat == 'Linux':
+        return _set_keepalive_linux(sock, after_idle_sec, interval_sec, max_fails)
+    if plat == 'Darwin':
+        return _set_keepalive_darwin(sock, after_idle_sec, interval_sec, max_fails)
+    if plat == 'Windows':
+        return _set_keepalive_win(sock, after_idle_sec, interval_sec)
+    raise RuntimeError(f'Unsupported platform {plat}')
+
+
+def _set_keepalive_linux(sock: socket.socket, after_idle_sec: int = DEFAULT_AFTER_IDLE_SEC,
+                         interval_sec: int = DEFAULT_INTERVAL_SEC, max_fails: int = DEFAULT_MAX_FAILS) -> None:
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, after_idle_sec)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval_sec)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, max_fails)
+
+
+def _set_keepalive_darwin(sock: socket.socket, after_idle_sec: int = DEFAULT_AFTER_IDLE_SEC,
+                          interval_sec: int = DEFAULT_INTERVAL_SEC, max_fails: int = DEFAULT_MAX_FAILS) -> None:
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    sock.setsockopt(socket.IPPROTO_TCP, _DARWIN_TCP_KEEPALIVE, after_idle_sec)
+    sock.setsockopt(socket.IPPROTO_TCP, _DARWIN_TCP_KEEPINTVL, interval_sec)
+    sock.setsockopt(socket.IPPROTO_TCP, _DARWIN_TCP_KEEPCNT, max_fails)
+
+
+def _set_keepalive_win(sock: socket.socket, after_idle_sec: int = DEFAULT_AFTER_IDLE_SEC,
+                       interval_sec: int = DEFAULT_INTERVAL_SEC) -> None:
+    sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, after_idle_sec * 1000, interval_sec * 1000))
+
+
+def get_host_id():
+    return str(uuid.uuid3(uuid.NAMESPACE_DNS, platform.node())).upper()

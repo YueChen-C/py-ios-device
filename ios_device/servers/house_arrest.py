@@ -3,17 +3,21 @@
 """
 import logging
 
+from ios_device.remote.remote_lockdown import RemoteLockdownClient
 from ..servers.afc import AFCClient, AFCShell
 from ..util.lockdown import LockdownClient
 
 
 class HouseArrestService(AFCClient):
     SERVICE_NAME = "com.apple.mobile.house_arrest"
+    RSD_SERVICE_NAME = 'com.apple.mobile.house_arrest.shim.remote'
 
-    def __init__(self, lockdown=None, udid=None, network=None,logger=None):
+    def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.lockdown = lockdown or LockdownClient(udid=udid,network=network)
-        super(HouseArrestService, self).__init__(self.lockdown, self.SERVICE_NAME)
+        self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
+        SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown,
+                                                           RemoteLockdownClient) else self.SERVICE_NAME
+        super(HouseArrestService, self).__init__(self.lockdown, SERVICE_NAME)
 
     def stop_session(self):
         self.logger.info("Disconecting...")

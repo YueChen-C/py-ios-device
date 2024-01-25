@@ -7,3 +7,9 @@ requests>=2.25.1
 click>=7.1.2
 coloredlogs>=3.3.2
 PyExecJS==1.5.1
+psutil
+qh3>=0.11.5
+srptools
+opack
+aiofiles
+sslpsk_pmd3

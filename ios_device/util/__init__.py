@@ -1,10 +1,13 @@
 import logging
 import os
 import sys
+from pathlib import Path
+from typing import Optional
 
 import coloredlogs
 
 gettrace = getattr(sys, 'gettrace', None)
+HOME_PATH = '.cache/pyidevice'
 
 
 def hexdump(d):
@@ -60,3 +63,32 @@ class Log:
 
 
 PROGRAM_NAME = "py_ios_device"
+
+
+def get_home_path(filename: str) -> Path:
+    path = Path('~').expanduser().joinpath(HOME_PATH)
+    if not path.exists():
+        path.mkdir(parents=True)
+    return path.joinpath(filename)
+
+
+def read_home_file(filename: str) -> Optional[bytes]:
+    path = get_home_path(filename)
+    if not path.exists():
+        return None
+    with path.open('rb') as f:
+        return f.read()
+
+
+def write_home_file(filename: str, data: bytes) -> str:
+    path = get_home_path(filename)
+    with path.open('wb') as f:
+        f.write(data)
+    return path.as_posix()
+
+
+def get_lockdown_dir():
+    if sys.platform == 'win32':
+        return Path(os.environ['ALLUSERSPROFILE'] + '/Apple/Lockdown/')
+    else:
+        return Path('/var/db/lockdown/')
