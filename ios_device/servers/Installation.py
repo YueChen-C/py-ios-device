@@ -26,6 +26,8 @@ import os
 import logging
 
 from optparse import OptionParser
+
+from ..remote.remote_lockdown import RemoteLockdownClient
 from ..servers.afc import AFCClient
 
 from ..util.lockdown import LockdownClient
@@ -40,11 +42,13 @@ client_options = {
 
 class InstallationProxyService(object):
     SERVICE_NAME = 'com.apple.mobile.installation_proxy'
+    RSD_SERVICE_NAME = 'com.apple.mobile.installation_proxy.shim.remote'
 
     def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
-        self.service = self.lockdown.start_service(self.SERVICE_NAME)
+        SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown, RemoteLockdownClient) else self.SERVICE_NAME
+        self.service = self.lockdown.start_service(SERVICE_NAME)
         if not self.service:
             raise Exception("installation_proxy init error : Could not start com.apple.mobile.installation_proxy")
 

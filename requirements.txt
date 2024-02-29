@@ -1,5 +1,5 @@
 cffi==1.14.4
-construct==2.10.56
+construct>=2.10.56
 pyasn1==0.4.8
 pyOpenSSL>=22.0.0
 six==1.15.0
@@ -13,3 +13,4 @@ srptools
 opack
 aiofiles
 sslpsk_pmd3
+hyperframe

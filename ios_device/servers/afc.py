@@ -561,6 +561,7 @@ class AFCCrashLog(AFCClient):
     RSD_SERVICE_NAME = 'com.apple.crashreportcopymobile.shim.remote'
 
     def __init__(self, lockdown=None, udid=None, logger=None):
+        self.lockdown = lockdown or LockdownClient(udid=udid)
         SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown,
                                                            RemoteLockdownClient) else self.SERVICE_NAME
         super(AFCCrashLog, self).__init__(lockdown, serviceName=SERVICE_NAME, udid=udid, logger=logger)
