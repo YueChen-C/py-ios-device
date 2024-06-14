@@ -281,10 +281,10 @@ class InstrumentsBase:
             'sampleInterval': time * 1000000}
         _system_attributes = self.system_attributes or system_attributes
         if _system_attributes:
-            config['sysAttrs'] = _system_attributes
-        process_attributes = self.process_attributes or process_attributes
-        if process_attributes:
-            config['procAttrs'] = process_attributes
+            config['sysAttrs'] = list(_system_attributes)
+        _process_attributes = self.process_attributes or process_attributes
+        if _process_attributes:
+            config['procAttrs'] = list(_process_attributes)
         self.instruments.call(InstrumentsService.Sysmontap, "setConfig:", config)
         self.instruments.register_channel_callback(InstrumentsService.Sysmontap, callback)
         self.instruments.call(InstrumentsService.Sysmontap, "start")
