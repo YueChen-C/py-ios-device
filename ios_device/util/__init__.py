@@ -36,7 +36,7 @@ class Log:
         self.level = level
 
     @classmethod
-    def getLogger(cls, name=os.path.abspath(__name__)):
+    def getLogger(cls, name=os.path.abspath(__name__)) -> logging.Logger:
         if name not in cls.__instances:
             logger = logging.getLogger(name)
             fmt = '%(asctime)s [%(levelname)s] [%(name)s] %(filename)s[line:%(lineno)d] %(message)s'

@@ -1,4 +1,4 @@
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 from ..remote.remote_lockdown import RemoteLockdownClient
 from ..servers.dvt import DTXServer
@@ -23,7 +23,7 @@ class InstrumentServer(DTXServer):
             if isinstance(self.lockdown, RemoteLockdownClient):
                 cli = self.lockdown.start_lockdown_developer_service(self.RSD_SERVICE_NAME)
             else:
-                if self.lockdown.ios_version >= LooseVersion('14.0'):
+                if self.lockdown.ios_version >= Version('14.0'):
                     cli = self.lockdown.start_service(self.SERVICE_NAME)
                 else:
                     cli = self.lockdown.start_service(self.OLD_SERVICE_NAME)

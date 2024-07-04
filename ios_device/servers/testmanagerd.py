@@ -1,4 +1,4 @@
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 from ..servers.dvt import DTXServer
 from ..util.lockdown import LockdownClient
@@ -15,7 +15,7 @@ class TestManagerdLockdown(DTXServer):
 
     def init(self, cli=None):
         if not cli:
-            if self.lockdown.ios_version >= LooseVersion('14.0'):
+            if self.lockdown.ios_version >= Version('14.0'):
                 cli = self.lockdown.start_service("com.apple.testmanagerd.lockdown.secure")
             else:
                 cli = self.lockdown.start_service("com.apple.testmanagerd.lockdown")

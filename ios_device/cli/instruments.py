@@ -5,7 +5,7 @@ import threading
 import uuid
 from copy import deepcopy
 from datetime import datetime
-from distutils.version import LooseVersion
+from packaging.version import Version
 from statistics import mean
 
 import click
@@ -163,7 +163,7 @@ def cmd_appmonitor(udid, network, format, time, bundle_id):
     """ Get application performance data """
     proc_filter = ['Pid', 'Name', 'CPU', 'Memory', 'DiskReads', 'DiskWrites', 'Threads']
     process_attributes = dataclasses.make_dataclass('SystemProcessAttributes', proc_filter)
-    ios_version = 0
+    ios_version = Version('0')
 
     def on_callback_message(res):
         if isinstance(res.selector, list):
@@ -175,7 +175,7 @@ def cmd_appmonitor(udid, network, format, time, bundle_id):
                             continue
                         if not attrs.CPU:
                             attrs.CPU = 0
-                        if ios_version < LooseVersion('14.0'):
+                        if ios_version < Version('14.0'):
                             attrs.CPU = attrs.CPU * 40
                         attrs.CPU = f'{round(attrs.CPU, 2)} %'
                         attrs.Memory = convertBytes(attrs.Memory)
@@ -445,8 +445,8 @@ def stackshot(udid, network, format, out):
     """ Dump stack snapshot information. """
     with InstrumentsBase(udid=udid, network=network) as rpc:
 
-        if rpc.lockdown.ios_version < LooseVersion('12.0'):
-            log.warn('The interface requires iOS version 12+')
+        if rpc.lockdown.ios_version < Version('12.0'):
+            log.warning('The interface requires iOS version 12+')
             return
         stopSignal = threading.Event()
 

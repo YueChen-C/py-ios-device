@@ -58,7 +58,7 @@ def x509_time(**kwargs) -> bytes:
 def make_cert(req: X509Req, ca_pkey: PKey) -> X509:
     cert = X509()
     cert.set_serial_number(1)
-    cert.set_version(2)
+    cert.set_version(0)
     cert.set_subject(req.get_subject())
     cert.set_pubkey(req.get_pubkey())
     cert.set_notBefore(x509_time(minutes=-1))
@@ -73,7 +73,7 @@ def make_cert(req: X509Req, ca_pkey: PKey) -> X509:
 
 def make_req(pub_key, cn=None, digest=None) -> X509Req:
     req = X509Req()
-    req.set_version(2)
+    req.set_version(0)
     req.set_pubkey(pub_key)
     if cn is not None:
         subject = req.get_subject()

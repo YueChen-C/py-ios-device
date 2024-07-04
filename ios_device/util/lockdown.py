@@ -5,19 +5,19 @@ import shutil
 import tempfile
 import time
 import zipfile
-from distutils.version import LooseVersion
 from typing import Optional, Dict, Any, Mapping
 
 import requests
-
-from ios_device.util.ca import make_certs_and_key
-from ios_device.util.exceptions import PairingError, NotTrustedError, FatalPairingError, CannotStopSessionError
-from ios_device.util.exceptions import StartServiceError, InitializationError
+from packaging.version import Version
 from ios_device.servers.plist_service import PlistService
-from ios_device.util.usbmux import MuxDevice, UsbmuxdClient
+from ios_device.util import Log, PROGRAM_NAME, get_lockdown_dir, write_home_file, get_home_path
+from ios_device.util.ca import make_certs_and_key
+from ios_device.util.exceptions import PairingError, NotTrustedError, FatalPairingError, \
+    CannotStopSessionError
+from ios_device.util.exceptions import StartServiceError, InitializationError
+from ios_device.util.usbmux import UsbmuxdClient
 from ios_device.util.utils import DictAttrProperty, cached_property, get_host_id
 from ios_device.util.variables import LOG
-from ios_device.util import Log, PROGRAM_NAME, get_lockdown_dir, write_home_file, get_home_path
 
 __all__ = ['LockdownClient']
 log = Log.getLogger(LOG.LockDown.value)
@@ -39,7 +39,7 @@ class LockdownClient:
     udid = DictAttrProperty('device_info', 'UniqueDeviceID')
     unique_chip_id = DictAttrProperty('device_info', 'UniqueChipID')
     device_id = DictAttrProperty('device_info', 'DeviceID')
-    ios_version = DictAttrProperty('device_info', 'ProductVersion', LooseVersion)
+    ios_version = DictAttrProperty('device_info', 'ProductVersion', Version)
 
     def __init__(
             self,
@@ -115,7 +115,7 @@ class LockdownClient:
     def _validate_pairing(self):
         pair_record = self._get_pair_record() or {}
         self.record = pair_record
-        if self.ios_version < LooseVersion('11.0'):  # 11 以下需要双向认证
+        if self.ios_version < Version('11.0'):  # 11 以下需要双向认证
             resp = self._plist_request('ValidatePair', PairRecord=pair_record)
             if not resp or 'Error' in resp:
                 log.error(f'Failed to ValidatePair: {resp}')
@@ -144,6 +144,8 @@ class LockdownClient:
             try:
                 self.svc.ssl_start(self.sslfile, self.sslfile)
             except OSError:
+                import traceback
+                log.debug(traceback.format_exc())
                 self.svc = PlistService.create_usbmux(62078, self.udid, network=self.network)
                 return False
         return True
@@ -254,7 +256,7 @@ class LockdownClient:
             if resp.get('Error') == 'PasswordProtected':
                 raise StartServiceError(f'Unable to start service={name!r} - a password must be entered on the device')
             error = resp.get('Error')
-            if self.ios_version >= LooseVersion('16.0'):
+            if self.ios_version >= Version('16.0'):
                 log.info('try `pyidevice enable_developer_mode`')
             raise StartServiceError(f'Unable to start service={name!r} - {error}')
         log.debug(f'connect port: {resp.get("Port")}')

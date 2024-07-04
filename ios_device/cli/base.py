@@ -2,7 +2,7 @@ import os
 import plistlib
 import threading
 import uuid
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
@@ -507,7 +507,7 @@ class InstrumentsBase:
         ManagerdLockdown1 = TestManagerdLockdown(self.lockdown).init()
 
         ManagerdLockdown1.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
-        if self.lockdown.ios_version > LooseVersion('11.0'):
+        if self.lockdown.ios_version > Version('11.0'):
             result = ManagerdLockdown1.call(
                 "dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface",
                 "_IDE_initiateControlSessionWithProtocolVersion:", RawObj(XCODE_VERSION)).selector
@@ -593,11 +593,11 @@ class InstrumentsBase:
             'MJPEG_SERVER_PORT': '',
             'USE_PORT': str(USE_PORT),
         }
-        if self.lockdown.ios_version > LooseVersion('11.0'):
+        if self.lockdown.ios_version > Version('11.0'):
             app_env['DYLD_INSERT_LIBRARIES'] = '/Developer/usr/lib/libMainThreadChecker.dylib'
             app_env['OS_ACTIVITY_DT_MODE'] = 'YES'
         app_options = {'StartSuspendedKey': False}
-        if self.lockdown.ios_version > LooseVersion('12.0'):
+        if self.lockdown.ios_version > Version('12.0'):
             app_options['ActivateSuspended'] = True
 
         app_args = [
@@ -620,7 +620,7 @@ class InstrumentsBase:
         if quit_event:
             conn.register_selector_callback(DTXEnum.FINISHED, lambda _: quit_event.set())
 
-        if self.lockdown.ios_version > LooseVersion('12.0'):
+        if self.lockdown.ios_version > Version('12.0'):
             identifier = '_IDE_authorizeTestSessionWithProcessID:'
             result = ManagerdLockdown1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',

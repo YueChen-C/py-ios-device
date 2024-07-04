@@ -5,7 +5,7 @@
 import logging
 import os
 import threading
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 from ios_device.util.bpylist2 import NSUUID, XCTestConfiguration, NSURL
 
@@ -152,7 +152,7 @@ class RunXCUITest(threading.Thread):
         manager_lock_down_1 = TestManagerdLockdown(lock_down).init()
 
         manager_lock_down_1.make_channel("dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface")
-        if lock_down.ios_version > LooseVersion('11.0'):
+        if lock_down.ios_version > Version('11.0'):
             result = manager_lock_down_1.call(
                 "dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface",
                 "_IDE_initiateControlSessionWithProtocolVersion:", RawObj(xcode_version)).selector
@@ -241,11 +241,11 @@ class RunXCUITest(threading.Thread):
         }
         if self.app_env:
             app_env.update(self.app_env)
-        if lock_down.ios_version > LooseVersion('11.0'):
+        if lock_down.ios_version > Version('11.0'):
             app_env['DYLD_INSERT_LIBRARIES'] = '/Developer/usr/lib/libMainThreadChecker.dylib'
             app_env['OS_ACTIVITY_DT_MODE'] = 'YES'
         app_options = {'StartSuspendedKey': False}
-        if lock_down.ios_version > LooseVersion('12.0'):
+        if lock_down.ios_version > Version('12.0'):
             app_options['ActivateSuspended'] = True
 
         app_args = [
@@ -268,7 +268,7 @@ class RunXCUITest(threading.Thread):
         if self.quit_event:
             conn.register_selector_callback(DTXEnum.FINISHED, lambda _: self.quit_event.set())
 
-        if lock_down.ios_version > LooseVersion('12.0'):
+        if lock_down.ios_version > Version('12.0'):
             identifier = '_IDE_authorizeTestSessionWithProcessID:'
             result = manager_lock_down_1.call(
                 'dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface',

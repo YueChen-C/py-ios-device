@@ -1,17 +1,15 @@
 """
 Plist Service - handles parsing and formatting plist content
 """
-import socket
-
-from ios_device.util.exceptions import MuxError
-from ios_device.util import Log
 import plistlib
 import re
+import socket
 import ssl
 import struct
 from typing import Optional, Dict, Any
-
-from ios_device.util.usbmux import USBMux, MuxDevice
+from ios_device.util import Log
+from ios_device.util.exceptions import MuxError
+from ios_device.util.usbmux import USBMux
 
 __all__ = ['PlistService']
 
@@ -47,7 +45,11 @@ class PlistService:
         return server
 
     def ssl_start(self, keyfile, certfile):
-        self.sock = ssl.wrap_socket(self.sock, keyfile, certfile)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        context.load_cert_chain(keyfile=keyfile, certfile=certfile)
+        self.sock = context.wrap_socket(self.sock)
 
     def send(self, msg):
         total_sent = 0

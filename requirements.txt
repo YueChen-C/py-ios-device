@@ -13,3 +13,4 @@ opack
 aiofiles
 sslpsk_pmd3
 hyperframe
+packaging
