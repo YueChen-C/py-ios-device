@@ -68,9 +68,11 @@ def crash_shell(udid, network, format):
 
 #######################################################################
 
-@cli.command('sandbox', cls=Command)
-@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter', required=True)
-@click.option('-a', '--access_type', default='VendDocuments', type=click.Choice(['VendDocuments', 'VendContainer']),
+@cli.command('sandbox', cls=Command, short_help='accessing application sandbox')
+@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter',
+              required=True)
+@click.option('-a', '--access_type', default='VendDocuments',
+              type=click.Choice(['VendDocuments', 'VendContainer']),
               help='Type of access sandbox')
 def sandbox(udid, network, format, bundle_id, access_type):
     """ open an AFC shell for given bundle_id, assuming its profile is installed """
@@ -95,7 +97,7 @@ def cmd_deviceinfo(udid, network, format):
 
 #######################################################################
 
-@cli.group(short_help='crash report options')
+@cli.group(short_help='get device profiles ')
 def profiles():
     """
     描述文件管理 例如：安装 卸载 Fiddler 证书等
@@ -114,14 +116,17 @@ def profile_list(udid, network, format):
 @click.option('--path', type=click.File('rb'))
 def profile_install(udid, network, format, path):
     """ install given profile file """
-    print_json(MCInstallService(udid=udid, network=network, logger=log).install_profile(path.read()), format)
+    print_json(
+        MCInstallService(udid=udid, network=network, logger=log).install_profile(path.read()),
+        format)
 
 
 @profiles.command('remove', cls=Command)
 @click.option('--name')
 def profile_remove(udid, network, format, name):
     """ remove profile by name """
-    print_json(MCInstallService(udid=udid, network=network, logger=log).remove_profile(name), format)
+    print_json(MCInstallService(udid=udid, network=network, logger=log).remove_profile(name),
+               format)
 
 
 #######################################################################
@@ -130,7 +135,7 @@ def profile_remove(udid, network, format, name):
 @click.option('--path', type=click.File('wt'), help='full path to the log file')
 @click.option('--filter', help='filter strings')
 def cmd_syslog(udid, network, format, path, filter):
-    """ file management per application bundle """
+    """ get device syslog """
     server = SyslogServer(udid=udid, network=network, logger=log)
     server.watch(log_file=path, filter=filter)
 
@@ -156,16 +161,19 @@ def apps_list(udid, network, format, user, system, size):
     if system:
         options['ApplicationType'] = 'System'
     if size:
-        options['ReturnAttributes'] = ['CFBundleIdentifier', 'CFBundleVersion', 'CFBundleDisplayName',
+        options['ReturnAttributes'] = ['CFBundleIdentifier', 'CFBundleVersion',
+                                       'CFBundleDisplayName',
                                        'StaticDiskUsage', 'DynamicDiskUsage']
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).apps_info(options), format=format)
+    print_json(InstallationProxyService(udid=udid, network=network, logger=log).apps_info(options),
+               format=format)
 
 
 @apps.command('uninstall', cls=Command)
 @click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
 def uninstall(udid, network, format, bundle_id):
     """ uninstall app by given bundle_id """
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).uninstall(bundle_id))
+    print_json(
+        InstallationProxyService(udid=udid, network=network, logger=log).uninstall(bundle_id))
 
 
 @apps.command('install', cls=Command)
@@ -183,8 +191,10 @@ def upgrade(udid, network, format, ipa_path):
 
 
 @apps.command('shell', cls=Command)
-@click.option('-b', '--bundle_id', default=None, required=True, help='Process app bundleId to filter')
-@click.option('-a', '--access_type', default='VendDocuments', type=click.Choice(['VendDocuments', 'VendContainer']),
+@click.option('-b', '--bundle_id', default=None, required=True,
+              help='Process app bundleId to filter')
+@click.option('-a', '--access_type', default='VendDocuments',
+              type=click.Choice(['VendDocuments', 'VendContainer']),
               help='filter VendDocuments or VendContainer')
 def shell(udid, network, format, bundle_id, access_type):
     """ open an AFC shell for given bundle_id, assuming its profile is installed """
@@ -225,7 +235,7 @@ def cmd_kill(udid, network, format, pid, name, bundle_id):
 @cli.command('pcapd', cls=Command)
 @click.argument('outfile', required=True)
 def cmd_pcapd(udid, network, format, outfile):
-    """ sniff device traffic
+    """ traffic packet capture
 
     :param outfile: output file  or (- for stdout)
     """
@@ -274,7 +284,7 @@ def cmd_battery(udid, network, format):
         f"[Battery] time={update_time}, current={current}, voltage={voltage}, power={power}, temperature={temperature}")
 
 
-@cli.command('enable_developer_mode', cls=Command)
+@cli.command('enable_developer', cls=Command)
 @click.option('-m', '--mode', type=click.Choice(['1', '2']), default=1, help='')
 def cmd_enable_developer_mode(udid, network, format, mode):
     """ enable developer mode """

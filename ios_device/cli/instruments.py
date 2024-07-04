@@ -53,7 +53,7 @@ def cmd_running_processes(udid, network, format):
 @instruments.command('applist', cls=Command)
 @click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
 def cmd_application(udid, network, format, bundle_id):
-    """ Show application list """
+    """ Show application list. """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         apps = rpc.application_listing(bundle_id)
         print_json(apps, format)
@@ -80,7 +80,8 @@ def cmd_kill(udid, network, format, pid, name, bundle_id):
 @click.option('--app_env', default=None, help='App launch environment variable')
 def cmd_launch(udid, network, format, bundle_id: str, app_env: dict):
     """
-    Launch a process.
+    Launch an application.
+
     :param bundle_id: Arguments of process to launch, the first argument is the bundle id.
     :param app_env: App launch environment variable
     """
@@ -91,7 +92,7 @@ def cmd_launch(udid, network, format, bundle_id: str, app_env: dict):
 
 @instruments.group('information')
 def information():
-    """ System information. """
+    """ System information options. """
 
 
 @information.command('system', cls=Command)
@@ -135,7 +136,7 @@ def cmd_xcode_energy(udid, network, pid, name, bundle_id, format):
 @click.option('-n', '--name', default=None, help='Process app name to filter')
 @click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
 def cmd_network_process(udid, network, pid, name, bundle_id, format):
-    """ Print process about current network activity.  """
+    """ Print a process's network activity.  """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         if bundle_id or name:
             pid = rpc.get_pid(bundle_id, name)
@@ -147,7 +148,7 @@ def cmd_network_process(udid, network, pid, name, bundle_id, format):
 
 @instruments.command('networking', cls=Command)
 def cmd_networking(udid, network, format):
-    """ Print information about current network activity. """
+    """ Print all network activity. """
 
     def _callback(res):
         api_util.network_caller(res, print_json)
@@ -160,7 +161,7 @@ def cmd_networking(udid, network, format):
 @click.option('-t', '--time', type=click.INT, default=1000, help='Output interval time (ms)')
 @click.option('-b', '--bundle_id', required=True, help='Process app bundleId to filter')
 def cmd_appmonitor(udid, network, format, time, bundle_id):
-    """ Get application performance data """
+    """ Get application performance data. """
     proc_filter = ['Pid', 'Name', 'CPU', 'Memory', 'DiskReads', 'DiskWrites', 'Threads']
     process_attributes = dataclasses.make_dataclass('SystemProcessAttributes', proc_filter)
     ios_version = Version('0')
@@ -207,7 +208,7 @@ def cmd_appmonitor(udid, network, format, time, bundle_id):
 @click.option('--sys_filter', help='System param to filter split by ",". Omit show all')
 def cmd_sysmontap(udid, network, format, time, pid, name, bundle_id, processes, sort, proc_filter,
                   sys_filter):
-    """ Get more performance data """
+    """ Get more performance data. """
 
     def on_callback_message(res):
         if isinstance(res.selector, list):
@@ -278,7 +279,7 @@ def cmd_sysmontap(udid, network, format, time, pid, name, bundle_id, processes, 
 @instruments.command('monitor', cls=Command)
 @click.option('--filter', default="all", type=click.Choice(["all", 'disk', 'network', 'memory', 'cpu']), help='')
 def cmd_monitor(udid, network, format, filter: str):
-    """ Get monitor performance data """
+    """ Get monitor performance data. """
     disk = DumpDisk()
     Network = DumpNetwork()
     Memory = DumpMemory()
@@ -317,13 +318,13 @@ def cmd_monitor(udid, network, format, filter: str):
 @instruments.group()
 def condition():
     """
-    Set system running condition
+    System condition options.
     """
 
 
 @condition.command('get', cls=Command)
 def cmd_get_condition_inducer(udid, network, format):
-    """ get aLL condition inducer configuration
+    """ get aLL condition inducer configuration.
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         ret = rpc.get_condition_inducer()
@@ -334,7 +335,7 @@ def cmd_get_condition_inducer(udid, network, format):
 @click.option('-c', '--condition_id', default=None, help='Process app bundleId to filter')
 @click.option('-p', '--profile_id', default='', help='start wda port')
 def cmd_set_condition_inducer(udid, network, format, condition_id, profile_id):
-    """ set condition inducer
+    """ set condition inducer.
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         ret = rpc.set_condition_inducer(condition_id, profile_id)
@@ -354,7 +355,7 @@ def cmd_xcuitest(udid, network, format, bundle_id, port):
 @instruments.command('fps', cls=Command)
 @click.option('-t', '--time', type=click.INT, default=1000, help='Output interval time (ms)')
 def cmd_graphics(udid, network, format, time):
-    """ Get graphics fps
+    """ Get graphics fps.
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         def on_callback_message(res):
@@ -366,7 +367,7 @@ def cmd_graphics(udid, network, format, time):
 
 @instruments.command('display', cls=Command)
 def cmd_display(udid, network, format):
-    """ Get graphics fps
+    """ Get more advanced fps.
     """
     last_frame = None
     last_1_frame_cost, last_2_frame_cost, last_3_frame_cost = 0, 0, 0
@@ -421,7 +422,7 @@ def cmd_display(udid, network, format):
 
 @instruments.command('notifications', cls=Command)
 def cmd_notifications(udid, network, format):
-    """Get mobile notifications
+    """Get mobile notifications.
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         machTimeInfo = rpc.instruments.call(InstrumentsService.DeviceInfo.value, "machTimeInfo").selector
@@ -487,7 +488,7 @@ def stackshot(udid, network, format, pid, process_name):
 
 @instruments.command('gpu_counters', cls=Command)
 def gpu_counters(udid, network, format):
-    """ Metal GPU Counters """
+    """ Get Metal GPU Counters. """
     stopSignal = threading.Event()
     signal.signal(signal.SIGINT, lambda x, y: stopSignal.set())
     with InstrumentsBase(udid=udid, network=network) as rpc:
@@ -514,5 +515,6 @@ def gpu_counters(udid, network, format):
 @instruments.command('app_lifecycle', cls=Command)
 @click.option('-b', '--bundle_id', default=None, help='Process app bundleId')
 def cmd_app_lifecycle(udid, network, format, bundle_id):
+    """ App startup lifecycle. """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         rpc.app_launch_lifecycle(bundle_id)
