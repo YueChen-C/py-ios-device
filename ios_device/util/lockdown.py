@@ -344,8 +344,11 @@ class LockdownClient:
             self.imagemounter.mount(image_path, signature_path)
             log.info("DeveloperImage mounted successfully")
 
-    def start_service(self, name: str, escrow_bag=None) -> PlistService:
+    def start_service(self, name: str, escrow_bag=None) -> Optional[PlistService]:
         try:
+            if self.ios_version >= Version('17.0'):
+                log.info("ios 17 and above versions require the use of RemoteLockdownClient")
+                return None
             return self._start_service(name, escrow_bag)
         except StartServiceError:
             self.mount_developer_image()
