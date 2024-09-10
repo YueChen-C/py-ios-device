@@ -818,15 +818,18 @@ class DBG_DAEMON(enum.Enum):
 
 def trace_data_new_thread(parser, data):
     parser.threads_pids[data.args[0]] = data.args[1]
+    parser.threads_tids[data.tid] = data.args[0]
 
 
 def trace_data_exec(parser, data):
     parser.threads_pids[data.tid] = data.args[0]
+    parser.threads_tids[data.tid] = data.tid
 
 
 def trace_string_new_thread(parser, data):
     name = data.buf_data.replace(b'\x00', b'').decode()
     parser.tid_names[data.tid] = name
+    parser.threads_tids[data.tid] = data.tid
     pid = parser.threads_pids.get(data.tid)
     if pid:
         parser.pid_names[pid] = name
@@ -835,6 +838,7 @@ def trace_string_new_thread(parser, data):
 def trace_string_exec(parser, data):
     name = data.buf_data.replace(b'\x00', b'').decode()
     parser.tid_names[data.tid] = name
+    parser.threads_tids[data.tid] = data.tid
     pid = parser.threads_pids.get(data.tid)
     if pid:
         parser.pid_names[pid] = name
@@ -848,11 +852,15 @@ def trace_string_proc_exit(parser, data):
 def trace_string_thread_name(parser, data):
     name = data.buf_data.replace(b'\x00', b'').decode()
     parser.tids_names[data.tid] = name
+    parser.threads_tids[data.tid] = data.tid
+
 
 
 def trace_string_thread_name_prev(parser, data):
     name = data.buf_data.replace(b'\x00', b'').decode()
     parser.tids_names[data.tid] = name
+    parser.threads_tids[data.tid] = data.tid
+
 
 
 def trace_unknown(parser, data):
@@ -958,6 +966,9 @@ class KdBufParser:
             decode_trace_data(parser, _cls)
             yield _cls
 
+    def __str__(self):
+        return
+
 
 def _format_class(classes, code):
     if classes:
@@ -1039,6 +1050,7 @@ class KperfData:
         self.stack_shot = None
         self.trace_codes = traceCodesFile
         self.threads_pids = {}
+        self.threads_tids = {}
         self.pid_names = {}
         self.tid_names = {}
         self.version = None
@@ -1050,6 +1062,7 @@ class KperfData:
             self.pid_names[thread.pid] = thread.process
             self.tid_names[thread.tid] = thread.process
             self.threads_pids[thread.tid] = thread.pid
+            self.threads_tids[thread.tid] = thread.tid
 
     def _format_process(self, tid):
         pid = self.threads_pids.get(tid)

@@ -642,7 +642,7 @@ class NSURL:
         archive.encode('NS.relative', obj._relative)
 
     @staticmethod
-    def decode_archive(obj, archive):
+    def decode_archive(archive):
         base = archive.decode('NS.base')
         relative = archive.decode('NS.relative')
         return {"$class": "NSURL", "base": base, "relative": relative}
@@ -790,7 +790,34 @@ class NSValueArchive:
         return s
 
 
+class DTCPUClusterInfo:
+    @staticmethod
+    def decode_archive(archive):
+        return {'clusterID': archive.object['_clusterID'],
+                'clusterFlags': archive.object['_clusterFlags']}
+
+
+class IAGlobalConfigurationModel:
+    @staticmethod
+    def decode_archive(archive):
+        _dict = {}
+        info = archive.object.copy()
+        info.pop("$class")
+        for i in info:
+            _dict[i] = archive.decode(i)
+        return _dict
+
+
+class DTXDynamicParamsNodeModel:
+    @staticmethod
+    def decode_archive(archive):
+        return archive.decode("json")
+
+
 UNARCHIVE_CLASS_MAP = {
+    'IAGlobalConfigurationModel': IAGlobalConfigurationModel,
+    'DTXDynamicParamsNodeModel': DTXDynamicParamsNodeModel,
+    'DTCPUClusterInfo': DTCPUClusterInfo,
     'NSDictionary': DictArchive,
     'NSMutableDictionary': DictArchive,
     'NSArray': ListArchive,
