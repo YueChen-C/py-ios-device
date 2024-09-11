@@ -51,6 +51,11 @@ python version: 3.7 +
 ```bash
 pip install pymobiledevice3
 sudo python3 -m pymobiledevice3 remote start-tunnel
+
+# Recommended to use go-ios, which has better transmission performance
+npm install -g go-ios  
+sudo ios tunnel start
+curl http://127.0.0.1:60105/tunnels
 ```
 
 ```python

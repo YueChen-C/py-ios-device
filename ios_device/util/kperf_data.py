@@ -11,8 +11,11 @@ import struct
 from construct import Struct, Const, Padding, Int32ul, Int64ul, Array, GreedyRange, Byte, FixedSized, \
     CString, GreedyBytes, this, Adapter, Int16ul, Switch, StreamError
 
-from ios_device.util import plistlib
+from ios_device.util import plistlib, Log
 from ios_device.util.kc_data import kc_data_parse
+from ios_device.util.variables import LOG
+
+log = Log.getLogger(LOG.DTXMsg.value)
 
 # from pykdebugparser.kd_buf_parser import BplistAdapter
 
@@ -962,6 +965,10 @@ class KdBufParser:
             buf = buf_io.read(64)
             if not buf:
                 return
+            # 判断 buf 长度能否被 KD_BUF_FORMAT 长度整除
+            if len(buf) % 64 != 0:
+                log.warning(f'KdBuf Invalid buffer length:{len(buf)}')
+                continue
             _cls = cls(*struct.unpack(KD_BUF_FORMAT, buf))
             decode_trace_data(parser, _cls)
             yield _cls
