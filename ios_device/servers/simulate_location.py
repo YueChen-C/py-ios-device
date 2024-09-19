@@ -3,6 +3,7 @@ import struct
 
 from construct import Struct, PascalString, Int, Optional
 
+from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util.lockdown import LockdownClient
 
 LOCATION_STRUCT = Struct(
@@ -32,3 +33,19 @@ class SimulateLocation(object):
             'longitude': str(longitude)
         })
         self.service.sock.sendall(location_byte)
+
+
+class DvtSimulateLocation(InstrumentServer):
+    LocationSimulation = 'com.apple.instruments.server.services.LocationSimulation'
+
+    def __init__(self):
+        super().__init__()
+        self.init()
+
+    def set(self, latitude: float, longitude: float):
+        data = self.call(self.LocationSimulation, 'simulateLocationWithLatitude:longitude:', latitude, longitude)
+        return data
+
+    def clear(self):
+        data = self.call(self.LocationSimulation, 'stopLocationSimulation')
+        return data
