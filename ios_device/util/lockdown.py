@@ -47,7 +47,9 @@ class LockdownClient:
             cache_dir: str = '.cache/pyiOSDevice',
             network=None,
             address=None,
+            userspace_port=None
     ):
+        self.userspace_port = userspace_port
         self.network = network
         self.cache_dir = cache_dir
         self.record = None  # type: Optional[Dict[str, Any]]

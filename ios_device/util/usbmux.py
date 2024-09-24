@@ -359,3 +359,13 @@ class SafeStreamSocket:
                 raise MuxError('socket connection broken')
             msg = msg + chunk
         return msg
+
+
+def connect_tun_device(address, userspace_port):
+    if userspace_port:
+        sock = socket.create_connection(("localhost", userspace_port))
+        sock.send(socket.inet_pton(socket.AF_INET6, address[0]))
+        sock.send(struct.pack('<I', address[1]))
+    else:
+        sock = socket.create_connection(address)
+    return sock

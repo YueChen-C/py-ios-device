@@ -51,9 +51,9 @@ def sysmontap(rpc):
 
 
 if __name__ == '__main__':
-    host = 'fdb1:c2d3:d8cd::1'  # randomized
-    port = 60574  # randomized
-    with RemoteLockdownClient((host, port)) as rsd:
+    host = 'fd17:cafe:59d4::1'  # randomized
+    port = 54934  # randomized
+    with RemoteLockdownClient((host, port),userspace_port=60106) as rsd:
         rpc = InstrumentServer(rsd).init()
         sysmontap(rpc)
         rpc.stop()

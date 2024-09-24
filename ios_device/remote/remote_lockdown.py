@@ -23,10 +23,15 @@ RSD_PORT = 58783
 
 
 class RemoteLockdownClient(LockdownClient):
-    def __init__(self, address: Tuple[str, int]):
-        super().__init__(address=address)
+    def __init__(self, address: Tuple[str, int], userspace_port=None):
+        """
+        @param address:
+        @param userspace_port:  ios tunnel start --userspace :: userspaceTunPort
+        """
+        super().__init__(address=address, userspace_port=userspace_port)
         self.peer_info: Optional[Mapping] = None
         self.service = None
+        self.userspace_port = userspace_port
 
     @property
     def product_version(self) -> str:
@@ -37,7 +42,7 @@ class RemoteLockdownClient(LockdownClient):
         return self.peer_info['Properties']['UniqueChipID']
 
     def connect(self) -> None:
-        self.service = RemoteXPCConnection(self.address)
+        self.service = RemoteXPCConnection(self.address, userspace_port=self.userspace_port)
         self.service.connect()
         self.peer_info = self.service.receive_response()
         self.udid = self.peer_info['Properties']['UniqueDeviceID']
@@ -45,7 +50,8 @@ class RemoteLockdownClient(LockdownClient):
         self.svc = self.start_service('com.apple.mobile.lockdown.remote.trusted')
 
     def start_lockdown_service_without_checkin(self, name: str):
-        return PlistService.create_tcp(self.service.address[0], self.get_service_port(name))
+        return PlistService.create_tcp(self.service.address[0], self.get_service_port(name),
+                                       userspace_port=self.userspace_port)
 
     def start_service(self, name: str, escrow_bag: bool = False):
         service = self.start_lockdown_service_without_checkin(name)

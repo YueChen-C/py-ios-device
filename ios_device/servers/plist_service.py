@@ -9,7 +9,7 @@ import struct
 from typing import Optional, Dict, Any
 from ios_device.util import Log
 from ios_device.util.exceptions import MuxError
-from ios_device.util.usbmux import USBMux
+from ios_device.util.usbmux import USBMux, connect_tun_device
 
 __all__ = ['PlistService']
 
@@ -28,8 +28,8 @@ class PlistService:
         self.device = device
 
     @staticmethod
-    def create_tcp(hostname: str, port: int, keep_alive: bool = True):
-        sock = socket.create_connection((hostname, port))
+    def create_tcp(hostname: str, port: int, keep_alive: bool = True, userspace_port=None):
+        sock = connect_tun_device((hostname, port), userspace_port)
         if keep_alive:
             set_keepalive(sock)
         return PlistService(sock)

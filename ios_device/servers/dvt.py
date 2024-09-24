@@ -116,7 +116,7 @@ class DTXServer:
         启动 servers 服务, 此接口用户无需调用, 用户使用 init 接口
         :return: bool 是否成功
         """
-        if self._running:
+        if self._running or not self._cli:
             return True
         self._running = True
         self._recv_thread = Thread(target=self._receiver, name="InstrumentServer")
@@ -181,7 +181,7 @@ class DTXServer:
         self._channels[channel] = channel_id
         return channel_id
 
-    def call(self, channel: str, selector: str, *auxiliaries):
+    def call(self, channel: str, selector: str, *auxiliaries) -> DTXMessage:
         channel_id = self.make_channel(channel)
         ret = self._call(True, channel_id, selector, *auxiliaries)
         return ret

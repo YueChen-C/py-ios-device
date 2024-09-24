@@ -1,12 +1,13 @@
 import socket
-from socket import create_connection
 from typing import Generator, Mapping, Optional, Tuple
 from construct import StreamError
-from hyperframe.frame import DataFrame, Frame, GoAwayFrame, HeadersFrame, RstStreamFrame, SettingsFrame, \
+from hyperframe.frame import DataFrame, Frame, GoAwayFrame, HeadersFrame, RstStreamFrame, \
+    SettingsFrame, \
     WindowUpdateFrame
 from ios_device.remote.xpc_message import XpcFlags, XpcWrapper, create_xpc_wrapper, \
     decode_xpc_object
 from ios_device.util.exceptions import StreamClosedError
+from ios_device.util.usbmux import connect_tun_device
 
 DEFAULT_SETTINGS_MAX_CONCURRENT_STREAMS = 100
 DEFAULT_SETTINGS_INITIAL_WINDOW_SIZE = 1048576
@@ -20,12 +21,13 @@ REPLY_CHANNEL = 3
 
 
 class RemoteXPCConnection:
-    def __init__(self, address: Tuple[str, int]):
+    def __init__(self, address: Tuple[str, int], userspace_port=None):
         self._previous_frame_data = b''
         self.address = address
         self.sock: Optional[socket.socket] = None
         self.next_message_id: Mapping[int: int] = {ROOT_CHANNEL: 0, REPLY_CHANNEL: 0}
         self.peer_info = None
+        self.userspace_port = userspace_port
 
     def __enter__(self) -> 'RemoteXPCConnection':
         self.connect()
@@ -35,7 +37,7 @@ class RemoteXPCConnection:
         self.close()
 
     def connect(self) -> None:
-        self.sock = create_connection(self.address)
+        self.sock = connect_tun_device(self.address, self.userspace_port)
         self._do_handshake()
 
     def close(self) -> None:
