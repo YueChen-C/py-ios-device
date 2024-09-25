@@ -313,6 +313,7 @@ class AFCClient(object):
         hh = struct.pack("<Q", handle)
         _len = len(data)
         segments = int(len(data) / MAXIMUM_WRITE_SIZE)
+        s = 0
         try:
             for i in range(segments):
                 self.dispatch_packet(AFC_OP_WRITE,
@@ -322,7 +323,8 @@ class AFCClient(object):
                 if s != AFC_E_SUCCESS:
                     self.logger.error("file_write error: %d", s)
                     break
-                print(f'total: {_len / 1024 / 1024} MB write: {(i + 1) * MAXIMUM_WRITE_SIZE / 1024 / 1024} MB')
+                self.logger.info(
+                    f'total: {_len / 1024 / 1024} MB write: {(i + 1) * MAXIMUM_WRITE_SIZE / 1024 / 1024} MB')
             if len(data) % MAXIMUM_WRITE_SIZE:
                 self.dispatch_packet(AFC_OP_WRITE,
                                      hh + data[segments * MAXIMUM_WRITE_SIZE:],
@@ -360,6 +362,9 @@ class AFCClient(object):
         self.file_close(h)
 
     def set_upload_dir(self, path, afc_path):
+        infos = self.get_file_info(afc_path)
+        if infos and infos.get('st_ifmt') != 'S_IFDIR':
+            raise Exception(f'{afc_path} is not a directory')
         if os.path.isdir(path):
             self.make_directory(afc_path)
             dir_list = os.listdir(path)
@@ -370,12 +375,21 @@ class AFCClient(object):
                 else:
                     with open(_path, "rb") as f:
                         self.set_file_contents(f'{afc_path}/{_dir}', f.read())
+                        self.logger.info(f'cp {_path} to {afc_path}/{_dir}')
         else:
-            raise Exception(f"{path} must be a folder")
+            with open(path, "rb") as f:
+                self.set_file_contents(f'{afc_path}/{os.path.basename(path)}', f.read())
+                self.logger.info(f'cp {path} to {afc_path}/{os.path.basename(path)}')
 
     def dir_walk(self, dirname):
         dirs = []
         files = []
+        infos = self.get_file_info(dirname)
+        if infos and infos.get('st_ifmt') != 'S_IFDIR':
+            dirname, file = dirname.replace("\\", "/").rsplit('/', maxsplit=1)
+            files.append(file)
+            yield dirname, [], files
+            return
         for fd in self.read_directory(dirname):
             if PY3 and isinstance(fd, bytes):
                 fd = fd.decode('utf-8')

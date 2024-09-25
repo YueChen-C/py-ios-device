@@ -1,5 +1,6 @@
 import functools
 import io
+import os
 import sys
 
 import click
@@ -73,10 +74,49 @@ def crash_shell(udid, network, format):
               required=True)
 @click.option('-a', '--access_type', default='VendDocuments',
               type=click.Choice(['VendDocuments', 'VendContainer']),
-              help='Type of access sandbox')
+              help='Type of access sandbox. '
+                   'If choosing VendContainer, the app must be in debug mode')
 def sandbox(udid, network, format, bundle_id, access_type):
     """ open an AFC shell for given bundle_id, assuming its profile is installed """
     HouseArrestService(udid=udid, network=network, logger=log).shell(bundle_id, cmd=access_type)
+
+
+@cli.command('pull', cls=Command, short_help='copy files/dirs from device')
+@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter',
+              required=True)
+@click.option('-a', '--access_type', default='VendDocuments',
+              type=click.Choice(['VendDocuments', 'VendContainer']),
+              help='Type of access sandbox. '
+                   'If choosing VendContainer, the app must be in debug mode')
+@click.option('-l', '--local_path', required=True)
+@click.option('-r', '--remote_path', required=True)
+def pull(udid, network, format, bundle_id, access_type, local_path, remote_path):
+    service = HouseArrestService(udid=udid, network=network, logger=log)
+    service.send_command(bundle_id, access_type)
+    p = service.dir_walk(remote_path)
+    for dirname, dirs, files in p:
+        if files:
+            for file in files:
+                os.makedirs(local_path, 0o755, exist_ok=True)
+                _path = os.path.join(local_path, file)
+                log.info(f'save {_path}')
+                with open(_path, 'wb') as (fp):
+                    fp.write(service.get_file_contents(os.path.join(dirname, file)))
+
+
+@cli.command('push', cls=Command, short_help='copy local files/directories to device')
+@click.option('-b', '--bundle_id', help='Process app bundleId to filter',
+              required=True)
+@click.option('-a', '--access_type', default='VendDocuments',
+              type=click.Choice(['VendDocuments', 'VendContainer']),
+              help='Type of access sandbox. '
+                   'If choosing VendContainer, the app must be in debug mode')
+@click.option('-l', '--local_path', type=click.Path(exists=True), required=True)
+@click.option('-r', '--remote_path', required=True)
+def push(udid, network, format, bundle_id, access_type, local_path, remote_path):
+    service = HouseArrestService(udid=udid, network=network, logger=log)
+    service.send_command(bundle_id, access_type)
+    service.set_upload_dir(local_path, remote_path)
 
 
 #######################################################################

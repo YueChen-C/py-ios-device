@@ -34,6 +34,7 @@ python 版本: 3.7 +
 - [x] 获取 iOS GPU Counters 
 - [x] 设置虚拟位置信息 
 - [x] 获取 APP 启动时间
+- [x] pull && push 文件
 
 
 ### 其他功能列表
@@ -50,23 +51,29 @@ python 版本: 3.7 +
 
 ```bash
 pip install pymobiledevice3
-```
-```bash
 sudo python3 -m pymobiledevice3 remote start-tunnel
+
+# 建议使用 go-ios 创建隧道性能更优秀
+npm install -g go-ios  
+sudo ios tunnel start && ios tunnel start --userspace
+curl http://127.0.0.1:60105/tunnels
 ```
 
 ```python
 from ios_device.remote.remote_lockdown import RemoteLockdownClient
 from ios_device.servers.Instrument import  InstrumentServer
 from demo.instrument_demo.sysmontap import  sysmontap
-host = 'fdb1:c2d3:d8cd::1'
-port = 60574  
-with RemoteLockdownClient((host, port)) as rsd:
+
+# support ios tunnel start --userspace 无 sudo 启动使用方法
+# [{"address":"fd17:cafe:59d4::1","rsdPort":54934,"udid":"00008101-0018242C3XXXXXXXXX","userspaceTun":true,"userspaceTunPort":60106}]
+
+host = 'fd17:cafe:59d4::1'
+port = 54934  
+with RemoteLockdownClient((host, port), userspace_port=60106) as rsd:
     rpc = InstrumentServer(rsd).init()
     sysmontap(rpc)
     rpc.stop()
 ```
-
 
 
 ## pip 仓库:

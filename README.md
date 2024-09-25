@@ -31,6 +31,7 @@ python version: 3.7 +
 - [x] Analyze the core profile data stream
 - [x] Get Metal GPU Counters
 - [x] Get App Launch Lifecycle
+- [x] pull && push form the device
 
 
 ### Other 
