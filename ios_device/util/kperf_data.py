@@ -1084,7 +1084,7 @@ class KperfData:
         elif version == VERSION2_FLAG:
             yield from self._parse_v2(buf_io)
         elif version == VERSION3_FLAG:
-            yield from self._parse_v2(buf_io)
+            yield from self._parse_v3(buf_io)
         else:
             yield from KdBufParser.decode(self, buf_io)
 
