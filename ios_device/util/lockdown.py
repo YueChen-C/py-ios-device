@@ -348,11 +348,11 @@ class LockdownClient:
 
     def start_service(self, name: str, escrow_bag=None) -> Optional[PlistService]:
         try:
-            if self.ios_version >= Version('17.0'):
-                log.info("ios 17 and above versions require the use of RemoteLockdownClient")
-                return None
             return self._start_service(name, escrow_bag)
         except StartServiceError:
+            if self.ios_version >= Version('17.0'):
+                log.info("Try enabling developer mode or using RemoteLockdownClient on iOS 17 or above")
+                return None
             self.mount_developer_image()
             time.sleep(.5)
             return self._start_service(name, escrow_bag)
