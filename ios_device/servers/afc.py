@@ -365,8 +365,9 @@ class AFCClient(object):
         infos = self.get_file_info(afc_path)
         if infos and infos.get('st_ifmt') != 'S_IFDIR':
             raise Exception(f'{afc_path} is not a directory')
-        if os.path.isdir(path):
+        if not infos and afc_path.endswith('/'):
             self.make_directory(afc_path)
+        if os.path.isdir(path):
             dir_list = os.listdir(path)
             for _dir in dir_list:
                 _path = f'{path}/{_dir}'
