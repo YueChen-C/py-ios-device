@@ -28,10 +28,10 @@ class RemoteLockdownClient(LockdownClient):
         @param address:
         @param userspace_port:  ios tunnel start --userspace :: userspaceTunPort
         """
-        super().__init__(address=address, userspace_port=userspace_port)
         self.peer_info: Optional[Mapping] = None
         self.service = None
         self.userspace_port = userspace_port
+        super().__init__(address=address, userspace_port=userspace_port)
 
     @property
     def product_version(self) -> str:
@@ -89,7 +89,6 @@ class RemoteLockdownClient(LockdownClient):
         return int(service['Port'])
 
     def __enter__(self) -> 'RemoteLockdownClient':
-        self.connect()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
