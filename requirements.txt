@@ -1,5 +1,5 @@
 construct>=2.10.56
-pyasn1>=0.4.8
+pyasn1>=0.6.2
 pyOpenSSL>=22.0.0
 six>=1.15.0
 requests>=2.25.1
