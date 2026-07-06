@@ -286,7 +286,7 @@ class AFCClient(object):
         return status
 
     def file_read(self, handle, sz):
-        MAXIMUM_READ_SIZE = 1 << 26
+        MAXIMUM_READ_SIZE = 1 << 16
         data = ""
         if PY3:
             data = b""
