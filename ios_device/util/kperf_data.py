@@ -8,7 +8,8 @@ import io
 import json
 import struct
 
-from construct import Struct, Const, Padding, Int32ul, Int64ul, Array, GreedyRange, Byte, FixedSized, \
+from construct import Struct, Const, Padding, Int32ul, Int64ul, Array, GreedyRange, Byte, \
+    FixedSized, \
     CString, GreedyBytes, this, Adapter, Int16ul, Switch, StreamError
 
 from ios_device.util import plistlib, Log
@@ -660,9 +661,134 @@ class DBG_THROTTLE(enum.Enum):
 
 
 class DBG_PERF(enum.Enum):
-    PERF_EVENT = 0
-    PERF_DATA = 1
-    PERF_STK = 2
+    PERF_GENERIC = 0
+    PERF_THREADINFO = 1
+    PERF_CALLSTACK = 2
+    PERF_TIMER = 3
+    PERF_PET = 4
+    PERF_AST = 5
+    PERF_KPC = 6
+    PERF_KDBG = 7
+    PERF_TASK = 8
+    PERF_LAZY = 9
+    PERF_MEMINFO = 10
+
+
+class PERF_GENERIC(enum.Enum):
+    PERF_GEN_EVENT = 0
+
+
+class PERF_THREADINFO(enum.Enum):
+    # 批量生成枚举
+    PERF_TI_SAMPLE = 0
+    PERF_TI_DATA = 1
+    PERF_TI_XSAMPLE = 2
+    PERF_TI_XPEND = 3
+    PERF_TI_XDATA = 4
+    PERF_TI_CSWITCH = 5
+    PERF_TI_SCHEDSAMPLE = 6
+    PERF_TI_SCHEDDATA = 7
+    PERF_TI_SNAPSAMPLE = 8
+    PERF_TI_SNAPDATA = 9
+    PERF_TI_DISPSAMPLE = 10
+    PERF_TI_DISPDATA = 11
+    PERF_TI_DISPPEND = 12
+    PERF_TI_SNAPDATA_32 = 13
+    PERF_TI_DISPDATA_32 = 14
+    PERF_TI_SCHEDDATA1_32 = 15
+    PERF_TI_SCHEDDATA2_32 = 16
+    PERF_TI_INSCYCDATA = 17
+    PERF_TI_INSCYCDATA_32 = 18
+    PERF_TI_SCHEDDATA_2 = 19
+    PERF_TI_SCHEDDATA2_32_2 = 20
+    PERF_TI_SCHEDDATA3_32 = 21
+    PERF_TI_SCHEDDATA_3 = 22
+    PERF_TI_DISPLABEL = 23
+
+
+class PERF_CALLSTACK(enum.Enum):
+    PERF_CS_KSAMPLE = 0
+    PERF_CS_UPEND = 1
+    PERF_CS_USAMPLE = 2
+    PERF_CS_KDATA = 3
+    PERF_CS_UDATA = 4
+    PERF_CS_KHDR = 5
+    PERF_CS_UHDR = 6
+    PERF_CS_ERROR = 7
+    PERF_CS_BACKTRACE = 8
+    PERF_CS_LOG = 9
+    PERF_CS_EXHDR = 10
+    PERF_CS_EXDATA = 11
+    PERF_CS_EXSTACKHDR = 12
+    PERF_CS_EXSTACK = 13
+
+
+class PERF_TIMER(enum.Enum):
+    PERF_TM_FIRE = 0
+    PERF_TM_SCHED = 1
+    PERF_TM_HNDLR = 2
+    PERF_TM_PENDING = 3
+    PERF_TM_SKIPPED = 4
+
+
+class PERF_PET(enum.Enum):
+    PERF_PET_THREAD = 0
+    PERF_PET_ERROR = 1
+    PERF_PET_RUN = 2
+    PERF_PET_PAUSE = 3
+    PERF_PET_IDLE = 4
+    PERF_PET_SAMPLE = 5
+    PERF_PET_SCHED = 6
+    PERF_PET_END = 7
+    PERF_PET_SAMPLE_TASK = 8
+    PERF_PET_SAMPLE_THREAD = 9
+
+
+class PERF_AST(enum.Enum):
+    PERF_AST_HNDLR = 0
+    PERF_AST_ERROR = 1
+    PERF_AST_EXCLAVES = 2
+
+
+class PERF_KPC(enum.Enum):
+    PERF_KPC_HNDLR = 0
+    PERF_KPC_FCOUNTER = 1
+    PERF_KPC_COUNTER = 2
+    PERF_KPC_DATA = 3
+    PERF_KPC_CONFIG = 4
+    PERF_KPC_CFG_REG = 5
+    PERF_KPC_DATA32 = 6
+    PERF_KPC_CFG_REG32 = 7
+    PERF_KPC_DATA_THREAD = 8
+    PERF_KPC_DATA_THREAD32 = 9
+    PERF_KPC_CPU_SAMPLE = 10
+    PERF_KPC_THREAD_SAMPLE = 11
+
+
+class PERF_KDBG(enum.Enum):
+    PERF_KDBG_HNDLR = 0
+
+
+class PERF_TASK(enum.Enum):
+    PERF_TK_SNAP_SAMPLE = 0
+    PERF_TK_SNAP_DATA = 1
+    PERF_TK_SNAP_DATA1_32 = 2
+    PERF_TK_SNAP_DATA2_32 = 3
+    PERF_TK_INFO_DATA = 4
+
+
+class PERF_LAZY(enum.Enum):
+    PERF_LZ_MKRUNNABLE = 0
+    PERF_LZ_WAITSAMPLE = 1
+    PERF_LZ_CPUSAMPLE = 2
+
+
+class PERF_MEMINFO(enum.Enum):
+    PERF_MI_SAMPLE = 0
+    PERF_MI_DATA = 1
+    PERF_MI_SYS_DATA = 2
+    PERF_MI_SYS_DATA_2 = 3
+    PERF_MI_SYS_DATA_3 = 4
 
 
 class DBG_IMPORTANCE(enum.Enum):
@@ -858,12 +984,10 @@ def trace_string_thread_name(parser, data):
     parser.threads_tids[data.tid] = data.tid
 
 
-
 def trace_string_thread_name_prev(parser, data):
     name = data.buf_data.replace(b'\x00', b'').decode()
     parser.tids_names[data.tid] = name
     parser.threads_tids[data.tid] = data.tid
-
 
 
 def trace_unknown(parser, data):
