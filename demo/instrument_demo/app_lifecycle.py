@@ -3,6 +3,8 @@ import sys
 import time
 import uuid
 
+from ios_device.util.lockdown import LockdownClient
+
 sys.path.append(os.getcwd())
 
 from ios_device.cli.base import InstrumentDeviceInfo
@@ -23,23 +25,24 @@ def app_launch_lifecyle(rpc, bundleid, rsd):
     LifeCycle = AppLifeCycle(machTimeInfo, usecs_since_epoch)
     filter_pid = None
 
+    def process_name(pid):
+        return Kperf.pid_names.get(pid) or Kperf.tid_names.get(pid)
+
     def demo(data):
         for event in Kperf.to_dict(data):
-            if isinstance(event, KdBufParser):
-                _process_name = Kperf.tid_names.get(event.tid)
-                _tid = Kperf.threads_tids.get(event.tid)
-                process_key = (_tid, _process_name)
-                if not _tid:
-                    continue
-                if event.class_code in (0x1f, 0x2b, 0x31):
-                    LifeCycle.decode_app_lifecycle(event, process_key)
-                if event.debug_id == 835321862:
-                    LifeCycle.format_str()
+            if not isinstance(event, KdBufParser):
+                continue
+            _pid = Kperf.threads_pids.get(event.tid)
+            if _pid is None:
+                continue
+            # Returns True when the launch sequence completed; the modeler picks
+            # the launch events itself, so no class filter is needed here.
+            if LifeCycle.decode_app_lifecycle(event, _pid):
+                LifeCycle.format_str(describe=process_name)
 
     def on_graphics_message(res):
         if type(res.selector) is InstrumentRPCParseError:
-            import _thread
-            _thread.start_new_thread(demo, (res.selector.data,))
+            demo(res.selector.data)
 
     rpc.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap",
                                   on_graphics_message)
@@ -61,7 +64,7 @@ def app_launch_lifecyle(rpc, bundleid, rsd):
                   'uuid': str(uuid.uuid4()).upper()})
     rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "start")
     channel = "com.apple.instruments.server.services.processcontrol"
-    rpc1 = InstrumentServer(rsd).init()
+    rpc1 = InstrumentServer(udid='00008030-001A690E2EC3802E').init()
     filter_pid = rpc1.call(channel,
                            'launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:',
                            '',
@@ -73,6 +76,7 @@ def app_launch_lifecyle(rpc, bundleid, rsd):
 
     time.sleep(1000)
     rpc.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop")
+    LifeCycle.format_str(describe=process_name)  # flush phases that never received an END event
     rpc.stop()
     rpc1.stop()
 
@@ -84,6 +88,6 @@ if __name__ == '__main__':
     #     app_launch_lifecyle(rpc, 'com.apple.MobileSMS', rsd)
     #     rpc.stop()
 
-    rpc = InstrumentServer().init()
+    rpc = InstrumentServer(udid='00008030-001A690E2EC3802E').init()
     app_launch_lifecyle(rpc, 'com.apple.MobileSMS', None)
     rpc.stop()

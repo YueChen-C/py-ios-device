@@ -21,6 +21,9 @@ from ios_device.util.variables import InstrumentsService, LOG
 
 log = Log.getLogger(LOG.Instrument.value)
 
+#: Upper bound for `app_lifecycle` to wait for the end of a launch sequence.
+APP_LAUNCH_TIMEOUT = 60
+
 
 class InstrumentDeviceInfo:
     def __exit__(self):
@@ -262,7 +265,7 @@ class InstrumentsBase:
     def sysmontap(self,
                   callback: callable,
                   time: int = 1000,
-                  stopSignal: threading.Event = threading.Event(),
+                  stopSignal: threading.Event = None,
                   system_attributes=None,
                   process_attributes=None):
         """
@@ -274,6 +277,9 @@ class InstrumentsBase:
         @param stopSignal:
         @return:
         """
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         config = {
             'ur': time,
             'bm': 0,
@@ -297,7 +303,7 @@ class InstrumentsBase:
     def graphics(self,
                  callback: callable,
                  time=1000,
-                 stopSignal: threading.Event = threading.Event()):
+                 stopSignal: threading.Event = None):
         """
         get graphics
         :param time: Output frequency (ms)
@@ -305,6 +311,9 @@ class InstrumentsBase:
         :param stopSignal:
         :return:
         """
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         self.instruments.register_channel_callback(InstrumentsService.GraphicsOpengl, callback)
         log.info(self.instruments.call(InstrumentsService.GraphicsOpengl, "availableStatistics").selector)
         log.info(self.instruments.call(InstrumentsService.GraphicsOpengl, "driverNames").selector)
@@ -317,13 +326,16 @@ class InstrumentsBase:
             pass
         self.instruments.call(InstrumentsService.GraphicsOpengl, "stopSampling")
 
-    def xcode_network(self, pid, stopSignal: threading.Event = threading.Event()):
+    def xcode_network(self, pid, stopSignal: threading.Event = None):
         """
         Get the network data of the launched application
         @param pid:
         @param stopSignal:
         @return:
         """
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         channel = "com.apple.xcode.debug-gauge-data-providers.NetworkStatistics"
         attr = {}
         self.instruments.call(channel, "startSamplingForPIDs:", {pid})
@@ -333,13 +345,16 @@ class InstrumentsBase:
 
     def networking(self,
                    callback: callable,
-                   stopSignal: threading.Event = threading.Event()):
+                   stopSignal: threading.Event = None):
         """
         Get system network data
         @param callback:
         @param stopSignal:
         @return:
         """
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         self.instruments.register_channel_callback(InstrumentsService.Networking, callback)
 
         self.instruments.call(InstrumentsService.Networking, "replayLastRecordedSession")
@@ -354,13 +369,15 @@ class InstrumentsBase:
 
     def mobile_notifications(self,
                              callback: callable,
-                             stopSignal: threading.Event = threading.Event()):
+                             stopSignal: threading.Event = None):
         """
         get mobile notifications
         @param callback:
         @param stopSignal:
         @return:
         """
+        if stopSignal is None:
+            stopSignal = threading.Event()
 
         self.instruments.register_undefined_callback(callback)
         self.instruments.call(InstrumentsService.MobileNotifications,
@@ -373,8 +390,11 @@ class InstrumentsBase:
 
     def core_profile_session(self,
                              callback: callable,
-                             stopSignal: threading.Event = threading.Event(),
+                             stopSignal: threading.Event = None,
                              config=None):
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         if config is None:
             config = {'rp': 10,
                       'tc': [{'kdf2': {630784000, 833617920, 830472456},
@@ -391,13 +411,16 @@ class InstrumentsBase:
 
     def gpu_counters(self,
                      callback: callable,
-                     stopSignal: threading.Event = threading.Event()):
+                     stopSignal: threading.Event = None):
         """
         get gpu counters
         @param callback:
         @param stopSignal:
         @return:
         """
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         self.instruments.register_undefined_callback(callback)
         requestDeviceGPUInfo = self.instruments.call(InstrumentsService.GPU, 'requestDeviceGPUInfo').selector
 
@@ -423,13 +446,16 @@ class InstrumentsBase:
 
     def power(self,
               callback: callable,
-              stopSignal: threading.Event = threading.Event()):
+              stopSignal: threading.Event = None):
         """
         get power  ios < 14
         @param callback:
         @param stopSignal:
         @return:
         """
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         channel = "com.apple.instruments.server.services.power"
         self.instruments.register_channel_callback(channel, callback)
         stream_num = self.instruments.call(channel, "openStreamForPath:", "live/level.dat").selector
@@ -440,13 +466,16 @@ class InstrumentsBase:
             pass
         log.info(f"stop{self.instruments.call(channel, 'endStreamTransfer:', float(stream_num)).selector}")
 
-    def xcode_energy(self, pid, stopSignal: threading.Event = threading.Event()):
+    def xcode_energy(self, pid, stopSignal: threading.Event = None):
         """
         get energy
         @param pid:
         @param stopSignal:
         @return:
         """
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         self.instruments.call(InstrumentsService.XcodeEnergy, "startSamplingForPIDs:", {pid})
         while not stopSignal.wait(1):
             ret = self.instruments.call(InstrumentsService.XcodeEnergy, "sampleAttributes:forPIDs:", {}, {pid})
@@ -462,7 +491,7 @@ class InstrumentsBase:
     def set_condition_inducer(self,
                               condition_identifier,
                               profile_identifier,
-                              stopSignal: threading.Event = threading.Event()):
+                              stopSignal: threading.Event = None):
         """ Set mobile phone status, simulated network, mobile cpu pressure, etc; 设置手机状态，模拟网络，手机压力数据等
         @param condition_identifier:
         @param profile_identifier:
@@ -470,6 +499,9 @@ class InstrumentsBase:
 
         :return:
         """
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         ret = self.instruments.call(InstrumentsService.ConditionInducer,
                                     'enableConditionWithIdentifier:profileIdentifier:',
                                     condition_identifier, profile_identifier).selector
@@ -486,7 +518,10 @@ class InstrumentsBase:
         c = self.instruments.call(InstrumentsService.ConditionInducer, 'disableActiveCondition').selector
         return c
 
-    def xctest(self, bundle_id, USE_PORT='', quit_event=threading.Event()):
+    def xctest(self, bundle_id, USE_PORT='', quit_event=None):
+        if quit_event is None:
+            quit_event = threading.Event()
+
         log = Log.getLogger(LOG.xctest.value)
 
         def _callback(res):
@@ -642,7 +677,10 @@ class InstrumentsBase:
         ManagerdLockdown2.stop()
         ManagerdLockdown1.stop()
 
-    def core_profile(self, config, pid, name, stopSignal: threading.Event = threading.Event()):
+    def core_profile(self, config, pid, name, stopSignal: threading.Event = None):
+        if stopSignal is None:
+            stopSignal = threading.Event()
+
         def on_graphics_message(res):
             if type(res.selector) is InstrumentRPCParseError:
                 for args in Kperf.to_str(res.selector.data):
@@ -659,7 +697,11 @@ class InstrumentsBase:
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop")
         self.instruments.stop()
 
-    def app_launch_lifecycle(self, bundleid, stopSignal: threading.Event = threading.Event()):
+    def app_launch_lifecycle(self, bundleid, stopSignal: threading.Event = None):
+        if stopSignal is None:
+            # Never use an Event() default: callers without an explicit event
+            # would share one object across calls and see a pre-set signal.
+            stopSignal = threading.Event()
         traceCodesFile = self.device_info.traceCodesFile()
         Kperf = KperfData(traceCodesFile)
         machTimeInfo = self.instruments.call("com.apple.instruments.server.services.deviceinfo",
@@ -668,18 +710,23 @@ class InstrumentsBase:
         LifeCycle = AppLifeCycle(machTimeInfo, usecs_since_epoch)
         filter_pid = None
 
+        def process_name(pid):
+            # Resolved at report time: the thread map may only arrive mid-capture.
+            return Kperf.pid_names.get(pid) or Kperf.tid_names.get(pid)
+
         def demo(data):
             for event in Kperf.to_dict(data):
-                if isinstance(event, KdBufParser):
-                    _process_name = Kperf.tid_names.get(event.tid)
-                    _pid = Kperf.threads_pids.get(event.tid)
-                    process_key = (_pid, _process_name)
-                    if filter_pid == _pid:
-                        if event.class_code in (0x1f, 0x2b, 0x31):
-                            LifeCycle.decode_app_lifecycle(event, process_key)
-                        if event.debug_id == 835321862:
-                            LifeCycle.format_str()
-                            stopSignal.set()
+                if not isinstance(event, KdBufParser):
+                    continue
+                _pid = Kperf.threads_pids.get(event.tid)
+                if _pid is None or _pid != filter_pid:
+                    continue
+                # Key on the pid: the name is not known yet for early events.
+                # The decoder selects the launch rules itself and returns True
+                # once the launch sequence completed (initial CA commit end).
+                if LifeCycle.decode_app_lifecycle(event, _pid):
+                    LifeCycle.format_str(describe=process_name)
+                    stopSignal.set()
 
         def on_graphics_message(res):
             if type(res.selector) is InstrumentRPCParseError:
@@ -715,8 +762,15 @@ class InstrumentsBase:
                                {'StartSuspendedKey': 0}).selector
         print(f'start {bundleid} pid:{filter_pid} [!] wait a few seconds, being analysed...')
 
-        while not stopSignal.wait(1):
-            pass
+        # A missing terminal event used to hang this command forever; give up and
+        # report the phases that were captured instead.
+        for _ in range(APP_LAUNCH_TIMEOUT):
+            if stopSignal.wait(1):
+                break
+        else:
+            log.warning('no launch completion event within %ss, reporting the captured phases', APP_LAUNCH_TIMEOUT)
         self.instruments.call("com.apple.instruments.server.services.coreprofilesessiontap", "stop")
+        # Flush whatever is left; intervals without an END are printed as "(open)".
+        LifeCycle.format_str(describe=process_name)
         self.instruments.stop()
         rpc2.stop()

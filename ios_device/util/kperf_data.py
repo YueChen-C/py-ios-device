@@ -854,14 +854,15 @@ def trace_string_proc_exit(parser, data):
 
 def trace_string_thread_name(parser, data):
     name = data.buf_data.replace(b'\x00', b'').decode()
-    parser.tids_names[data.tid] = name
+    # Thread names are not process names: keep them apart so a pthread_setname_np()
+    # cannot overwrite the process name used for pid attribution.
+    parser.thread_names[data.tid] = name
     parser.threads_tids[data.tid] = data.tid
-
 
 
 def trace_string_thread_name_prev(parser, data):
     name = data.buf_data.replace(b'\x00', b'').decode()
-    parser.tids_names[data.tid] = name
+    parser.thread_names[data.tid] = name
     parser.threads_tids[data.tid] = data.tid
 
 
@@ -965,16 +966,20 @@ class KdBufParser:
             buf = buf_io.read(64)
             if not buf:
                 return
-            # 判断 buf 长度能否被 KD_BUF_FORMAT 长度整除
-            if len(buf) % 64 != 0:
-                log.warning(f'KdBuf Invalid buffer length:{len(buf)}')
-                continue
+            # A short read can only be a truncated trailing record: kd_buf is a
+            # fixed 64-byte struct, so drop it instead of resynchronising.
+            if len(buf) != 64:
+                log.warning(f'KdBuf truncated record: {len(buf)} of 64 bytes, dropped')
+                return
             _cls = cls(*struct.unpack(KD_BUF_FORMAT, buf))
             decode_trace_data(parser, _cls)
             yield _cls
 
     def __str__(self):
-        return
+        return (f'KdBufParser(timestamp={self.timestamp} tid={self.tid} '
+                f'debug_id={self.debug_id:#010x} class={self.class_code:#04x} '
+                f'subclass={self.subclass_code:#04x} code={self.final_code} '
+                f'func={self.func_code} args={self.args})')
 
 
 def _format_class(classes, code):
@@ -1060,6 +1065,7 @@ class KperfData:
         self.threads_tids = {}
         self.pid_names = {}
         self.tid_names = {}
+        self.thread_names = {}
         self.version = None
         self.filter_tid = filter_pid
         self.filter_process = filter_process
@@ -1120,9 +1126,12 @@ class KperfData:
                 self.kd_cpu_map = FixedSized(raw_events.length - kd_cpumap_header.sizeof(),
                                              GreedyRange(kd_cpumap)).parse_stream(buf_io)
             elif raw_events.tag == V3_RAW_EVENTS:
+                # A raw-events chunk is an 8-byte zero prefix followed by
+                # `length // 64` kd_buf records; decode the chunk payload, not the
+                # outer stream (that used to desynchronise the whole trace).
                 events_buf = io.BytesIO(raw_events.data)
-                events_buf.read(8)  # Future events timestamp struct.pack('Q', 0)
-                yield from KdBufParser.decode(self, buf_io)
+                events_buf.read(8)  # All zeros, unknown
+                yield from KdBufParser.decode(self, events_buf)
 
     def to_dict(self, kd_buf):
         for event in self.parse(kd_buf):
