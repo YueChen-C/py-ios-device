@@ -34,21 +34,21 @@ from ios_device.remote.remote_lockdown import RemoteLockdownClient
 sys.path.append(os.getcwd())
 from ios_device.util.lockdown import LockdownClient
 
-TIME_FORMAT = '%H:%M:%S'
+TIME_FORMAT = "%H:%M:%S"
 
 
 class SyslogServer(object):
     """
     View system logs
     """
+
     SERVICE_NAME = "com.apple.syslog_relay"
-    RSD_SERVICE_NAME = 'com.apple.syslog_relay.shim.remote'
+    RSD_SERVICE_NAME = "com.apple.syslog_relay.shim.remote"
 
     def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown or LockdownClient(udid=udid, network=network)
-        SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown,
-                                                           RemoteLockdownClient) else self.SERVICE_NAME
+        SERVICE_NAME = self.RSD_SERVICE_NAME if isinstance(self.lockdown, RemoteLockdownClient) else self.SERVICE_NAME
         self.c = self.lockdown.start_service(SERVICE_NAME)
 
     def watch(self, log_file=None, filter=None):
@@ -58,7 +58,7 @@ class SyslogServer(object):
         """
         while True:
             d = self.c.recv(4096)
-            d = d.decode('utf-8')
+            d = d.decode("utf-8")
             if filter:
                 procFilter = re.compile(filter, re.IGNORECASE)
                 if not procFilter.search(d):
@@ -67,7 +67,7 @@ class SyslogServer(object):
             print(s)
             if log_file:
                 if isinstance(log_file, str):
-                    with open(log_file, 'wt') as f:
+                    with open(log_file, "wt") as f:
                         f.write(d.replace("\x00", ""))
                 else:
                     log_file.write(d.replace("\x00", ""))
@@ -75,16 +75,16 @@ class SyslogServer(object):
 
 if __name__ == "__main__":
     parser = OptionParser(usage="%prog")
-    parser.add_option("-u", "--udid",
-                      default=False, action="store", dest="device_udid", metavar="DEVICE_UDID",
-                      help="Device udid")
-    parser.add_option("-p", "--process", dest="procName", default=False,
-                      help="Show process log only", type="string")
-    parser.add_option("-o", "--logfile", dest="logFile", default=False,
-                      help="Write Logs into specified file", type="string")
-    parser.add_option("-w", "--watch-time",
-                      default=False, action="store", dest="watchtime", metavar="WATCH_TIME",
-                      help="watchtime")
+    parser.add_option(
+        "-u", "--udid", default=False, action="store", dest="device_udid", metavar="DEVICE_UDID", help="Device udid"
+    )
+    parser.add_option("-p", "--process", dest="procName", default=False, help="Show process log only", type="string")
+    parser.add_option(
+        "-o", "--logfile", dest="logFile", default=False, help="Write Logs into specified file", type="string"
+    )
+    parser.add_option(
+        "-w", "--watch-time", default=False, action="store", dest="watchtime", metavar="WATCH_TIME", help="watchtime"
+    )
     (options, args) = parser.parse_args()
 
     try:

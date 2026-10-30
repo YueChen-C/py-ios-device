@@ -1,8 +1,9 @@
-import os
-import sys
-import shutil
 import logging
+import os
+import shutil
+import sys
 from pathlib import Path
+
 from invoke import task
 
 logger = logging
@@ -34,7 +35,7 @@ def clean(ctx):
     shutil.rmtree(_get_ctx_abs_path(ctx, "build"), ignore_errors=True)
     shutil.rmtree(_get_ctx_abs_path(ctx, "dist"), ignore_errors=True)
     shutil.rmtree(
-        _get_ctx_abs_path(ctx, f"py_ios_device.egg-info"),
+        _get_ctx_abs_path(ctx, "py_ios_device.egg-info"),
         ignore_errors=True,
     )
 
@@ -58,7 +59,7 @@ def install(ctx):
 
 @task
 def uninstall(ctx):
-    ctx.run(f"pip3 uninstall py-ios-device -y", hide="out")
+    ctx.run("pip3 uninstall py-ios-device -y", hide="out")
 
 
 @task
@@ -76,10 +77,7 @@ def reformat_code(ctx):
 @task
 def test(ctx):
     ctx.run("tox")
-    print(
-        f"Coverage html report: "
-        f'file://{os.path.join(os.path.dirname(__file__), "htmlcov", "index.html")}'
-    )
+    print(f"Coverage html report: file://{os.path.join(os.path.dirname(__file__), 'htmlcov', 'index.html')}")
 
 
 @task(build)

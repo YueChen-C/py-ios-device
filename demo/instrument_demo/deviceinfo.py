@@ -1,6 +1,7 @@
 """
 获取系统信息
 """
+
 import os
 import sys
 
@@ -14,23 +15,23 @@ log = logging.getLogger(__name__)
 
 
 def runningProcesses(rpc):
-    """ 获取所有运行的进程信息
+    """获取所有运行的进程信息
     :param rpc:
     :return:
     """
     parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "runningProcesses").selector
     log.debug("runningProcesses:")
-    headers = '\t'.join(sorted(parsed[0].keys()))
+    headers = "\t".join(sorted(parsed[0].keys()))
     log.debug(headers)
     for item in parsed:
         sorted_item = sorted(item.items())
-        print('\t'.join(map(str, [v for _, v in sorted_item])))
+        print("\t".join(map(str, [v for _, v in sorted_item])))
     rpc.stop()
     return parsed
 
 
 def execnameForPid(rpc, pid):
-    """ 获取 pid 进程的应用名
+    """获取 pid 进程的应用名
     :param rpc:
     :param pid:
     :return:
@@ -74,13 +75,15 @@ def sysmonProcessAttributes(rpc):
 
 
 def sysmonSystemAttributes(rpc):
-    parsed = rpc.call("com.apple.instruments.server.services.deviceinfo", "symbolicatorSignaturesForExpiredPids").selector
+    parsed = rpc.call(
+        "com.apple.instruments.server.services.deviceinfo", "symbolicatorSignaturesForExpiredPids"
+    ).selector
     print(list(parsed))
     rpc.stop()
 
 
-if __name__ == '__main__':
-    host = 'fd73:3a0d:d4bd::1'  # randomized
+if __name__ == "__main__":
+    host = "fd73:3a0d:d4bd::1"  # randomized
     port = 60558  # randomized
     with RemoteLockdownClient((host, port)) as rsd:
         rpc = InstrumentServer(rsd).init()

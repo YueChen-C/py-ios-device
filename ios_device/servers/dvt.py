@@ -2,10 +2,10 @@ import enum
 import queue
 import typing
 from collections import defaultdict
-from threading import Thread, Event
+from threading import Event, Thread
 
-from ..util import logging, Log
-from ..util.dtx_msg import DTXMessage, MessageAux, dtx_message_header, object_to_aux, InfoRequest
+from ..util import Log, logging
+from ..util.dtx_msg import DTXMessage, InfoRequest, MessageAux, dtx_message_header, object_to_aux
 from ..util.exceptions import MuxError
 from ..util.variables import LOG
 
@@ -17,7 +17,6 @@ class DTXEnum(str, enum.Enum):
 
 
 class DTXClient:
-
     def __init__(self):
         self._dtx_manager = {}
 
@@ -29,12 +28,12 @@ class DTXClient:
             if not chunk:
                 raise MuxError("socket connection close")
             buf.extend(chunk)
-        log.debug(f'接收 DTX buf: {buf}')
+        log.debug(f"接收 DTX buf: {buf}")
         return buf
 
     def send_dtx(self, client, dtx):
         buffer = bytes(dtx)
-        log.debug(f'发送 DTX: {buffer}')
+        log.debug(f"发送 DTX: {buffer}")
         return client.send(buffer)
 
     def recv_dtx(self, client):
@@ -45,7 +44,6 @@ class DTXClient:
         """
         payload = bytearray()
         while True:
-
             header_buffer = self.recv(client, dtx_message_header.sizeof())
             if not header_buffer:
                 return None
@@ -78,7 +76,6 @@ class DTXClient:
 
 
 class DTXServer:
-
     def __init__(self):
         self._cli = None
         self._recv_thread = None
@@ -99,16 +96,22 @@ class DTXServer:
         def _notifyOfPublishedCapabilities(res):
             self.done.set()
             self._published_capabilities = res.auxiliaries
+
         self.register_selector_callback("_notifyOfPublishedCapabilities:", _notifyOfPublishedCapabilities)
 
     def init(self, _cli=None):
-        """ 继承类
+        """继承类
         初始化 servers 服务:
         :return: bool 是否成功
         """
         self._cli = _cli
         self._start()
-        self._call(True,0, '_notifyOfPublishedCapabilities:', {'com.apple.private.DTXBlockCompression': 0, 'com.apple.private.DTXConnection': 1})
+        self._call(
+            True,
+            0,
+            "_notifyOfPublishedCapabilities:",
+            {"com.apple.private.DTXBlockCompression": 0, "com.apple.private.DTXConnection": 1},
+        )
         return self
 
     def _start(self):
@@ -149,7 +152,6 @@ class DTXServer:
             return True
 
     def register_selector_callback(self, selector: str, callback: typing.Callable):
-
         """
         :param selector:
         :param callback:
@@ -162,7 +164,7 @@ class DTXServer:
         :param channel:
         :param callback
         """
-        log.debug(f'set {channel} callback ...')
+        log.debug(f"set {channel} callback ...")
         channel_id = self.make_channel(channel)
         self._channel_callbacks[channel_id] = callback
 
@@ -192,7 +194,7 @@ class DTXServer:
         reply._identifier = data.identifier
         reply._conversation_index = data.conversation_index + 1
         reply._flags = 0x3
-        reply._selector = b'\00' * 16
+        reply._selector = b"\00" * 16
         self._client.send_dtx(self._cli, reply)
 
     def wait_reply(self, message_id: int, timeout=30.0) -> DTXMessage:
@@ -231,12 +233,12 @@ class DTXServer:
         try:
             while self._running:
                 dtx = self._client.recv_dtx(self._cli)
-                if '_channelCanceled:' in str(dtx.selector):
+                if "_channelCanceled:" in str(dtx.selector):
                     self._cli.close()
                 if dtx.conversation_index == 1:
                     self._reply_queues[dtx.identifier].put(dtx)
-                elif (2 ** 32 - dtx.channel_code) in self._channel_callbacks:
-                    self._channel_callbacks[(2 ** 32 - dtx.channel_code)](dtx)
+                elif (2**32 - dtx.channel_code) in self._channel_callbacks:
+                    self._channel_callbacks[(2**32 - dtx.channel_code)](dtx)
                 else:
                     selector = dtx.selector
                     if isinstance(selector, str) and selector in self._callbacks:

@@ -5,15 +5,16 @@ PerfDog-style jank rules and the window accounting that ``cmd_display`` /
 ``start_get_fps`` rely on, including the bugs that were fixed: the hardcoded
 mach timebase and the cumulative (never reset) window time.
 """
+
 import struct
 import unittest
 
-from ios_device.util.display_stats import DisplayStats, FRAME_EVENT, MOVIE_FRAME_COST, NANO_SECOND
+from ios_device.util.display_stats import FRAME_EVENT, MOVIE_FRAME_COST, NANO_SECOND, DisplayStats
 from ios_device.util.kperf_data import kdbg_extract_all
 from ios_device.util.utils import kperf_data
 
-FACTOR = 125 / 3          # 24 MHz timebase: 1 tick == 125/3 ns
-FRAME_MS = 1000 / 60      # 60 fps 帧间隔
+FACTOR = 125 / 3  # 24 MHz timebase: 1 tick == 125/3 ns
+FRAME_MS = 1000 / 60  # 60 fps 帧间隔
 
 
 def frames(costs_ms, factor=FACTOR, window=1.0):
@@ -33,52 +34,51 @@ def frames(costs_ms, factor=FACTOR, window=1.0):
 
 
 class TestDisplayStats(unittest.TestCase):
-
     def test_steady_60fps(self):
         stats, reports = frames([FRAME_MS] * 125)
         self.assertEqual(len(reports), 2)
         for report in reports:
-            self.assertAlmostEqual(report['fps'], 60.0, places=1)
-            self.assertEqual(report['jank'], 0)
-            self.assertEqual(report['big_jank'], 0)
-            self.assertEqual(report['stutter'], 0.0)
+            self.assertAlmostEqual(report["fps"], 60.0, places=1)
+            self.assertEqual(report["jank"], 0)
+            self.assertEqual(report["big_jank"], 0)
+            self.assertEqual(report["stutter"], 0.0)
 
     def test_time_is_the_window_duration_not_cumulative(self):
         """回归：旧实现里 last_time 从不重置，第二个窗口的 time 会是 2.0。"""
         _, reports = frames([FRAME_MS] * 125)
         self.assertEqual(len(reports), 2)
         for report in reports:
-            self.assertGreater(report['time'], 0.9)
-            self.assertLess(report['time'], 1.1)
+            self.assertGreater(report["time"], 0.9)
+            self.assertLess(report["time"], 1.1)
 
     def test_jank_needs_both_conditions(self):
         # 100ms：> 前三帧均值的 2 倍，也 > 电影帧耗时的 2 倍
         _, reports = frames([FRAME_MS] * 4 + [100] + [FRAME_MS] * 60)
-        self.assertEqual(reports[0]['jank'], 1)
-        self.assertEqual(reports[0]['big_jank'], 0)
-        self.assertGreater(reports[0]['stutter'], 0.05)
-        self.assertLess(reports[0]['stutter'], 0.15)
+        self.assertEqual(reports[0]["jank"], 1)
+        self.assertEqual(reports[0]["big_jank"], 0)
+        self.assertGreater(reports[0]["stutter"], 0.05)
+        self.assertLess(reports[0]["stutter"], 0.15)
 
     def test_big_jank(self):
         # 200ms：> 电影帧耗时的 3 倍(125ms)
         _, reports = frames([FRAME_MS] * 4 + [200] + [FRAME_MS] * 60)
-        self.assertEqual(reports[0]['jank'], 1)
-        self.assertEqual(reports[0]['big_jank'], 1)
+        self.assertEqual(reports[0]["jank"], 1)
+        self.assertEqual(reports[0]["big_jank"], 1)
 
     def test_slow_but_not_jank(self):
         # 60ms：是前三帧均值的 3.6 倍，但没超过电影帧耗时的 2 倍(83.3ms)
         _, reports = frames([FRAME_MS] * 4 + [60] + [FRAME_MS] * 60)
-        self.assertEqual(reports[0]['jank'], 0)
+        self.assertEqual(reports[0]["jank"], 0)
 
     def test_warmup_frames_cannot_be_jank(self):
         # 前三帧没有历史可比较
         _, reports = frames([FRAME_MS, 200] + [FRAME_MS] * 61)
-        self.assertEqual(reports[0]['jank'], 0)
+        self.assertEqual(reports[0]["jank"], 0)
 
     def test_duplicate_timestamp_is_not_a_frame(self):
         # 相同时间戳的重复事件不能计帧，否则 fps 会被抬高
         _, reports = frames([FRAME_MS, 0] + [FRAME_MS] * 61)
-        self.assertEqual(reports[0]['fps'], 60.0)
+        self.assertEqual(reports[0]["fps"], 60.0)
 
     def test_window_is_reported_only_once_full(self):
         # factor=1：时间戳就是纳秒，100ms 一帧，凑满 10 帧才出报告
@@ -92,7 +92,7 @@ class TestDisplayStats(unittest.TestCase):
     def test_timebase_is_not_hardcoded(self):
         # factor=1：时间戳直接就是纳秒
         _, reports = frames([16.6667] * 62, factor=1.0)
-        self.assertAlmostEqual(reports[0]['fps'], 60.0, places=0)
+        self.assertAlmostEqual(reports[0]["fps"], 60.0, places=0)
 
     def test_constants(self):
         self.assertEqual(kdbg_extract_all(830472984), FRAME_EVENT)
@@ -103,7 +103,7 @@ class TestDisplayStats(unittest.TestCase):
 class TestKperfDataRecords(unittest.TestCase):
     """``kperf_data`` 是 cmd_display / start_get_fps 的事件来源。"""
 
-    RECORD = struct.Struct('<QLLQQQQLLQ')
+    RECORD = struct.Struct("<QLLQQQQLLQ")
 
     def record(self, timestamp, debug_id):
         return self.RECORD.pack(timestamp, 0, 0, 0, 0, 0, 7, debug_id, 0, 0)
@@ -116,13 +116,13 @@ class TestKperfDataRecords(unittest.TestCase):
 
     def test_truncated_tail_drops_only_the_tail(self):
         """回归：旧实现长度不是 64 的倍数时整块丢弃，一包帧全没了。"""
-        payload = self.record(1, 830472984) * 3 + b'\x01\x02'
+        payload = self.record(1, 830472984) * 3 + b"\x01\x02"
         rows = kperf_data(payload)
         self.assertEqual([row[0] for row in rows], [1, 1, 1])
 
     def test_empty(self):
-        self.assertEqual(kperf_data(b''), [])
+        self.assertEqual(kperf_data(b""), [])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

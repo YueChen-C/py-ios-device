@@ -22,27 +22,19 @@
 #
 #
 
-import os
 import logging
-
-from optparse import OptionParser
+import os
 
 from ..remote.remote_lockdown import RemoteLockdownClient
 from ..servers.afc import AFCClient
-
 from ..util.lockdown import LockdownClient
 
-client_options = {
-    "SkipUninstall": False,
-    "ApplicationSINF": False,
-    "iTunesMetadata": False,
-    "ReturnAttributes": False
-}
+client_options = {"SkipUninstall": False, "ApplicationSINF": False, "iTunesMetadata": False, "ReturnAttributes": False}
 
 
 class InstallationProxyService(object):
-    SERVICE_NAME = 'com.apple.mobile.installation_proxy'
-    RSD_SERVICE_NAME = 'com.apple.mobile.installation_proxy.shim.remote'
+    SERVICE_NAME = "com.apple.mobile.installation_proxy"
+    RSD_SERVICE_NAME = "com.apple.mobile.installation_proxy.shim.remote"
 
     def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
@@ -72,16 +64,14 @@ class InstallationProxyService(object):
             if z.get("Status") == "Complete":
                 self.logger.info("Success")
                 return z.get("Status"), True
-            if z.get('Error'):
-                self.logger.info(z.get('ErrorDescription'))
+            if z.get("Error"):
+                self.logger.info(z.get("ErrorDescription"))
                 return z.get("Error"), False
 
         return Exception("Install Error")
 
     def send_cmd_for_bid(self, bid, cmd="Archive", options=None, handler=None, *args):
-        cmd = {"Command": cmd,
-
-               "ApplicationIdentifier": bid}
+        cmd = {"Command": cmd, "ApplicationIdentifier": bid}
         if options:
             cmd.update({"ClientOptions": options})
         self.service.send_plist(cmd)
@@ -97,9 +87,7 @@ class InstallationProxyService(object):
             afc.set_upload_dir(ipaPath, "/" + os.path.basename(ipaPath))
         else:
             afc.set_file_contents("/" + os.path.basename(ipaPath), open(ipaPath, "rb").read())
-        cmd = {"Command": cmd,
-               "ClientOptions": options,
-               "PackagePath": os.path.basename(ipaPath)}
+        cmd = {"Command": cmd, "ClientOptions": options, "PackagePath": os.path.basename(ipaPath)}
         self.service.send_plist(cmd)
         return self.watch_completion(handler, args)
 
@@ -110,8 +98,7 @@ class InstallationProxyService(object):
         return self.install_or_upgrade(ipaPath, "Upgrade", options or {}, handler, args)
 
     def check_capabilities_match(self, capabilities, options: dict = None):
-        cmd = {"Command": "CheckCapabilitiesMatch",
-               "ClientOptions": options or {}}
+        cmd = {"Command": "CheckCapabilitiesMatch", "ClientOptions": options or {}}
 
         if capabilities:
             cmd["Capabilities"] = capabilities
@@ -127,8 +114,7 @@ class InstallationProxyService(object):
         if app_types:
             options["ApplicationType"] = app_types
 
-        cmd = {"Command": "Browse",
-               "ClientOptions": options}
+        cmd = {"Command": "Browse", "ClientOptions": options}
 
         self.service.send_plist(cmd)
 
@@ -148,11 +134,10 @@ class InstallationProxyService(object):
         return result
 
     def apps_info(self, options: dict = None):
-        cmd = {"Command": "Lookup",
-               "ClientOptions": options or {}}
+        cmd = {"Command": "Lookup", "ClientOptions": options or {}}
 
         self.service.send_plist(cmd)
-        return self.service.recv_plist().get('LookupResult')
+        return self.service.recv_plist().get("LookupResult")
 
     def archive(self, bid, options: dict = None, handler=None, *args):
         self.send_cmd_for_bid(bid, "Archive", options or {}, handler, args)
@@ -164,8 +149,7 @@ class InstallationProxyService(object):
         self.send_cmd_for_bid(bid, "RemoveArchive", options or {}, handler, args)
 
     def archives_info(self, options: dict = None):
-        cmd = {"Command": "LookupArchive",
-               "ClientOptions": options or {}}
+        cmd = {"Command": "LookupArchive", "ClientOptions": options or {}}
         return self.service.send_plist(cmd).get("LookupResult")
 
     def search_path_for_bid(self, bid):
@@ -178,29 +162,32 @@ class InstallationProxyService(object):
     def get_apps(self, appTypes=None):
         if appTypes is None:
             appTypes = ["User"]
-        return [app for app in self.apps_info().values()
-                if app.get("ApplicationType") in appTypes]
+        return [app for app in self.apps_info().values() if app.get("ApplicationType") in appTypes]
 
     def print_apps(self, appType=None):
         if appType is None:
             appType = ["User"]
         for app in self.get_apps(appType):
-            print(("%s : %s => %s" % (app.get("CFBundleDisplayName"),
-                                      app.get("CFBundleIdentifier"),
-                                      app.get("Path") if app.get("Path")
-                                      else app.get("Container"))).encode('utf-8'))
+            print(
+                (
+                    "%s : %s => %s"
+                    % (
+                        app.get("CFBundleDisplayName"),
+                        app.get("CFBundleIdentifier"),
+                        app.get("Path") if app.get("Path") else app.get("Container"),
+                    )
+                ).encode("utf-8")
+            )
 
     def find_bundle_id(self, bundle_id):
         for app in self.get_apps():
-            if app.get('CFBundleIdentifier') == bundle_id:
+            if app.get("CFBundleIdentifier") == bundle_id:
                 return app
 
     def get_apps_bid(self, appTypes=None):
         if appTypes is None:
             appTypes = ["User"]
-        return [app["CFBundleIdentifier"]
-                for app in self.get_apps()
-                if app.get("ApplicationType") in appTypes]
+        return [app["CFBundleIdentifier"] for app in self.get_apps() if app.get("ApplicationType") in appTypes]
 
     def close(self):
         self.service.close()

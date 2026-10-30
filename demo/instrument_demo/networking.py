@@ -2,12 +2,12 @@ import json
 import os
 import sys
 
-
 sys.path.append(os.getcwd())
 import time
 from _ctypes import Structure
 from ctypes import c_byte, c_uint16, c_uint32
-from ios_device.servers.Instrument import  InstrumentServer
+
+from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util import logging
 
 log = logging.getLogger(__name__)
@@ -15,11 +15,29 @@ log = logging.getLogger(__name__)
 
 def networking(rpc):
     headers = {
-        0: ['InterfaceIndex', "Name"],
-        1: ['LocalAddress', 'RemoteAddress', 'InterfaceIndex', 'Pid', 'RecvBufferSize', 'RecvBufferUsed',
-            'SerialNumber', 'Kind'],
-        2: ['RxPackets', 'RxBytes', 'TxPackets', 'TxBytes', 'RxDups', 'RxOOO', 'TxRetx', 'MinRTT', 'AvgRTT',
-            'ConnectionSerial']
+        0: ["InterfaceIndex", "Name"],
+        1: [
+            "LocalAddress",
+            "RemoteAddress",
+            "InterfaceIndex",
+            "Pid",
+            "RecvBufferSize",
+            "RecvBufferUsed",
+            "SerialNumber",
+            "Kind",
+        ],
+        2: [
+            "RxPackets",
+            "RxBytes",
+            "TxPackets",
+            "TxBytes",
+            "RxDups",
+            "RxOOO",
+            "TxRetx",
+            "MinRTT",
+            "AvgRTT",
+            "ConnectionSerial",
+        ],
     }
     msg_type = {
         0: "interface-detection",
@@ -28,14 +46,15 @@ def networking(rpc):
     }
 
     def on_callback_message(res):
-        from socket import inet_ntoa, htons, inet_ntop, AF_INET6
+        from socket import AF_INET6, htons, inet_ntoa, inet_ntop
+
         class SockAddr4(Structure):
             _fields_ = [
-                ('len', c_byte),
-                ('family', c_byte),
-                ('port', c_uint16),
-                ('addr', c_byte * 4),
-                ('zero', c_byte * 8)
+                ("len", c_byte),
+                ("family", c_byte),
+                ("port", c_uint16),
+                ("addr", c_byte * 4),
+                ("zero", c_byte * 8),
             ]
 
             def __str__(self):
@@ -43,12 +62,12 @@ def networking(rpc):
 
         class SockAddr6(Structure):
             _fields_ = [
-                ('len', c_byte),
-                ('family', c_byte),
-                ('port', c_uint16),
-                ('flowinfo', c_uint32),
-                ('addr', c_byte * 16),
-                ('scopeid', c_uint32)
+                ("len", c_byte),
+                ("family", c_byte),
+                ("port", c_uint16),
+                ("flowinfo", c_uint32),
+                ("addr", c_byte * 16),
+                ("scopeid", c_uint32),
             ]
 
             def __str__(self):
@@ -65,6 +84,7 @@ def networking(rpc):
 
         print(msg_type[data[0]] + json.dumps(dict(zip(headers[data[0]], data[1]))))
         # print("[data]", res.selector)
+
     rpc.register_channel_callback("com.apple.instruments.server.services.networking", on_callback_message)
     var = rpc.call("com.apple.instruments.server.services.networking", "replayLastRecordedSession").selector
     log.debug(f"replay {var}")
@@ -76,7 +96,7 @@ def networking(rpc):
     rpc.stop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rpc = InstrumentServer().init()
     networking(rpc)
     rpc.stop()

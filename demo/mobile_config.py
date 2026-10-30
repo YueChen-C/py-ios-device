@@ -29,11 +29,11 @@ import sys
 
 sys.path.append(os.getcwd())
 
-from ios_device.util import read_file
-
-from ios_device.util.lockdown import LockdownClient
 from optparse import OptionParser
 from pprint import pprint
+
+from ios_device.util import read_file
+from ios_device.util.lockdown import LockdownClient
 
 
 class MobileConfigService(object):
@@ -65,23 +65,23 @@ class MobileConfigService(object):
             return
         meta = profiles["ProfileMetadata"][ident]
         pprint(meta)
-        data = plistlib.dumps({"PayloadType": "Configuration",
-                                            "PayloadIdentifier": ident,
-                                            "PayloadUUID": meta["PayloadUUID"],
-                                            "PayloadVersion": meta["PayloadVersion"]
-                                            })
+        data = plistlib.dumps(
+            {
+                "PayloadType": "Configuration",
+                "PayloadIdentifier": ident,
+                "PayloadUUID": meta["PayloadUUID"],
+                "PayloadVersion": meta["PayloadVersion"],
+            }
+        )
         self.service.send_plist({"RequestType": "RemoveProfile", "ProfileIdentifier": data})
         return self.service.recvPlist()
 
 
 def main():
     parser = OptionParser(usage="%prog")
-    parser.add_option("-l", "--list", dest="list", action="store_true",
-                      default=False, help="List installed profiles")
-    parser.add_option("-i", "--install", dest="install", action="store",
-                      metavar="FILE", help="Install profile")
-    parser.add_option("-r", "--remove", dest="remove", action="store",
-                      metavar="IDENTIFIER", help="Remove profile")
+    parser.add_option("-l", "--list", dest="list", action="store_true", default=False, help="List installed profiles")
+    parser.add_option("-i", "--install", dest="install", action="store", metavar="FILE", help="Install profile")
+    parser.add_option("-r", "--remove", dest="remove", action="store", metavar="IDENTIFIER", help="Remove profile")
     (options, args) = parser.parse_args()
 
     if not options.list and not options.install and not options.remove:

@@ -7,11 +7,11 @@ import click
 
 from ios_device.cli.base import InstrumentsBase
 from ios_device.cli.cli import Command, print_json
-from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.amfi import AmfiService
 from ios_device.servers.crash_log import CrashLogService
 from ios_device.servers.diagnostics_relay import DiagnosticsRelayService
 from ios_device.servers.house_arrest import HouseArrestService
+from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.mc_install import MCInstallService
 from ios_device.servers.pcapd import PcapdService, PCAPPacketDumper
 from ios_device.servers.simulate_location import SimulateLocation
@@ -26,10 +26,10 @@ log = Log.getLogger(LOG.Mobile.value)
 
 @click.group()
 def cli():
-    """ instruments cli """
+    """instruments cli"""
 
 
-@cli.group(short_help='crash report options')
+@cli.group(short_help="crash report options")
 def crash():
     """
     获取 crash log 相关信息
@@ -37,59 +37,64 @@ def crash():
     """
 
 
-@crash.command('delete', cls=Command)
-@click.option('--name', help='crash name')
+@crash.command("delete", cls=Command)
+@click.option("--name", help="crash name")
 def crash_delete(udid, network, format, name):
-    """ remove crash report """
+    """remove crash report"""
     crash_server = CrashLogService(udid=udid, network=network, logger=log)
     crash_server.delete_crash(name)
 
 
-@crash.command('export', cls=Command)
-@click.option('--name', help='crash name')
+@crash.command("export", cls=Command)
+@click.option("--name", help="crash name")
 def crash_export(udid, network, format, name):
-    """ pull crash report """
+    """pull crash report"""
     crash_server = CrashLogService(udid=udid, network=network, logger=log)
     crash_server.export_crash(name)
 
 
-@crash.command('list', cls=Command)
+@crash.command("list", cls=Command)
 def crash_list(udid, network, format):
-    """ Show crash list """
+    """Show crash list"""
     crash_server = CrashLogService(udid=udid, network=network, logger=log)
     crash_server.get_list()
 
 
-@crash.command('shell', cls=Command)
+@crash.command("shell", cls=Command)
 def crash_shell(udid, network, format):
-    """ Open command line mode """
+    """Open command line mode"""
     crash_server = CrashLogService(udid=udid, network=network, logger=log)
     crash_server.shell()
 
 
 #######################################################################
 
-@cli.command('sandbox', cls=Command, short_help='accessing application sandbox')
-@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter',
-              required=True)
-@click.option('-a', '--access_type', default='VendDocuments',
-              type=click.Choice(['VendDocuments', 'VendContainer']),
-              help='Type of access sandbox. '
-                   'If choosing VendContainer, the app must be in debug mode')
+
+@cli.command("sandbox", cls=Command, short_help="accessing application sandbox")
+@click.option("-b", "--bundle_id", default=None, help="Process app bundleId to filter", required=True)
+@click.option(
+    "-a",
+    "--access_type",
+    default="VendDocuments",
+    type=click.Choice(["VendDocuments", "VendContainer"]),
+    help="Type of access sandbox. If choosing VendContainer, the app must be in debug mode",
+)
 def sandbox(udid, network, format, bundle_id, access_type):
-    """ open an AFC shell for given bundle_id, assuming its profile is installed """
+    """open an AFC shell for given bundle_id, assuming its profile is installed"""
     HouseArrestService(udid=udid, network=network, logger=log).shell(bundle_id, cmd=access_type)
 
 
-@cli.command('pull', cls=Command, short_help='copy files/dirs from device')
-@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter',
-              required=True)
-@click.option('-a', '--access_type', default='VendDocuments',
-              type=click.Choice(['VendDocuments', 'VendContainer']),
-              help='Type of access sandbox. '
-                   'If choosing VendContainer, the app must be in debug mode')
-@click.option('-l', '--local_path', required=True)
-@click.option('-r', '--remote_path', required=True)
+@cli.command("pull", cls=Command, short_help="copy files/dirs from device")
+@click.option("-b", "--bundle_id", default=None, help="Process app bundleId to filter", required=True)
+@click.option(
+    "-a",
+    "--access_type",
+    default="VendDocuments",
+    type=click.Choice(["VendDocuments", "VendContainer"]),
+    help="Type of access sandbox. If choosing VendContainer, the app must be in debug mode",
+)
+@click.option("-l", "--local_path", required=True)
+@click.option("-r", "--remote_path", required=True)
 def pull(udid, network, format, bundle_id, access_type, local_path, remote_path):
     service = HouseArrestService(udid=udid, network=network, logger=log)
     service.send_command(bundle_id, access_type)
@@ -99,20 +104,22 @@ def pull(udid, network, format, bundle_id, access_type, local_path, remote_path)
             for file in files:
                 os.makedirs(local_path, 0o755, exist_ok=True)
                 _path = os.path.join(local_path, file)
-                log.info(f'save {_path}')
-                with open(_path, 'wb') as (fp):
+                log.info(f"save {_path}")
+                with open(_path, "wb") as (fp):
                     fp.write(service.get_file_contents(os.path.join(dirname, file)))
 
 
-@cli.command('push', cls=Command, short_help='copy local files/directories to device')
-@click.option('-b', '--bundle_id', help='Process app bundleId to filter',
-              required=True)
-@click.option('-a', '--access_type', default='VendDocuments',
-              type=click.Choice(['VendDocuments', 'VendContainer']),
-              help='Type of access sandbox. '
-                   'If choosing VendContainer, the app must be in debug mode')
-@click.option('-l', '--local_path', type=click.Path(exists=True), required=True)
-@click.option('-r', '--remote_path', required=True)
+@cli.command("push", cls=Command, short_help="copy local files/directories to device")
+@click.option("-b", "--bundle_id", help="Process app bundleId to filter", required=True)
+@click.option(
+    "-a",
+    "--access_type",
+    default="VendDocuments",
+    type=click.Choice(["VendDocuments", "VendContainer"]),
+    help="Type of access sandbox. If choosing VendContainer, the app must be in debug mode",
+)
+@click.option("-l", "--local_path", type=click.Path(exists=True), required=True)
+@click.option("-r", "--remote_path", required=True)
 def push(udid, network, format, bundle_id, access_type, local_path, remote_path):
     service = HouseArrestService(udid=udid, network=network, logger=log)
     service.send_command(bundle_id, access_type)
@@ -121,23 +128,25 @@ def push(udid, network, format, bundle_id, access_type, local_path, remote_path)
 
 #######################################################################
 
-@cli.command('devices', cls=Command)
+
+@cli.command("devices", cls=Command)
 def cmd_devices(udid, network, format):
-    """ get device list """
+    """get device list"""
     with USBMux() as usb_mux:
         print_json(usb_mux.get_devices(network), format)
 
 
-@cli.command('deviceinfo', cls=Command)
+@cli.command("deviceinfo", cls=Command)
 def cmd_deviceinfo(udid, network, format):
-    """ show basic device attributes """
+    """show basic device attributes"""
     device_info = LockdownClient(udid=udid, network=network).get_value()
     print_json(device_info, format=format)
 
 
 #######################################################################
 
-@cli.group(short_help='get device profiles ')
+
+@cli.group(short_help="get device profiles ")
 def profiles():
     """
     描述文件管理 例如：安装 卸载 Fiddler 证书等
@@ -146,36 +155,34 @@ def profiles():
     """
 
 
-@profiles.command('list', cls=Command)
+@profiles.command("list", cls=Command)
 def profile_list(udid, network, format):
-    """ list installed profiles """
+    """list installed profiles"""
     print_json(MCInstallService(udid=udid, network=network, logger=log).get_profile_list(), format)
 
 
-@profiles.command('install', cls=Command)
-@click.option('--path', type=click.File('rb'))
+@profiles.command("install", cls=Command)
+@click.option("--path", type=click.File("rb"))
 def profile_install(udid, network, format, path):
-    """ install given profile file """
-    print_json(
-        MCInstallService(udid=udid, network=network, logger=log).install_profile(path.read()),
-        format)
+    """install given profile file"""
+    print_json(MCInstallService(udid=udid, network=network, logger=log).install_profile(path.read()), format)
 
 
-@profiles.command('remove', cls=Command)
-@click.option('--name')
+@profiles.command("remove", cls=Command)
+@click.option("--name")
 def profile_remove(udid, network, format, name):
-    """ remove profile by name """
-    print_json(MCInstallService(udid=udid, network=network, logger=log).remove_profile(name),
-               format)
+    """remove profile by name"""
+    print_json(MCInstallService(udid=udid, network=network, logger=log).remove_profile(name), format)
 
 
 #######################################################################
 
-@cli.command('syslog', cls=Command)
-@click.option('--path', type=click.File('wt'), help='full path to the log file')
-@click.option('--filter', help='filter strings')
+
+@cli.command("syslog", cls=Command)
+@click.option("--path", type=click.File("wt"), help="full path to the log file")
+@click.option("--filter", help="filter strings")
 def cmd_syslog(udid, network, format, path, filter):
-    """ get device syslog """
+    """get device syslog"""
     server = SyslogServer(udid=udid, network=network, logger=log)
     server.watch(log_file=path, filter=filter)
 
@@ -185,65 +192,70 @@ def cmd_syslog(udid, network, format, path, filter):
 
 @cli.group()
 def apps():
-    """ application options """
+    """application options"""
     pass
 
 
-@apps.command('list', cls=Command)
-@click.option('-u', '--user', is_flag=True, help='include user apps')
-@click.option('-s', '--system', is_flag=True, help='include system apps')
-@click.option('--size', is_flag=True, help='get app size')
+@apps.command("list", cls=Command)
+@click.option("-u", "--user", is_flag=True, help="include user apps")
+@click.option("-s", "--system", is_flag=True, help="include system apps")
+@click.option("--size", is_flag=True, help="get app size")
 def apps_list(udid, network, format, user, system, size):
-    """ list installed apps `-size` get app size """
+    """list installed apps `-size` get app size"""
     options = {}
     if user:
-        options['ApplicationType'] = 'User'
+        options["ApplicationType"] = "User"
     if system:
-        options['ApplicationType'] = 'System'
+        options["ApplicationType"] = "System"
     if size:
-        options['ReturnAttributes'] = ['CFBundleIdentifier', 'CFBundleVersion',
-                                       'CFBundleDisplayName',
-                                       'StaticDiskUsage', 'DynamicDiskUsage']
-    print_json(InstallationProxyService(udid=udid, network=network, logger=log).apps_info(options),
-               format=format)
+        options["ReturnAttributes"] = [
+            "CFBundleIdentifier",
+            "CFBundleVersion",
+            "CFBundleDisplayName",
+            "StaticDiskUsage",
+            "DynamicDiskUsage",
+        ]
+    print_json(InstallationProxyService(udid=udid, network=network, logger=log).apps_info(options), format=format)
 
 
-@apps.command('uninstall', cls=Command)
-@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
+@apps.command("uninstall", cls=Command)
+@click.option("-b", "--bundle_id", default=None, help="Process app bundleId to filter")
 def uninstall(udid, network, format, bundle_id):
-    """ uninstall app by given bundle_id """
-    print_json(
-        InstallationProxyService(udid=udid, network=network, logger=log).uninstall(bundle_id))
+    """uninstall app by given bundle_id"""
+    print_json(InstallationProxyService(udid=udid, network=network, logger=log).uninstall(bundle_id))
 
 
-@apps.command('install', cls=Command)
-@click.argument('ipa_path', required=True, type=click.Path(exists=True))
+@apps.command("install", cls=Command)
+@click.argument("ipa_path", required=True, type=click.Path(exists=True))
 def install(udid, network, format, ipa_path):
-    """ install given .ipa """
+    """install given .ipa"""
     print_json(InstallationProxyService(udid=udid, network=network, logger=log).install(ipa_path))
 
 
-@apps.command('upgrade', cls=Command)
-@click.option('--ipa_path', type=click.Path(exists=True))
+@apps.command("upgrade", cls=Command)
+@click.option("--ipa_path", type=click.Path(exists=True))
 def upgrade(udid, network, format, ipa_path):
-    """ install given .ipa """
+    """install given .ipa"""
     print_json(InstallationProxyService(udid=udid, network=network, logger=log).upgrade(ipa_path))
 
 
-@apps.command('shell', cls=Command)
-@click.option('-b', '--bundle_id', default=None, required=True,
-              help='Process app bundleId to filter')
-@click.option('-a', '--access_type', default='VendDocuments',
-              type=click.Choice(['VendDocuments', 'VendContainer']),
-              help='filter VendDocuments or VendContainer')
+@apps.command("shell", cls=Command)
+@click.option("-b", "--bundle_id", default=None, required=True, help="Process app bundleId to filter")
+@click.option(
+    "-a",
+    "--access_type",
+    default="VendDocuments",
+    type=click.Choice(["VendDocuments", "VendContainer"]),
+    help="filter VendDocuments or VendContainer",
+)
 def shell(udid, network, format, bundle_id, access_type):
-    """ open an AFC shell for given bundle_id, assuming its profile is installed """
+    """open an AFC shell for given bundle_id, assuming its profile is installed"""
     HouseArrestService(udid=udid, network=network, logger=log).shell(bundle_id, cmd=access_type)
 
 
-@apps.command('launch', cls=Command)
-@click.option('--bundle_id', default=None, help='Process app bundleId to filter')
-@click.option('--app_env', default=None, help='App launch environment variable')
+@apps.command("launch", cls=Command)
+@click.option("--bundle_id", default=None, help="Process app bundleId to filter")
+@click.option("--app_env", default=None, help="App launch environment variable")
 def cmd_launch(udid, network, format, bundle_id: str, app_env: dict):
     """
     Launch a process.
@@ -252,47 +264,48 @@ def cmd_launch(udid, network, format, bundle_id: str, app_env: dict):
     """
     with InstrumentsBase(udid=udid, network=network) as rpc:
         pid = rpc.launch_app(bundle_id=bundle_id, app_env=app_env)
-        print(f'Process launched with pid {pid}')
+        print(f"Process launched with pid {pid}")
 
 
-@apps.command('kill', cls=Command)
-@click.option('-p', '--pid', type=click.INT, default=None, help='Process ID to filter')
-@click.option('-n', '--name', default=None, help='Process app name to filter')
-@click.option('-b', '--bundle_id', default=None, help='Process app bundleId to filter')
+@apps.command("kill", cls=Command)
+@click.option("-p", "--pid", type=click.INT, default=None, help="Process ID to filter")
+@click.option("-n", "--name", default=None, help="Process app name to filter")
+@click.option("-b", "--bundle_id", default=None, help="Process app bundleId to filter")
 def cmd_kill(udid, network, format, pid, name, bundle_id):
-    """ Kill a process by its pid. """
+    """Kill a process by its pid."""
     with InstrumentsBase(udid=udid, network=network) as rpc:
         if bundle_id or name:
             pid = rpc.get_pid(bundle_id, name)
         if not pid:
-            log.warn(f'The {bundle_id, name, pid} did not start')
+            log.warn(f"The {bundle_id, name, pid} did not start")
         rpc.kill_app(pid)
-        print(f'Kill {pid} ...')
+        print(f"Kill {pid} ...")
 
 
 #######################################################################
 
-@cli.command('pcapd', cls=Command)
-@click.argument('outfile', required=True)
+
+@cli.command("pcapd", cls=Command)
+@click.argument("outfile", required=True)
 def cmd_pcapd(udid, network, format, outfile):
-    """ traffic packet capture
+    """traffic packet capture
 
     :param outfile: output file  or (- for stdout)
     """
 
-    if outfile == '-':
+    if outfile == "-":
         out_file = sys.stdout.buffer
         while isinstance(out_file, io.BufferedWriter):
             out_file = out_file.detach()
     else:
-        out_file = open(outfile, 'wb', 0)
+        out_file = open(outfile, "wb", 0)
     num_packets = 0
     stderr_print = functools.partial(print, file=sys.stderr)
 
     def packet_callback(pkt):
         nonlocal num_packets
         num_packets += 1
-        stderr_print('\r{} packets captured.'.format(num_packets), end='', flush=True)
+        stderr_print("\r{} packets captured.".format(num_packets), end="", flush=True)
 
     try:
         packet_extractor = PcapdService(udid=udid, network=network)
@@ -300,7 +313,7 @@ def cmd_pcapd(udid, network, format, outfile):
         packet_dumper.run(packet_callback)
     except KeyboardInterrupt:
         stderr_print()
-        stderr_print('closing capture ...')
+        stderr_print("closing capture ...")
         out_file.close()
     except:
         stderr_print()
@@ -308,45 +321,46 @@ def cmd_pcapd(udid, network, format, outfile):
 
 #######################################################################
 
-@cli.command('battery', cls=Command)
+
+@cli.command("battery", cls=Command)
 def cmd_battery(udid, network, format):
-    """ get device battery
-    """
+    """get device battery"""
     io_registry = DiagnosticsRelayService(udid=udid, network=network, logger=log).get_battery()
     print_json(io_registry, format=format)
-    update_time = io_registry.get('UpdateTime')
-    voltage = io_registry.get('Voltage')
-    instant_amperage = io_registry.get('InstantAmperage')
-    temperature = io_registry.get('Temperature')
+    update_time = io_registry.get("UpdateTime")
+    voltage = io_registry.get("Voltage")
+    instant_amperage = io_registry.get("InstantAmperage")
+    temperature = io_registry.get("Temperature")
     current = abs(instant_amperage)
     power = current * voltage / 1000
     log.info(
-        f"[Battery] time={update_time}, current={current}, voltage={voltage}, power={power}, temperature={temperature}")
+        f"[Battery] time={update_time}, current={current}, voltage={voltage}, power={power}, temperature={temperature}"
+    )
 
 
-@cli.command('enable_developer', cls=Command)
-@click.option('-m', '--mode', type=click.Choice(['1', '2']), default=1, help='')
+@cli.command("enable_developer", cls=Command)
+@click.option("-m", "--mode", type=click.Choice(["1", "2"]), default=1, help="")
 def cmd_enable_developer_mode(udid, network, format, mode):
-    """ enable developer mode """
+    """enable developer mode"""
     serve = AmfiService(udid=udid, network=network, logger=log)
     serve.enable_developer_mode() if int(mode) == 1 else serve.enable_developer_mode_turn_on()
 
 
-@cli.group('simulate-location')
+@cli.group("simulate-location")
 def simulate_location():
-    """ simulate-location options. """
+    """simulate-location options."""
     pass
 
 
-@simulate_location.command('clear', cls=Command)
+@simulate_location.command("clear", cls=Command)
 def simulate_location_clear(udid, network, format, mode):
-    """ clear simulated location """
+    """clear simulated location"""
     SimulateLocation(udid=udid, network=network, logger=log).clear()
 
 
-@simulate_location.command('set', cls=Command)
-@click.argument('latitude', type=click.FLOAT)
-@click.argument('longitude', type=click.FLOAT)
+@simulate_location.command("set", cls=Command)
+@click.argument("latitude", type=click.FLOAT)
+@click.argument("longitude", type=click.FLOAT)
 def simulate_location_set(udid, network, format, latitude, longitude):
     """
     set a simulated location.

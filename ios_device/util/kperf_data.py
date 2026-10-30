@@ -8,10 +8,26 @@ import io
 import json
 import struct
 
-from construct import Struct, Const, Padding, Int32ul, Int64ul, Array, GreedyRange, Byte, FixedSized, \
-    CString, GreedyBytes, this, Adapter, Int16ul, Switch, StreamError
+from construct import (
+    Adapter,
+    Array,
+    Byte,
+    Const,
+    CString,
+    FixedSized,
+    GreedyBytes,
+    GreedyRange,
+    Int16ul,
+    Int32ul,
+    Int64ul,
+    Padding,
+    StreamError,
+    Struct,
+    Switch,
+    this,
+)
 
-from ios_device.util import plistlib, Log
+from ios_device.util import Log, plistlib
 from ios_device.util.kc_data import kc_data_parse
 from ios_device.util.variables import LOG
 
@@ -19,28 +35,28 @@ log = Log.getLogger(LOG.DTXMsg.value)
 
 # from pykdebugparser.kd_buf_parser import BplistAdapter
 
-KDBG_CLASS_MASK = 0xff000000
+KDBG_CLASS_MASK = 0xFF000000
 KDBG_CLASS_OFFSET = 24
-KDBG_CLASS_MAX = 0xff
+KDBG_CLASS_MAX = 0xFF
 
-KDBG_SUBCLASS_MASK = 0x00ff0000
+KDBG_SUBCLASS_MASK = 0x00FF0000
 KDBG_SUBCLASS_OFFSET = 16
-KDBG_SUBCLASS_MAX = 0xff
+KDBG_SUBCLASS_MAX = 0xFF
 
 # ## /* class and subclass mask */
-KDBG_CSC_MASK = 0xffff0000
+KDBG_CSC_MASK = 0xFFFF0000
 KDBG_CSC_OFFSET = KDBG_SUBCLASS_OFFSET
-KDBG_CSC_MAX = 0xffff
+KDBG_CSC_MAX = 0xFFFF
 
-KDBG_CODE_MASK = 0x0000fffc
+KDBG_CODE_MASK = 0x0000FFFC
 KDBG_CODE_OFFSET = 2
-KDBG_CODE_MAX = 0x3fff
+KDBG_CODE_MAX = 0x3FFF
 
-KDBG_EVENTID_MASK = 0xfffffffc
+KDBG_EVENTID_MASK = 0xFFFFFFFC
 KDBG_FUNC_MASK = 0x00000003
-VERSION2_FLAG = b'\x00\x02\xaa\x55'
-VERSION3_FLAG = b'\x00\x03\xaa\x55'
-KD_BUF_FORMAT = '<Q32sQLLQ'
+VERSION2_FLAG = b"\x00\x02\xaa\x55"
+VERSION3_FLAG = b"\x00\x03\xaa\x55"
+KD_BUF_FORMAT = "<Q32sQLLQ"
 
 
 def kdbg_extract_class(Debugid):
@@ -74,6 +90,7 @@ class DgbFuncQual(enum.Enum):
         DBG_FUNC_NONE = 0U
     Event's role in the trace.
     """
+
     DBG_FUNC_NONE = 0
     DBG_FUNC_START = 1
     DBG_FUNC_END = 2
@@ -185,12 +202,12 @@ class DBG_MACH_SCHED(enum.Enum):
     MACH_PROMOTE = 0x7  # /* promoted due to resource (replaced by MACH_PROMOTED) */
     MACH_DEMOTE = 0x8  # /* promotion undone (replaced by MACH_UNPROMOTED) */
     MACH_IDLE = 0x9  # /* processor idling */
-    MACH_STACK_DEPTH = 0xa  # /* stack depth at switch */
-    MACH_MOVED = 0xb  # /* did not use original scheduling decision */
-    MACH_PSET_LOAD_AVERAGE = 0xc
-    MACH_AMP_DEBUG = 0xd
-    MACH_FAILSAFE = 0xe  # /* tripped fixed-pri/RT failsafe */
-    MACH_BLOCK = 0xf  # /* thread block */
+    MACH_STACK_DEPTH = 0xA  # /* stack depth at switch */
+    MACH_MOVED = 0xB  # /* did not use original scheduling decision */
+    MACH_PSET_LOAD_AVERAGE = 0xC
+    MACH_AMP_DEBUG = 0xD
+    MACH_FAILSAFE = 0xE  # /* tripped fixed-pri/RT failsafe */
+    MACH_BLOCK = 0xF  # /* thread block */
     MACH_WAIT = 0x10  # /* thread wait assertion */
     MACH_GET_URGENCY = 0x14  # /* Urgency queried by platform */
     MACH_URGENCY = 0x15  # /* Urgency (RT/BG/NORMAL) communicated
@@ -198,11 +215,11 @@ class DBG_MACH_SCHED(enum.Enum):
     MACH_REMOTE_AST = 0x17  # /* AST signal issued to remote processor */
     MACH_SCHED_CHOOSE_PROCESSOR = 0x18  # /* Result of choose_processor */
     MACH_DEEP_IDLE = 0x19  # /* deep idle on master processor */
-    MACH_SCHED_DECAY_PRIORITY = 0x1a  # /*was MACH_SCHED_DECAY_PRIORITY */
-    MACH_CPU_THROTTLE_DISABLE = 0x1b  # /* Global CPU Throttle Disable */
-    MACH_RW_PROMOTE = 0x1c  # /* promoted due to RW lock promotion */
-    MACH_RW_DEMOTE = 0x1d  # /* promotion due to RW lock undone */
-    MACH_SCHED_MAINTENANCE = 0x1f  # /* periodic maintenance thread */
+    MACH_SCHED_DECAY_PRIORITY = 0x1A  # /*was MACH_SCHED_DECAY_PRIORITY */
+    MACH_CPU_THROTTLE_DISABLE = 0x1B  # /* Global CPU Throttle Disable */
+    MACH_RW_PROMOTE = 0x1C  # /* promoted due to RW lock promotion */
+    MACH_RW_DEMOTE = 0x1D  # /* promotion due to RW lock undone */
+    MACH_SCHED_MAINTENANCE = 0x1F  # /* periodic maintenance thread */
     MACH_DISPATCH = 0x20  # /* context switch completed */
     MACH_QUANTUM_HANDOFF = 0x21  # /* quantum handoff occurred */
     MACH_MULTIQ_DEQUEUE = 0x22  # /* Result of multiq dequeue */
@@ -213,12 +230,12 @@ class DBG_MACH_SCHED(enum.Enum):
     MACH_SCHED_CHANGE_PRIORITY = 0x27  # /* thread sched priority changed */
     MACH_SCHED_UPDATE_REC_CORES = 0x28  # /* Change to recommended processor bitmask */
     MACH_STACK_WAIT = 0x29  # /* Thread could not be switched-to because of kernel stack shortage */
-    MACH_THREAD_BIND = 0x2a  # /* Thread was bound (or unbound) to a processor */
-    MACH_WAITQ_PROMOTE = 0x2b  # /* Thread promoted by waitq boost */
-    MACH_WAITQ_DEMOTE = 0x2c  # /* Thread demoted from waitq boost */
-    MACH_SCHED_LOAD = 0x2d  # /* load update */
-    MACH_REC_CORES_FAILSAFE = 0x2e  # /* recommended processor failsafe kicked in */
-    MACH_SCHED_QUANTUM_EXPIRED = 0x2f  # /* thread quantum expired */
+    MACH_THREAD_BIND = 0x2A  # /* Thread was bound (or unbound) to a processor */
+    MACH_WAITQ_PROMOTE = 0x2B  # /* Thread promoted by waitq boost */
+    MACH_WAITQ_DEMOTE = 0x2C  # /* Thread demoted from waitq boost */
+    MACH_SCHED_LOAD = 0x2D  # /* load update */
+    MACH_REC_CORES_FAILSAFE = 0x2E  # /* recommended processor failsafe kicked in */
+    MACH_SCHED_QUANTUM_EXPIRED = 0x2F  # /* thread quantum expired */
     MACH_EXEC_PROMOTE = 0x30  # /* Thread promoted by exec boost */
     MACH_EXEC_DEMOTE = 0x31  # /* Thread demoted from exec boost */
     MACH_AMP_SIGNAL_SPILL = 0x32  # /* AMP spill signal sent to cpuid */
@@ -229,8 +246,8 @@ class DBG_MACH_SCHED(enum.Enum):
     MACH_PROMOTED_UPDATE = 0x37  # /* was: thread already promoted, but promotion priority changed */
     MACH_QUIESCENT_COUNTER = 0x38  # /* quiescent counter tick */
     MACH_TURNSTILE_USER_CHANGE = 0x39  # /* base priority change because of turnstile */
-    MACH_AMP_RECOMMENDATION_CHANGE = 0x3a  # /* Thread group recommendation change */
-    MACH_AMP_PERFCTL_POLICY_CHANGE = 0x3b  # /* AMP policy for perfctl cluster recommendation */
+    MACH_AMP_RECOMMENDATION_CHANGE = 0x3A  # /* Thread group recommendation change */
+    MACH_AMP_PERFCTL_POLICY_CHANGE = 0x3B  # /* AMP policy for perfctl cluster recommendation */
     MACH_TURNSTILE_KERNEL_CHANGE = 0x40  # /* sched priority change because of turnstile */
     MACH_SCHED_WI_AUTO_JOIN = 0x41  # /* work interval auto join events */
     MACH_SCHED_WI_DEFERRED_FINISH = 0x42  # /* work interval pending finish events for auto-join thread groups */
@@ -248,8 +265,8 @@ class DBG_MACH_SCHED_CLUTCH(enum.Enum):
     MACH_SCHED_EDGE_REBAL_RUNNABLE = 0x7  # /* Rebalance runnable threads on a foreign cluster */
     MACH_SCHED_EDGE_REBAL_RUNNING = 0x8  # /* Rebalance running threads on a foreign cluster */
     MACH_SCHED_EDGE_SHOULD_YIELD = 0x9  # /* Edge decisions for thread yield */
-    MACH_SCHED_CLUTCH_THR_COUNT = 0xa  # /* Clutch scheduler runnable thread counts */
-    MACH_SCHED_EDGE_LOAD_AVG = 0xb  # /* Per-cluster load average */
+    MACH_SCHED_CLUTCH_THR_COUNT = 0xA  # /* Clutch scheduler runnable thread counts */
+    MACH_SCHED_EDGE_LOAD_AVG = 0xB  # /* Per-cluster load average */
 
 
 class DBG_MACH_WORKGROUP(enum.Enum):
@@ -272,10 +289,10 @@ class DBG_MACH_IPC(enum.Enum):
     MACH_IPC_VOUCHER_CREATE = 0x7  # /* Voucher added to global voucher hashtable */
     MACH_IPC_VOUCHER_CREATE_ATTR_DATA = 0x8  # /* Attr data for newly created voucher */
     MACH_IPC_VOUCHER_DESTROY = 0x9  # /* Voucher removed from global voucher hashtable */
-    MACH_IPC_KMSG_INFO = 0xa  # /* Send/Receive info for a kmsg */
-    MACH_IPC_KMSG_LINK = 0xb  # /* link a kernel kmsg pointer to user mach_msg_header_t */
-    MACH_IPC_PORT_ENTRY_MODIFY = 0xc  # /* A port space gained or lost a port right (reference) */
-    MACH_IPC_DESTROY_GUARDED_DESC = 0xd  # /* Unable to receive a guarded descriptor */
+    MACH_IPC_KMSG_INFO = 0xA  # /* Send/Receive info for a kmsg */
+    MACH_IPC_KMSG_LINK = 0xB  # /* link a kernel kmsg pointer to user mach_msg_header_t */
+    MACH_IPC_PORT_ENTRY_MODIFY = 0xC  # /* A port space gained or lost a port right (reference) */
+    MACH_IPC_DESTROY_GUARDED_DESC = 0xD  # /* Unable to receive a guarded descriptor */
 
 
 class DBG_MACH_THREAD_GROUP(enum.Enum):
@@ -338,7 +355,7 @@ class DBG_MACH_SFI(enum.Enum):
     SFI_WAIT_CANCELED = 0x7
     SFI_PID_SET_MANAGED = 0x8
     SFI_PID_CLEAR_MANAGED = 0x9
-    SFI_GLOBAL_DEFER = 0xa
+    SFI_GLOBAL_DEFER = 0xA
 
 
 class DBG_MACH_ZALLOC(enum.Enum):
@@ -352,20 +369,20 @@ class DBG_MACH_RESOURCE(enum.Enum):
     RMON_CPUUSAGE_VIOLATED_K32A = 0x004
     RMON_CPUUSAGE_VIOLATED_K32B = 0x005
     RMON_CPUUSAGE_RESUMED = 0x006
-    RMON_DISABLE_CPUUSAGE_MONITOR = 0x00f
+    RMON_DISABLE_CPUUSAGE_MONITOR = 0x00F
 
     RMON_ENABLE_CPUWAKES_MONITOR = 0x011
     RMON_CPUWAKES_VIOLATED = 0x012
     RMON_CPUWAKES_VIOLATED_K32A = 0x014
     RMON_CPUWAKES_VIOLATED_K32B = 0x015
-    RMON_DISABLE_CPUWAKES_MONITOR = 0x01f
+    RMON_DISABLE_CPUWAKES_MONITOR = 0x01F
 
     RMON_ENABLE_IO_MONITOR = 0x021
     RMON_LOGWRITES_VIOLATED = 0x022
     RMON_PHYSWRITES_VIOLATED = 0x023
     RMON_LOGWRITES_VIOLATED_K32A = 0x024
     RMON_LOGWRITES_VIOLATED_K32B = 0x025
-    RMON_DISABLE_IO_MONITOR = 0x02f
+    RMON_DISABLE_IO_MONITOR = 0x02F
 
 
 class DBG_NETWORK(enum.Enum):
@@ -585,8 +602,8 @@ class DBG_MONOTONIC(enum.Enum):
     DBG_MT_DEBUG = 2
     DBG_MT_RESOURCES_PROC_EXIT = 3
     DBG_MT_RESOURCES_THR_EXIT = 4
-    DBG_MT_TMPTH = 0xfe
-    DBG_MT_TMPCPU = 0xff
+    DBG_MT_TMPTH = 0xFE
+    DBG_MT_TMPCPU = 0xFF
 
 
 class DBG_MISC(enum.Enum):
@@ -595,7 +612,7 @@ class DBG_MISC(enum.Enum):
     DBG_EVENT = 0x10
     DBG_MISC_INSTRUMENTS = 0x11
     DBG_MISC_INSTRUMENTSBT = 0x12
-    DBG_MISC_LAYOUT = 0x1a
+    DBG_MISC_LAYOUT = 0x1A
     DBG_BUFFER = 0x20
 
 
@@ -604,23 +621,23 @@ class DBG_DYLD(enum.Enum):
 
 
 class DBG_DYLD_UUID(enum.Enum):
-    DBG_DYLD_UUID_MAP_A = (0)
-    DBG_DYLD_UUID_MAP_B = (1)
-    DBG_DYLD_UUID_MAP_32_A = (2)
-    DBG_DYLD_UUID_MAP_32_B = (3)
-    DBG_DYLD_UUID_MAP_32_C = (4)
-    DBG_DYLD_UUID_UNMAP_A = (5)
-    DBG_DYLD_UUID_UNMAP_B = (6)
-    DBG_DYLD_UUID_UNMAP_32_A = (7)
-    DBG_DYLD_UUID_UNMAP_32_B = (8)
-    DBG_DYLD_UUID_UNMAP_32_C = (9)
-    DBG_DYLD_UUID_SHARED_CACHE_A = (10)
-    DBG_DYLD_UUID_SHARED_CACHE_B = (11)
-    DBG_DYLD_UUID_SHARED_CACHE_32_A = (12)
-    DBG_DYLD_UUID_SHARED_CACHE_32_B = (13)
-    DBG_DYLD_UUID_SHARED_CACHE_32_C = (14)
-    DBG_DYLD_AOT_UUID_MAP_A = (15)
-    DBG_DYLD_AOT_UUID_MAP_B = (16)
+    DBG_DYLD_UUID_MAP_A = 0
+    DBG_DYLD_UUID_MAP_B = 1
+    DBG_DYLD_UUID_MAP_32_A = 2
+    DBG_DYLD_UUID_MAP_32_B = 3
+    DBG_DYLD_UUID_MAP_32_C = 4
+    DBG_DYLD_UUID_UNMAP_A = 5
+    DBG_DYLD_UUID_UNMAP_B = 6
+    DBG_DYLD_UUID_UNMAP_32_A = 7
+    DBG_DYLD_UUID_UNMAP_32_B = 8
+    DBG_DYLD_UUID_UNMAP_32_C = 9
+    DBG_DYLD_UUID_SHARED_CACHE_A = 10
+    DBG_DYLD_UUID_SHARED_CACHE_B = 11
+    DBG_DYLD_UUID_SHARED_CACHE_32_A = 12
+    DBG_DYLD_UUID_SHARED_CACHE_32_B = 13
+    DBG_DYLD_UUID_SHARED_CACHE_32_C = 14
+    DBG_DYLD_AOT_UUID_MAP_A = 15
+    DBG_DYLD_AOT_UUID_MAP_B = 16
 
 
 class DBG_DKRW(enum.Enum):
@@ -757,8 +774,8 @@ class TURNSTILE_HEAP_OPERATIONS(enum.Enum):
     TURNSTILE_ADDED_TO_THREAD_HEAP = 0x7
     TURNSTILE_REMOVED_FROM_THREAD_HEAP = 0x8
     TURNSTILE_MOVED_IN_THREAD_HEAP = 0x9
-    TURNSTILE_UPDATE_STOPPED_BY_LIMIT = 0xa
-    THREAD_NOT_WAITING_ON_TURNSTILE = 0xb
+    TURNSTILE_UPDATE_STOPPED_BY_LIMIT = 0xA
+    THREAD_NOT_WAITING_ON_TURNSTILE = 0xB
 
 
 class TURNSTILE_PRIORITY_OPERATIONS(enum.Enum):
@@ -819,6 +836,7 @@ class DBG_DAEMON(enum.Enum):
 # 0x7010010	TRACE_STRING_THREADNAME
 # 0x7010014	TRACE_STRING_THREADNAME_PREV
 
+
 def trace_data_new_thread(parser, data):
     parser.threads_pids[data.args[0]] = data.args[1]
     parser.threads_tids[data.tid] = data.args[0]
@@ -830,7 +848,7 @@ def trace_data_exec(parser, data):
 
 
 def trace_string_new_thread(parser, data):
-    name = data.buf_data.replace(b'\x00', b'').decode()
+    name = data.buf_data.replace(b"\x00", b"").decode()
     parser.tid_names[data.tid] = name
     parser.threads_tids[data.tid] = data.tid
     pid = parser.threads_pids.get(data.tid)
@@ -839,7 +857,7 @@ def trace_string_new_thread(parser, data):
 
 
 def trace_string_exec(parser, data):
-    name = data.buf_data.replace(b'\x00', b'').decode()
+    name = data.buf_data.replace(b"\x00", b"").decode()
     parser.tid_names[data.tid] = name
     parser.threads_tids[data.tid] = data.tid
     pid = parser.threads_pids.get(data.tid)
@@ -848,12 +866,12 @@ def trace_string_exec(parser, data):
 
 
 def trace_string_proc_exit(parser, data):
-    name = data.buf_data.replace(b'\x00', b'').decode()
+    name = data.buf_data.replace(b"\x00", b"").decode()
     return name
 
 
 def trace_string_thread_name(parser, data):
-    name = data.buf_data.replace(b'\x00', b'').decode()
+    name = data.buf_data.replace(b"\x00", b"").decode()
     # Thread names are not process names: keep them apart so a pthread_setname_np()
     # cannot overwrite the process name used for pid attribution.
     parser.thread_names[data.tid] = name
@@ -861,10 +879,9 @@ def trace_string_thread_name(parser, data):
 
 
 def trace_string_thread_name_prev(parser, data):
-    name = data.buf_data.replace(b'\x00', b'').decode()
+    name = data.buf_data.replace(b"\x00", b"").decode()
     parser.thread_names[data.tid] = name
     parser.threads_tids[data.tid] = data.tid
-
 
 
 def trace_unknown(parser, data):
@@ -879,7 +896,7 @@ trace_handlers = {
     # 0x7010000: trace_unknown,
     0x7010004: trace_string_new_thread,
     0x7010008: trace_string_exec,
-    0x701000c: trace_string_proc_exit,
+    0x701000C: trace_string_proc_exit,
     0x7010010: trace_string_thread_name,
     0x7010014: trace_string_thread_name_prev,
     # 0x7020000: trace_unknown,
@@ -896,20 +913,20 @@ def decode_trace_data(parser, data):
 
 
 kd_threadmap = Struct(
-    'tid' / Int64ul,
-    'pid' / Int32ul,
-    'process' / FixedSized(0x14, CString('utf8')),
+    "tid" / Int64ul,
+    "pid" / Int32ul,
+    "process" / FixedSized(0x14, CString("utf8")),
 )
 
 kd_header_v2 = Struct(
-    'tag' / Int32ul,
-    'number_of_treads' / Int32ul,
+    "tag" / Int32ul,
+    "number_of_treads" / Int32ul,
     Padding(12),
-    'is_64bit' / Int32ul,
-    'tick_frequency' / Int64ul,
+    "is_64bit" / Int32ul,
+    "tick_frequency" / Int64ul,
     Padding(0x100),
-    'threadmap' / Array(lambda ctx: ctx.number_of_treads, kd_threadmap),
-    '_pad' / GreedyRange(Const(0, Byte)),
+    "threadmap" / Array(lambda ctx: ctx.number_of_treads, kd_threadmap),
+    "_pad" / GreedyRange(Const(0, Byte)),
 )
 
 
@@ -922,33 +939,31 @@ class BplistAdapter(Adapter):
 
 
 class KCdataParse(Adapter):
-
     def _decode(self, obj, context, path):
         return kc_data_parse(obj)
 
 
 kd_header_v3 = Struct(
-    'tag' / Int32ul,
-    'sub_tag' / Int32ul,
-    'length' / Int64ul,
-    'timebase_numer' / Int32ul,
-    'timebase_denom' / Int32ul,
-    'timestamp' / Int64ul,
-    'walltime_secs' / Int64ul,
-    'walltime_usecs' / Int32ul,
-    'timezone_minuteswest' / Int32ul,
-    'timezone_dst' / Int32ul,
-    'flags' / Int32ul,
+    "tag" / Int32ul,
+    "sub_tag" / Int32ul,
+    "length" / Int64ul,
+    "timebase_numer" / Int32ul,
+    "timebase_denom" / Int32ul,
+    "timestamp" / Int64ul,
+    "walltime_secs" / Int64ul,
+    "walltime_usecs" / Int32ul,
+    "timezone_minuteswest" / Int32ul,
+    "timezone_dst" / Int32ul,
+    "flags" / Int32ul,
 )
 
 CLASS_DICT = vars()
 
 
 class KdBufParser:
-
     def __init__(self, timestamp, args_buf, tid, debug_id, cpuid, unused):
         self.timestamp = timestamp
-        self.args = struct.unpack('<QQQQ', args_buf)
+        self.args = struct.unpack("<QQQQ", args_buf)
         self.buf_data = args_buf
         self.tid = tid
         self.cpuid = cpuid
@@ -969,28 +984,30 @@ class KdBufParser:
             # A short read can only be a truncated trailing record: kd_buf is a
             # fixed 64-byte struct, so drop it instead of resynchronising.
             if len(buf) != 64:
-                log.warning(f'KdBuf truncated record: {len(buf)} of 64 bytes, dropped')
+                log.warning(f"KdBuf truncated record: {len(buf)} of 64 bytes, dropped")
                 return
             _cls = cls(*struct.unpack(KD_BUF_FORMAT, buf))
             decode_trace_data(parser, _cls)
             yield _cls
 
     def __str__(self):
-        return (f'KdBufParser(timestamp={self.timestamp} tid={self.tid} '
-                f'debug_id={self.debug_id:#010x} class={self.class_code:#04x} '
-                f'subclass={self.subclass_code:#04x} code={self.final_code} '
-                f'func={self.func_code} args={self.args})')
+        return (
+            f"KdBufParser(timestamp={self.timestamp} tid={self.tid} "
+            f"debug_id={self.debug_id:#010x} class={self.class_code:#04x} "
+            f"subclass={self.subclass_code:#04x} code={self.final_code} "
+            f"func={self.func_code} args={self.args})"
+        )
 
 
 def _format_class(classes, code):
     if classes:
         try:
             classes_name = classes(code).name
-            return classes_name, f'{classes_name:<18}'
+            return classes_name, f"{classes_name:<18}"
         except ValueError:
-            return None, f'''{'Error(' + (str(code)) + ")"}'''
+            return None, f"""{"Error(" + (str(code)) + ")"}"""
     else:
-        return None, f'''{'Error(' + (str(code)) + ")"}'''
+        return None, f"""{"Error(" + (str(code)) + ")"}"""
 
 
 SSHOT_TAG = 0x8002
@@ -998,49 +1015,54 @@ IMAGES_TAG = 0x8004
 KERNEL_EXTENSIONS_TAG = 0x8005
 CONFIG_TAG = 0x8006
 KERNEL_TAG = 0x8008
-MACHINE_TAG = 0x8c00
-CPU_EVENTS_TAG = 0x8c01
+MACHINE_TAG = 0x8C00
+CPU_EVENTS_TAG = 0x8C01
 CPU_EVENTS_TAG2 = 0x8013
-CPU_EVENTS_NULL = 0x800e
+CPU_EVENTS_NULL = 0x800E
 RAW_VERSION3 = 0x00001000
 V3_NULL_CHUNK = 0x00002000
-V3_CONFIG = 0x00001b00
-V3_CPU_HEADER_TAG = 0x00001c00
-V3_THREAD_MAP = 0x00001d00
-V3_RAW_EVENTS = 0x00001e00
+V3_CONFIG = 0x00001B00
+V3_CPU_HEADER_TAG = 0x00001C00
+V3_THREAD_MAP = 0x00001D00
+V3_RAW_EVENTS = 0x00001E00
 
 kd_cpumap = Struct(
-    'cpu_id' / Int32ul,
-    'flags' / Int32ul,
-    'name' / FixedSized(8, CString('utf8')),
-    'args' / Array(6, Int32ul),
+    "cpu_id" / Int32ul,
+    "flags" / Int32ul,
+    "name" / FixedSized(8, CString("utf8")),
+    "args" / Array(6, Int32ul),
 )
 
 kd_cpumap_header = Struct(
-    'version_no' / Int32ul,
-    'cpu_count' / Int32ul,
+    "version_no" / Int32ul,
+    "cpu_count" / Int32ul,
 )
 
 ktrace_pack = Struct(
-    'tag' / Int32ul,
-    'major' / Int16ul,
-    'minor' / Int16ul,
-    'length' / Int64ul,
-    'data' / Switch(this.tag,
-                    {MACHINE_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
-                     CONFIG_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
-                     KERNEL_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
-                     KERNEL_EXTENSIONS_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
-                     IMAGES_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
-                     SSHOT_TAG: FixedSized(this.length, KCdataParse(GreedyBytes)),
-                     CPU_EVENTS_TAG: FixedSized(this.length, GreedyBytes),
-                     CPU_EVENTS_TAG2: FixedSized(this.length, GreedyBytes),
-                     CPU_EVENTS_NULL: FixedSized(this.length, GreedyBytes),
-                     V3_NULL_CHUNK: FixedSized(this.length, GreedyBytes),
-                     V3_RAW_EVENTS: FixedSized(this.length, GreedyBytes),
-                     V3_CPU_HEADER_TAG: kd_cpumap_header,
-                     V3_THREAD_MAP: FixedSized(this.length, GreedyRange(kd_threadmap))},
-                    default=GreedyBytes),
+    "tag" / Int32ul,
+    "major" / Int16ul,
+    "minor" / Int16ul,
+    "length" / Int64ul,
+    "data"
+    / Switch(
+        this.tag,
+        {
+            MACHINE_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
+            CONFIG_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
+            KERNEL_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
+            KERNEL_EXTENSIONS_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
+            IMAGES_TAG: FixedSized(this.length, BplistAdapter(GreedyBytes)),
+            SSHOT_TAG: FixedSized(this.length, KCdataParse(GreedyBytes)),
+            CPU_EVENTS_TAG: FixedSized(this.length, GreedyBytes),
+            CPU_EVENTS_TAG2: FixedSized(this.length, GreedyBytes),
+            CPU_EVENTS_NULL: FixedSized(this.length, GreedyBytes),
+            V3_NULL_CHUNK: FixedSized(this.length, GreedyBytes),
+            V3_RAW_EVENTS: FixedSized(this.length, GreedyBytes),
+            V3_CPU_HEADER_TAG: kd_cpumap_header,
+            V3_THREAD_MAP: FixedSized(this.length, GreedyRange(kd_threadmap)),
+        },
+        default=GreedyBytes,
+    ),
 )
 
 
@@ -1080,12 +1102,12 @@ class KperfData:
     def _format_process(self, tid):
         pid = self.threads_pids.get(tid)
         process_name = self.tid_names.get(tid)
-        return pid, process_name, f'{process_name}({pid})' if pid else f'Error: tid {tid}'
+        return pid, process_name, f"{process_name}({pid})" if pid else f"Error: tid {tid}"
 
     def parse(self, kd_buf: bytes):
         buf_io = io.BytesIO(kd_buf)
         version = kd_buf[:4]
-        if version == b'\x07X\xa2Y':
+        if version == b"\x07X\xa2Y":
             yield kc_data_parse(buf_io.read())
         elif version == VERSION2_FLAG:
             yield from self._parse_v2(buf_io)
@@ -1123,8 +1145,9 @@ class KperfData:
                 GreedyRange(Const(0, Byte)).parse_stream(buf_io)
             elif raw_events.tag == V3_CPU_HEADER_TAG:
                 self.cpu_header = raw_events
-                self.kd_cpu_map = FixedSized(raw_events.length - kd_cpumap_header.sizeof(),
-                                             GreedyRange(kd_cpumap)).parse_stream(buf_io)
+                self.kd_cpu_map = FixedSized(
+                    raw_events.length - kd_cpumap_header.sizeof(), GreedyRange(kd_cpumap)
+                ).parse_stream(buf_io)
             elif raw_events.tag == V3_RAW_EVENTS:
                 # A raw-events chunk is an 8-byte zero prefix followed by
                 # `length // 64` kd_buf records; decode the chunk payload, not the
@@ -1147,20 +1170,20 @@ class KperfData:
                 continue
             if self.filter_process and self.filter_process != process_name:
                 continue
-            formatted_data = ''
-            formatted_data += f'{process_str:<27}'
+            formatted_data = ""
+            formatted_data += f"{process_str:<27}"
             if event.event_id in self.trace_codes:
-                name = self.trace_codes[event.event_id] + f' ({hex(event.event_id)})'
+                name = self.trace_codes[event.event_id] + f" ({hex(event.event_id)})"
             else:
                 name = hex(event.event_id)
 
-            formatted_data += f'{name:<60}'
+            formatted_data += f"{name:<60}"
             classes_name, _str = _format_class(DebugClasses, event.class_code)
-            formatted_data += f'{_str:<18}'
+            formatted_data += f"{_str:<18}"
             classes_name, _str = _format_class(CLASS_DICT.get(classes_name), event.subclass_code)
-            formatted_data += f'{_str:<30}'
+            formatted_data += f"{_str:<30}"
             try:
-                formatted_data += f'{DgbFuncQual(event.func_code).name:<15}'
+                formatted_data += f"{DgbFuncQual(event.func_code).name:<15}"
             except ValueError:
-                formatted_data += f'{"Error":<16}'
+                formatted_data += f"{'Error':<16}"
             yield formatted_data

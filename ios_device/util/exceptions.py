@@ -1,6 +1,6 @@
 from errno import ENOENT, ENOTDIR
 
-from .constants import AFC_E_UNKNOWN_ERROR, AFC_ERROR_NAMES, AFC_E_OBJECT_NOT_FOUND, AFC_E_OBJECT_IS_DIR
+from .constants import AFC_E_OBJECT_IS_DIR, AFC_E_OBJECT_NOT_FOUND, AFC_E_UNKNOWN_ERROR, AFC_ERROR_NAMES
 
 AFC_TO_OS_ERROR_CODES = {
     AFC_E_OBJECT_NOT_FOUND: ENOENT,
@@ -94,8 +94,8 @@ class iOSError(PyiOSDeviceException, OSError):
         self.afc_errno = afc_errno
 
     def __str__(self):
-        name = AFC_ERROR_NAMES.get(self.afc_errno, 'UNKNOWN ERROR')
-        return f'{self.__class__.__name__}[afc={self.afc_errno}/{name}][os={self.errno}] {self.strerror}'
+        name = AFC_ERROR_NAMES.get(self.afc_errno, "UNKNOWN ERROR")
+        return f"{self.__class__.__name__}[afc={self.afc_errno}/{name}][os={self.errno}] {self.strerror}"
 
 
 class iFileNotFoundError(PyiOSDeviceException, FileNotFoundError):

@@ -1,22 +1,23 @@
 """
 Plist Service - handles parsing and formatting plist content
 """
+
 import plistlib
 import re
-import socket
 import ssl
 import struct
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from ios_device.util import Log
 from ios_device.util.exceptions import MuxError
 from ios_device.util.usbmux import USBMux, connect_tun_device
 
-__all__ = ['PlistService']
+__all__ = ["PlistService"]
 
 from ios_device.util.utils import set_keepalive
 
 log = Log.getLogger(__name__)
-HARDWARE_PLATFORM_SUB = re.compile(r'[^\w<>/ \-_0-9\"\'\\=.?!+]+').sub
+HARDWARE_PLATFORM_SUB = re.compile(r"[^\w<>/ \-_0-9\"\'\\=.?!+]+").sub
 
 
 class PlistService:
@@ -56,7 +57,7 @@ class PlistService:
         while total_sent < len(msg):
             sent = self.sock.send(msg[total_sent:])
             if sent == 0:
-                raise MuxError('socket connection broken')
+                raise MuxError("socket connection broken")
             total_sent = total_sent + sent
 
     def recv(self, length=4096, timeout=-1):
@@ -65,8 +66,8 @@ class PlistService:
                 self.sock.settimeout(timeout)
             buf = self.sock.recv(length)
             return buf
-        except Exception as E:
-            return b''
+        except Exception:
+            return b""
 
     def close(self):
         self.sock.close()
@@ -87,23 +88,23 @@ class PlistService:
         resp = self.recv_exact(4)
         if not resp or len(resp) != 4:
             return None
-        payload = self.recv_exact(struct.unpack('>L', resp)[0])
-        log.debug(f'接收 Plist byte: {payload}')
+        payload = self.recv_exact(struct.unpack(">L", resp)[0])
+        log.debug(f"接收 Plist byte: {payload}")
 
         if not payload:
             return None
-        if payload.startswith(b'bplist00') or payload.startswith(b'<?xml'):
+        if payload.startswith(b"bplist00") or payload.startswith(b"<?xml"):
             data = plistlib.loads(payload)
-            log.debug(f'接收 Plist data: {data}')
+            log.debug(f"接收 Plist data: {data}")
             return data
         else:
-            raise ValueError('Received invalid data: {}'.format(payload[:100].decode('hex')))
+            raise ValueError("Received invalid data: {}".format(payload[:100].decode("hex")))
 
     def send_plist(self, data):
-        log.debug(f'发送 Plist: {data}')
+        log.debug(f"发送 Plist: {data}")
         payload = plistlib.dumps(data)
-        payload_len = struct.pack('>L', len(payload))
-        log.debug(f'发送 Plist byte: {payload_len + payload}')
+        payload_len = struct.pack(">L", len(payload))
+        log.debug(f"发送 Plist byte: {payload_len + payload}")
         return self.sock.send(payload_len + payload)
 
     def plist_request(self, request):

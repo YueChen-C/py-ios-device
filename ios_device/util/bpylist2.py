@@ -1,13 +1,10 @@
 import copy
-import sys
-from typing import Mapping, Dict
-import uuid
-
-from datetime import datetime, timezone
-from typing import Optional
-from . import plistlib
-
 import dataclasses
+import uuid
+from datetime import datetime, timezone
+from typing import Dict, Mapping, Optional
+
+from . import plistlib
 
 
 class Error(Exception):
@@ -23,16 +20,13 @@ def _verify_dataclass_has_fields(dataclass, plist_obj):
 
     dataclass_fields = dataclasses.fields(dataclass)
 
-    skip_fields = {'$class'}
+    skip_fields = {"$class"}
 
     fields_to_verify = plist_obj.keys() - skip_fields
-    fields_with_no_dots = {
-        (f if not f.startswith('NS.') else 'NS' + f[3:])
-        for f in fields_to_verify}
+    fields_with_no_dots = {(f if not f.startswith("NS.") else "NS" + f[3:]) for f in fields_to_verify}
     unmapped_fields = fields_with_no_dots - {f.name for f in dataclass_fields}
     if unmapped_fields:
-        raise Error(
-            f"Unmapped fields: {unmapped_fields} for class {dataclass}")
+        raise Error(f"Unmapped fields: {unmapped_fields} for class {dataclass}")
 
 
 class DataclassArchiver:
@@ -70,8 +64,8 @@ class DataclassArchiver:
     def encode_archive(obj, archive):
         for field in dataclasses.fields(type(obj)):
             archive_field_name = field.name
-            if archive_field_name[:2] == 'NS':
-                archive_field_name = 'NS.' + archive_field_name[2:]
+            if archive_field_name[:2] == "NS":
+                archive_field_name = "NS." + archive_field_name[2:]
             archive.encode(archive_field_name, getattr(obj, field.name))
 
     @classmethod
@@ -80,8 +74,8 @@ class DataclassArchiver:
         field_values = {}
         for field in dataclasses.fields(cls):
             archive_field_name = field.name
-            if archive_field_name[:2] == 'NS':
-                archive_field_name = 'NS.' + archive_field_name[2:]
+            if archive_field_name[:2] == "NS":
+                archive_field_name = "NS." + archive_field_name[2:]
             value = archive.decode(archive_field_name)
             if isinstance(value, bytearray):
                 value = bytes(value)
@@ -115,12 +109,12 @@ class timestamp(float):
     def encode_archive(obj, archive):
         """Delegate for packing timestamps back into the NSDate archive format"""
         offset = obj - timestamp.unix2apple_epoch_delta
-        archive.encode('NS.time', offset)
+        archive.encode("NS.time", offset)
 
     @staticmethod
     def decode_archive(archive):
         """Delegate for unpacking NSDate objects from an archiver.Archive"""
-        offset = archive.decode('NS.time')
+        offset = archive.decode("NS.time")
         return timestamp(timestamp.unix2apple_epoch_delta + offset)
 
     def __str__(self):
@@ -135,17 +129,7 @@ class NSMutableData(DataclassArchiver):
     NSdata: Optional[bytes] = None
 
     def __repr__(self):
-        return "NSMutableData(%s bytes)" % (
-            'null' if self.NSdata is None else len(self.NSdata))
-
-
-@dataclasses.dataclass()
-class NSMutableData(DataclassArchiver):
-    NSdata: Optional[bytes] = None
-
-    def __repr__(self):
-        return "NSMutableData(%s bytes)" % (
-            'null' if self.NSdata is None else len(self.NSdata))
+        return "NSMutableData(%s bytes)" % ("null" if self.NSdata is None else len(self.NSdata))
 
 
 # The magic number which Cocoa uses as an implementation version.
@@ -164,7 +148,7 @@ def unarchive(plist: bytes) -> object:
 
 def unarchive_file(path: str) -> object:
     """Loads an archive from a file path."""
-    with open(path, 'rb') as fd:
+    with open(path, "rb") as fd:
         return unarchive(fd.read())
 
 
@@ -237,8 +221,8 @@ class DictArchive:
 
     @staticmethod
     def decode_archive(archive_obj):
-        key_uids = archive_obj.decode('NS.keys')
-        val_uids = archive_obj.decode('NS.objects')
+        key_uids = archive_obj.decode("NS.keys")
+        val_uids = archive_obj.decode("NS.objects")
 
         count = len(key_uids)
         d = dict()
@@ -256,7 +240,7 @@ class ListArchive:
 
     @staticmethod
     def decode_archive(archive_obj):
-        uids = archive_obj.decode('NS.objects')
+        uids = archive_obj.decode("NS.objects")
         return [archive_obj.decode_index(index) for index in uids]
 
 
@@ -265,7 +249,7 @@ class SetArchive:
 
     @staticmethod
     def decode_archive(archive_obj):
-        uids = archive_obj.decode('NS.objects')
+        uids = archive_obj.decode("NS.objects")
         return {archive_obj.decode_index(index) for index in uids}
 
 
@@ -321,24 +305,24 @@ class Unarchive:
     def unpack_archive_header(self):
         plist = plistlib.loads(self.input)
 
-        archiver = plist.get('$archiver')
-        if archiver != 'NSKeyedArchiver':
+        archiver = plist.get("$archiver")
+        if archiver != "NSKeyedArchiver":
             raise UnsupportedArchiver(archiver)
 
-        version = plist.get('$version')
+        version = plist.get("$version")
         if version != NSKeyedArchiveVersion:
             raise UnsupportedArchiveVersion(version)
 
-        top = plist.get('$top')
+        top = plist.get("$top")
         if not isinstance(top, dict):
             raise MissingTopObject(plist)
 
-        top_uid = top.get('root')
+        top_uid = top.get("root")
         if top_uid is None:
             raise MissingTopObjectUID(top)
         self.top_uid = top_uid
 
-        self.objects = plist.get('$objects')
+        self.objects = plist.get("$objects")
         if not isinstance(self.objects, list):
             raise MissingObjectsArray(plist)
 
@@ -349,7 +333,7 @@ class Unarchive:
         if not isinstance(meta, dict):
             raise MissingClassMetaData(index, meta)
 
-        name = meta.get('$classname')
+        name = meta.get("$classname")
         if not isinstance(name, str):
             raise MissingClassName(meta)
 
@@ -389,7 +373,7 @@ class Unarchive:
             self.unpacked_uids[index] = obj
             return raw_obj
 
-        class_uid = raw_obj.get('$class')
+        class_uid = raw_obj.get("$class")
         if class_uid is None:
             raise MissingClassUID(raw_obj)
 
@@ -450,7 +434,7 @@ class Archive:
         # cache/map of already archived objects to uids (to avoid cycles)
         self.ref_map = {}
         # objects that go directly into the archive, always start with $null
-        self.objects = ['$null']
+        self.objects = ["$null"]
 
     def uid_for_archiver(self, archiver: [type, str]) -> plistlib.UID:
         """
@@ -472,10 +456,7 @@ class Archive:
         val = plistlib.UID(len(self.objects))
         self.class_map[archiver] = val
 
-        self.objects.append({
-            '$classes': [archiver],
-            '$classname': archiver
-        })
+        self.objects.append({"$classes": [archiver], "$classname": archiver})
 
         return val
 
@@ -488,18 +469,18 @@ class Archive:
         return self.archive(val)
 
     def encode_list(self, objs, archive_obj):
-        archiver_uid = self.uid_for_archiver('NSArray')
-        archive_obj['$class'] = archiver_uid
-        archive_obj['NS.objects'] = [self.archive(obj) for obj in objs]
+        archiver_uid = self.uid_for_archiver("NSArray")
+        archive_obj["$class"] = archiver_uid
+        archive_obj["NS.objects"] = [self.archive(obj) for obj in objs]
 
     def encode_set(self, objs, archive_obj):
-        archiver_uid = self.uid_for_archiver('NSSet')
-        archive_obj['$class'] = archiver_uid
-        archive_obj['NS.objects'] = [self.archive(obj) for obj in objs]
+        archiver_uid = self.uid_for_archiver("NSSet")
+        archive_obj["$class"] = archiver_uid
+        archive_obj["NS.objects"] = [self.archive(obj) for obj in objs]
 
     def encode_dict(self, obj, archive_obj):
-        archiver_uid = self.uid_for_archiver('NSDictionary')
-        archive_obj['$class'] = archiver_uid
+        archiver_uid = self.uid_for_archiver("NSDictionary")
+        archive_obj["$class"] = archiver_uid
 
         keys = []
         vals = []
@@ -507,8 +488,8 @@ class Archive:
             keys.append(self.archive(k))
             vals.append(self.archive(obj[k]))
 
-        archive_obj['NS.keys'] = keys
-        archive_obj['NS.objects'] = vals
+        archive_obj["NS.keys"] = keys
+        archive_obj["NS.objects"] = vals
 
     def encode_top_level(self, obj, archive_obj):
         """Encode obj and store the encoding in archive_obj"""
@@ -530,7 +511,7 @@ class Archive:
                 raise MissingClassMapping(obj, ARCHIVE_CLASS_MAP)
 
             archiver_uid = self.uid_for_archiver(archiver)
-            archive_obj['$class'] = archiver_uid
+            archive_obj["$class"] = archiver_uid
 
             archive_wrapper = ArchivingObject(archive_obj, self)
             cls.encode_archive(obj, archive_wrapper)
@@ -569,19 +550,17 @@ class Archive:
             self.archive(self.input)
 
         d = {
-            '$version': NSKeyedArchiveVersion,
-            '$archiver': 'NSKeyedArchiver',
-            '$top': {'root': plistlib.UID(1)},
-            '$objects': self.objects
+            "$version": NSKeyedArchiveVersion,
+            "$archiver": "NSKeyedArchiver",
+            "$top": {"root": plistlib.UID(1)},
+            "$objects": self.objects,
         }
         # pylint: disable=no-member
-        return plistlib.dumps(
-            d, fmt=plistlib.FMT_BINARY, sort_keys=False)  # type: ignore
+        return plistlib.dumps(d, fmt=plistlib.FMT_BINARY, sort_keys=False)  # type: ignore
         # pylint: enable=no-member
 
 
 class NullArchive:
-
     @staticmethod
     def decode_archive(archive):
         return None
@@ -590,32 +569,30 @@ class NullArchive:
 class XCTCapabilities:
     @staticmethod
     def decode_archive(archive):
-        return archive.decode('capabilities-dictionary')
+        return archive.decode("capabilities-dictionary")
 
 
 class DTTapMessageArchive:
-
     @staticmethod
     def decode_archive(archive):
-        return archive.decode('DTTapMessagePlist')
+        return archive.decode("DTTapMessagePlist")
 
 
 class ErrorArchive:
     @staticmethod
     def decode_archive(archive):
-        domain = archive.decode('NSDomain')
-        userinfo = archive.decode('NSUserInfo')
-        code = archive.decode('NSCode')
+        domain = archive.decode("NSDomain")
+        userinfo = archive.decode("NSUserInfo")
+        code = archive.decode("NSCode")
         return {"$class": "NSError", "domain": domain, "userinfo": userinfo, "code": code}
 
 
 class ExceptionArchive:
-
     @staticmethod
     def decode_archive(archive):
-        name = archive.decode('NS.name')
-        reason = archive.decode('NS.reason')
-        userinfo = archive.decode('userinfo')
+        name = archive.decode("NS.name")
+        reason = archive.decode("NS.reason")
+        userinfo = archive.decode("userinfo")
         return {"$class": "NSException", "reason": reason, "userinfo": userinfo, "name": name}
 
 
@@ -638,58 +615,55 @@ class NSURL:
     @staticmethod
     def encode_archive(obj, archive):
         """Delegate for packing timestamps back into the NSDate archive format"""
-        archive.encode('NS.base', obj._base)
-        archive.encode('NS.relative', obj._relative)
+        archive.encode("NS.base", obj._base)
+        archive.encode("NS.relative", obj._relative)
 
     @staticmethod
     def decode_archive(archive):
-        base = archive.decode('NS.base')
-        relative = archive.decode('NS.relative')
+        base = archive.decode("NS.base")
+        relative = archive.decode("NS.relative")
         return {"$class": "NSURL", "base": base, "relative": relative}
 
 
 class XCTestConfiguration:
     _default = {
-        'aggregateStatisticsBeforeCrash': {
-            'XCSuiteRecordsKey': {}
-        },
-        'automationFrameworkPath': '/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework',
-        'baselineFileRelativePath': None,
-        'baselineFileURL': None,
-        'defaultTestExecutionTimeAllowance': None,
-        'disablePerformanceMetrics': False,
-        'emitOSLogs': False,
-        'formatVersion': 2,  # store in UID
-        'gatherLocalizableStringsData': False,
-        'initializeForUITesting': True,
-        'maximumTestExecutionTimeAllowance': None,
-        'productModuleName': "WebDriverAgentRunner",  # set to other value is also OK
-        'randomExecutionOrderingSeed': None,
-        'reportActivities': True,
-        'reportResultsToIDE': True,
-        'systemAttachmentLifetime': 2,
-        'targetApplicationArguments': [],  # maybe useless
-        'targetApplicationBundleID': None,
-        'targetApplicationEnvironment': None,
-        'targetApplicationPath': None,
-        'testApplicationDependencies': {},
-        'testApplicationUserOverrides': None,
-        'testBundleRelativePath': None,
-        'testExecutionOrdering': 0,
-        'testTimeoutsEnabled': False,
-        'testsDrivenByIDE': False,
-        'testsMustRunOnMainThread': True,
-        'testsToRun': None,
-        'testsToSkip': None,
-        'treatMissingBaselinesAsFailures': False,
-        'userAttachmentLifetime': 1
+        "aggregateStatisticsBeforeCrash": {"XCSuiteRecordsKey": {}},
+        "automationFrameworkPath": "/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework",
+        "baselineFileRelativePath": None,
+        "baselineFileURL": None,
+        "defaultTestExecutionTimeAllowance": None,
+        "disablePerformanceMetrics": False,
+        "emitOSLogs": False,
+        "formatVersion": 2,  # store in UID
+        "gatherLocalizableStringsData": False,
+        "initializeForUITesting": True,
+        "maximumTestExecutionTimeAllowance": None,
+        "productModuleName": "WebDriverAgentRunner",  # set to other value is also OK
+        "randomExecutionOrderingSeed": None,
+        "reportActivities": True,
+        "reportResultsToIDE": True,
+        "systemAttachmentLifetime": 2,
+        "targetApplicationArguments": [],  # maybe useless
+        "targetApplicationBundleID": None,
+        "targetApplicationEnvironment": None,
+        "targetApplicationPath": None,
+        "testApplicationDependencies": {},
+        "testApplicationUserOverrides": None,
+        "testBundleRelativePath": None,
+        "testExecutionOrdering": 0,
+        "testTimeoutsEnabled": False,
+        "testsDrivenByIDE": False,
+        "testsMustRunOnMainThread": True,
+        "testsToRun": None,
+        "testsToSkip": None,
+        "treatMissingBaselinesAsFailures": False,
+        "userAttachmentLifetime": 1,
     }
 
     def __init__(self, kv: dict):
         # self._kv = kv
-        assert 'testBundleURL' in kv and isinstance(kv['testBundleURL'], NSURL)
-        assert 'sessionIdentifier' in kv and isinstance(
-            kv['sessionIdentifier'], uuid.UUID)
+        assert "testBundleURL" in kv and isinstance(kv["testBundleURL"], NSURL)
+        assert "sessionIdentifier" in kv and isinstance(kv["sessionIdentifier"], uuid.UUID)
 
         self._kv = copy.deepcopy(self._default)
         self._kv.update(kv)
@@ -709,7 +683,7 @@ class XCTestConfiguration:
 
     @staticmethod
     def encode_archive(objects, archive):
-        for (k, v) in objects._kv.items():
+        for k, v in objects._kv.items():
             archive.encode(k, v)
 
     # def decode(objects: list, archive: dict):
@@ -723,14 +697,14 @@ class XCTestConfiguration:
 
 
 class XCActivityRecord(dict):
-    _keys = ('activityType', 'attachments', 'finish', 'start', 'title', 'uuid')
+    _keys = ("activityType", "attachments", "finish", "start", "title", "uuid")
 
     def __repr__(self):
         attrs = []
         for key in self._keys:
-            attrs.append('{}={}'.format(key, self[key]))
+            attrs.append("{}={}".format(key, self[key]))
 
-        return 'XCActivityRecord({})'.format(', '.join(attrs))
+        return "XCActivityRecord({})".format(", ".join(attrs))
 
     @staticmethod
     def decode_archive(archive):
@@ -741,7 +715,6 @@ class XCActivityRecord(dict):
 
 
 class NSUUID(uuid.UUID):
-
     @staticmethod
     def encode_archive(objects, archive):
         archive._archive_obj["NS.uuidbytes"] = objects.bytes
@@ -749,18 +722,17 @@ class NSUUID(uuid.UUID):
 
     @staticmethod
     def decode_archive(archive):
-        uuidbytes = archive.decode('NS.uuidbytes')
+        uuidbytes = archive.decode("NS.uuidbytes")
         return NSUUID(bytes=bytes(uuidbytes))
 
 
 class DTKTraceTapMessage:
-
     @staticmethod
     def decode_archive(archive):
-        if hasattr(archive, '_object'):
-            if archive._object.get('$0'):
-                return archive.decode('$0')
-        return archive.decode('DTTapMessagePlist')
+        if hasattr(archive, "_object"):
+            if archive._object.get("$0"):
+                return archive.decode("$0")
+        return archive.decode("DTTapMessagePlist")
 
 
 class MutableDataArchive:
@@ -768,7 +740,7 @@ class MutableDataArchive:
 
     @staticmethod
     def decode_archive(archive):
-        s = archive.decode('NS.data')
+        s = archive.decode("NS.data")
         return s
 
 
@@ -777,7 +749,7 @@ class MutableStringArchive:
 
     @staticmethod
     def decode_archive(archive):
-        s = archive.decode('NS.string')
+        s = archive.decode("NS.string")
         return s
 
 
@@ -786,15 +758,14 @@ class NSValueArchive:
 
     @staticmethod
     def decode_archive(archive):
-        s = archive.decode('NS.rectval')
+        s = archive.decode("NS.rectval")
         return s
 
 
 class DTCPUClusterInfo:
     @staticmethod
     def decode_archive(archive):
-        return {'clusterID': archive.object['_clusterID'],
-                'clusterFlags': archive.object['_clusterFlags']}
+        return {"clusterID": archive.object["_clusterID"], "clusterFlags": archive.object["_clusterFlags"]}
 
 
 class IAGlobalConfigurationModel:
@@ -815,43 +786,41 @@ class DTXDynamicParamsNodeModel:
 
 
 UNARCHIVE_CLASS_MAP = {
-    'IAGlobalConfigurationModel': IAGlobalConfigurationModel,
-    'DTXDynamicParamsNodeModel': DTXDynamicParamsNodeModel,
-    'DTCPUClusterInfo': DTCPUClusterInfo,
-    'NSDictionary': DictArchive,
-    'NSMutableDictionary': DictArchive,
-    'NSArray': ListArchive,
-    'NSMutableArray': ListArchive,
-    'NSSet': SetArchive,
-    'NSMutableSet': SetArchive,
-    'NSDate': timestamp,
-    'NSNull': NullArchive,
-    'NSError': ErrorArchive,
-    'NSException': ExceptionArchive,
-    'NSMutableString': MutableStringArchive,
-    'NSMutableData': MutableDataArchive,
+    "IAGlobalConfigurationModel": IAGlobalConfigurationModel,
+    "DTXDynamicParamsNodeModel": DTXDynamicParamsNodeModel,
+    "DTCPUClusterInfo": DTCPUClusterInfo,
+    "NSDictionary": DictArchive,
+    "NSMutableDictionary": DictArchive,
+    "NSArray": ListArchive,
+    "NSMutableArray": ListArchive,
+    "NSSet": SetArchive,
+    "NSMutableSet": SetArchive,
+    "NSDate": timestamp,
+    "NSNull": NullArchive,
+    "NSError": ErrorArchive,
+    "NSException": ExceptionArchive,
+    "NSMutableString": MutableStringArchive,
+    "NSMutableData": MutableDataArchive,
     "NSUUID": NSUUID,
     "NSURL": NSURL,
     "XCTestConfiguration": XCTestConfiguration,
-    'XCActivityRecord': XCActivityRecord,
-    'DTKTraceTapMessage': DTKTraceTapMessage,
-    'XCTCapabilities': XCTCapabilities,
-    'DTTapHeartbeatMessage': DTTapMessageArchive,
-    'DTSysmonTapMessage': DTTapMessageArchive,
-    'DTTapMessage': DTTapMessageArchive,
-    'NSValue': NSValueArchive,
-
+    "XCActivityRecord": XCActivityRecord,
+    "DTKTraceTapMessage": DTKTraceTapMessage,
+    "XCTCapabilities": XCTCapabilities,
+    "DTTapHeartbeatMessage": DTTapMessageArchive,
+    "DTSysmonTapMessage": DTTapMessageArchive,
+    "DTTapMessage": DTTapMessageArchive,
+    "NSValue": NSValueArchive,
 }
 
 ARCHIVE_CLASS_MAP = {
-    dict: 'NSDictionary',
-    list: 'NSArray',
-    set: 'NSSet',
-    timestamp: 'NSDate',
-    NSURL: 'NSURL',
-    XCTestConfiguration: 'XCTestConfiguration',
-    NSUUID: 'NSUUID'
-
+    dict: "NSDictionary",
+    list: "NSArray",
+    set: "NSSet",
+    timestamp: "NSDate",
+    NSURL: "NSURL",
+    XCTestConfiguration: "XCTestConfiguration",
+    NSUUID: "NSUUID",
 }
 
 

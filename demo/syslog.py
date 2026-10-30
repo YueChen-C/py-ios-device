@@ -29,19 +29,20 @@ import sys
 import time
 from optparse import OptionParser
 from sys import exit
-sys.path.append(os.getcwd())
 
-from ios_device.util.lockdown import LockdownClient
+sys.path.append(os.getcwd())
 
 from six import PY3
 
-TIME_FORMAT = '%H:%M:%S'
+from ios_device.util.lockdown import LockdownClient
+
+TIME_FORMAT = "%H:%M:%S"
 
 
 class Syslog(object):
-    '''
+    """
     View system logs
-    '''
+    """
 
     def __init__(self, lockdown=None, udid=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
@@ -50,18 +51,18 @@ class Syslog(object):
 
     def watch(self, watchtime=None, logFile=None, procName=None):
         """View log
-        :param watchtime: time (seconds)
-        :type watchtime: int
-        :param logFile: full path to the log file
-        :type logFile: str
-        :param procName: process name
-        :type proName: str
+                :param watchtime: time (seconds)
+                :type watchtime: int
+        :param logFile: full path to the log file
+        :type logFile: str
+        :param procName: process name
+        :type proName: str
         """
         begin = time.strftime(TIME_FORMAT)
         while True:
             d = self.c.recv(4096)
             if PY3:
-                d = d.decode('utf-8')
+                d = d.decode("utf-8")
             if procName:
                 procFilter = re.compile(procName, re.IGNORECASE)
                 if len(d.split(" ")) > 4 and not procFilter.search(d):
@@ -70,7 +71,7 @@ class Syslog(object):
             # self.logger.info(s)
             print(s)
             if logFile:
-                with open(logFile, 'a') as f:
+                with open(logFile, "a") as f:
                     f.write(d.replace("\x00", ""))
             if watchtime:
                 now = self.time_match(s[7:15])
@@ -83,7 +84,7 @@ class Syslog(object):
         """
         Determine if the time format matches
         """
-        pattern = re.compile(r'\d{2}:\d{2}:\d{2}')
+        pattern = re.compile(r"\d{2}:\d{2}:\d{2}")
         match = pattern.match(str_time)
         if match:
             return str_time
@@ -101,16 +102,16 @@ class Syslog(object):
 
 if __name__ == "__main__":
     parser = OptionParser(usage="%prog")
-    parser.add_option("-u", "--udid",
-                      default=False, action="store", dest="device_udid", metavar="DEVICE_UDID",
-                      help="Device udid")
-    parser.add_option("-p", "--process", dest="procName", default=False,
-                      help="Show process log only", type="string")
-    parser.add_option("-o", "--logfile", dest="logFile", default=False,
-                      help="Write Logs into specified file", type="string")
-    parser.add_option("-w", "--watch-time",
-                      default=False, action="store", dest="watchtime", metavar="WATCH_TIME",
-                      help="watchtime")
+    parser.add_option(
+        "-u", "--udid", default=False, action="store", dest="device_udid", metavar="DEVICE_UDID", help="Device udid"
+    )
+    parser.add_option("-p", "--process", dest="procName", default=False, help="Show process log only", type="string")
+    parser.add_option(
+        "-o", "--logfile", dest="logFile", default=False, help="Write Logs into specified file", type="string"
+    )
+    parser.add_option(
+        "-w", "--watch-time", default=False, action="store", dest="watchtime", metavar="WATCH_TIME", help="watchtime"
+    )
     (options, args) = parser.parse_args()
 
     try:
@@ -124,7 +125,6 @@ if __name__ == "__main__":
             raise
         else:
             pass
-
 
     except (KeyboardInterrupt, SystemExit):
         exit()

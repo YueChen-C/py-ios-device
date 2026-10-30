@@ -8,16 +8,16 @@ class DgbFuncQual(enum.Enum):
 
 
 class LOG(str, enum.Enum):
-    Instrument = 'Instrument'
+    Instrument = "Instrument"
     LockDown = "LockDown"
     xctest = "xctest"
-    USBMux = 'USBMux'
-    Mobile = 'Mobile'
-    DTXMsg = 'DTXMsg'
+    USBMux = "USBMux"
+    Mobile = "Mobile"
+    DTXMsg = "DTXMsg"
 
 
 class LockdownService(str, enum.Enum):
-    MobileLockdown = 'com.apple.mobile.lockdown'
+    MobileLockdown = "com.apple.mobile.lockdown"
     MobileWirelessLockdown = "com.apple.mobile.wireless_lockdown"
 
     MobileScreenshotr = "com.apple.mobile.screenshotr"  # 截图服务
@@ -30,7 +30,7 @@ class LockdownService(str, enum.Enum):
 
 
 class InstrumentsService(str, enum.Enum):
-    DeviceInfo = 'com.apple.instruments.server.services.deviceinfo'  # 获取设备信息
+    DeviceInfo = "com.apple.instruments.server.services.deviceinfo"  # 获取设备信息
     # _selector
     # - machTimeInfo
     # - runningProcesses
@@ -71,13 +71,13 @@ class InstrumentsService(str, enum.Enum):
     # - stop
     # - start
     # - unpause
-    Networking = 'com.apple.instruments.server.services.networking'  # 全局网络数据
+    Networking = "com.apple.instruments.server.services.networking"  # 全局网络数据
     # _selector
     # - replayLastRecordedSession
     # - stopMonitoring
     # - setTargetPID:
     # - startMonitoring
-    MobileNotifications = 'com.apple.instruments.server.services.mobilenotifications'  # 监控应用状态
+    MobileNotifications = "com.apple.instruments.server.services.mobilenotifications"  # 监控应用状态
     # _selector
     # - setApplicationStateNotificationsEnabled:
     # - setMemoryNotificationsEnabled:
@@ -96,7 +96,7 @@ class InstrumentsService(str, enum.Enum):
     # _selector
     # - installedApplicationsMatching: registerUpdateToken:
     # - unregisterUpdateToken:
-    XcodeNetworkStatistics = 'com.apple.xcode.debug-gauge-data-providers.NetworkStatistics'  # 获取单进程网络数据
+    XcodeNetworkStatistics = "com.apple.xcode.debug-gauge-data-providers.NetworkStatistics"  # 获取单进程网络数据
     CoreProfileSessionTap = "com.apple.instruments.server.services.coreprofilesessiontap"  # 获取内核数据
     # _selector
     # - fetchDataNow
@@ -105,7 +105,7 @@ class InstrumentsService(str, enum.Enum):
     # - start
     # - unpause
     # - setConfig:
-    Screenshot = 'com.apple.instruments.server.services.screenshot'  # 获取画面
+    Screenshot = "com.apple.instruments.server.services.screenshot"  # 获取画面
     # _selector
     # - takeScreenshot
     ConditionInducer = "com.apple.instruments.server.services.ConditionInducer"  # 控制手机，比如网络，手机状态
@@ -113,10 +113,10 @@ class InstrumentsService(str, enum.Enum):
     # - disableActiveCondition
     # - disableConditionWithIdentifier:
     # - enableConditionWithIdentifier: profileIdentifier:
-    XcodeEnergy = 'com.apple.xcode.debug-gauge-data-providers.Energy'
-    GPU = 'com.apple.instruments.server.services.gpu'
+    XcodeEnergy = "com.apple.xcode.debug-gauge-data-providers.Energy"
+    GPU = "com.apple.instruments.server.services.gpu"
 
 
 class TunnelProtocol(enum.Enum):
-    TCP = 'tcp'
-    QUIC = 'quic'
+    TCP = "tcp"
+    QUIC = "quic"

@@ -2,10 +2,11 @@
 @Date    : 2021-02-24
 @Author  : liyachao
 """
-import time
+
+from queue import Queue
 
 import pytest
-from queue import Queue
+
 from ios_device import py_ios_device
 from ios_device.py_ios_device import PyiOSDevice
 
@@ -13,7 +14,6 @@ app_bundle_id = "com.apple.calculator"
 
 
 class TestIOSDevice:
-
     def callback(self, res):
         self.queue.put(res)
 

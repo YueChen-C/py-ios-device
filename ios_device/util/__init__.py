@@ -6,13 +6,13 @@ from typing import Optional
 
 import coloredlogs
 
-gettrace = getattr(sys, 'gettrace', None)
-HOME_PATH = '.cache/pyidevice'
+gettrace = getattr(sys, "gettrace", None)
+HOME_PATH = ".cache/pyidevice"
 
 
 def hexdump(d):
     for i in range(0, len(d), 16):
-        data = d[i:i + 16]
+        data = d[i : i + 16]
         print("%08X | %s | %s" % (i, hex(data).ljust(47), ascii(data)))
 
 
@@ -23,10 +23,14 @@ def read_file(filename):
     return data
 
 
-coloredlogs.DEFAULT_FIELD_STYLES = {'asctime': {'color': 'green'}, 'hostname': {'color': 'magenta'},
-                                    'levelname': {'color': 'green', 'bold': True},
-                                    'name': {'color': 'blue'}, 'programname': {'color': 'cyan'},
-                                    'threadName': {'color': 'yellow'}}
+coloredlogs.DEFAULT_FIELD_STYLES = {
+    "asctime": {"color": "green"},
+    "hostname": {"color": "magenta"},
+    "levelname": {"color": "green", "bold": True},
+    "name": {"color": "blue"},
+    "programname": {"color": "cyan"},
+    "threadName": {"color": "yellow"},
+}
 
 
 class Log:
@@ -39,7 +43,7 @@ class Log:
     def getLogger(cls, name=os.path.abspath(__name__)) -> logging.Logger:
         if name not in cls.__instances:
             logger = logging.getLogger(name)
-            fmt = '%(asctime)s [%(levelname)s] [%(name)s] %(filename)s[line:%(lineno)d] %(message)s'
+            fmt = "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s[line:%(lineno)d] %(message)s"
             formater = logging.Formatter(fmt)
             ch = logging.StreamHandler()
             ch.setLevel(Log.__getLogLevel())
@@ -66,7 +70,7 @@ PROGRAM_NAME = "py_ios_device"
 
 
 def get_home_path(filename: str) -> Path:
-    path = Path('~').expanduser().joinpath(HOME_PATH)
+    path = Path("~").expanduser().joinpath(HOME_PATH)
     if not path.exists():
         path.mkdir(parents=True)
     return path.joinpath(filename)
@@ -76,19 +80,19 @@ def read_home_file(filename: str) -> Optional[bytes]:
     path = get_home_path(filename)
     if not path.exists():
         return None
-    with path.open('rb') as f:
+    with path.open("rb") as f:
         return f.read()
 
 
 def write_home_file(filename: str, data: bytes) -> str:
     path = get_home_path(filename)
-    with path.open('wb') as f:
+    with path.open("wb") as f:
         f.write(data)
     return path.as_posix()
 
 
 def get_lockdown_dir():
-    if sys.platform == 'win32':
-        return Path(os.environ['ALLUSERSPROFILE'] + '/Apple/Lockdown/')
+    if sys.platform == "win32":
+        return Path(os.environ["ALLUSERSPROFILE"] + "/Apple/Lockdown/")
     else:
-        return Path('/var/db/lockdown/')
+        return Path("/var/db/lockdown/")

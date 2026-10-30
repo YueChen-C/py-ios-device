@@ -17,7 +17,7 @@ NANO_SECOND = 1e9  # ns
 MOVIE_FRAME_COST = 1 / 24
 
 #: 帧事件（CA commit）的 kdebug 签名：(class, subclass, code)
-FRAME_EVENT = (0x31, 0x80, 0xc6)
+FRAME_EVENT = (0x31, 0x80, 0xC6)
 
 
 class DisplayStats:
@@ -32,13 +32,13 @@ class DisplayStats:
         """``mach_time_factor`` 是 mach tick → 纳秒 的比值，``window`` 是窗口秒数。"""
         self.factor = float(mach_time_factor)
         self.window_ns = window * NANO_SECOND
-        self._last_frame = None     # 上一帧的 mach 时间戳
+        self._last_frame = None  # 上一帧的 mach 时间戳
         self._costs = [0.0, 0.0, 0.0]  # 前三帧的耗时（纳秒）
-        self._frames = 0            # 窗口内已计的帧数
-        self._elapsed = 0.0         # 窗口内累计的帧耗时（纳秒）
+        self._frames = 0  # 窗口内已计的帧数
+        self._elapsed = 0.0  # 窗口内累计的帧耗时（纳秒）
         self._jank = 0
         self._big_jank = 0
-        self._jank_time = 0.0       # 窗口内卡顿帧的总耗时（纳秒）
+        self._jank_time = 0.0  # 窗口内卡顿帧的总耗时（纳秒）
 
     def add_frame(self, timestamp):
         """喂一个帧事件的时间戳；凑满一个窗口时返回统计 dict，否则返回 ``None``。"""
@@ -70,11 +70,11 @@ class DisplayStats:
     def _pop_report(self):
         report = {
             # 窗口时长（秒），就是累计的帧耗时，不再用宿主机墙钟相减
-            'time': round(self._elapsed / NANO_SECOND, 3),
-            'fps': round(self._frames / self._elapsed * NANO_SECOND, 2),
-            'jank': self._jank,
-            'big_jank': self._big_jank,
-            'stutter': round(self._jank_time / self._elapsed, 4),
+            "time": round(self._elapsed / NANO_SECOND, 3),
+            "fps": round(self._frames / self._elapsed * NANO_SECOND, 2),
+            "jank": self._jank,
+            "big_jank": self._big_jank,
+            "stutter": round(self._jank_time / self._elapsed, 4),
         }
         self._frames = 0
         self._elapsed = 0.0

@@ -3,20 +3,22 @@ USBMux client that handles iDevice descovery via USB.
 
 :author: Doug Skrypa (original: Hector Martin "marcan" <hector@marcansoft.com>)
 """
-from .variables import LOG
-from ..util import Log
+
+import plistlib
 import select
 import socket
 import struct
 import sys
-import plistlib
-from typing import Dict, Union, Optional, Tuple, Any, Mapping, List
+from typing import Any, Dict, Mapping, Optional, Tuple, Union
+
+from ..util import Log
+from .variables import LOG
 
 log = Log.getLogger(LOG.USBMux.value)
 
 from ..util.exceptions import MuxError, MuxVersionError, NoMuxDeviceFound
 
-__all__ = ['USBMux', 'MuxConnection', 'MuxDevice', 'UsbmuxdClient']
+__all__ = ["USBMux", "MuxConnection", "MuxDevice", "UsbmuxdClient"]
 
 
 class MuxDevice:
@@ -24,12 +26,12 @@ class MuxDevice:
         self.device = device
         self._proto_cls = proto_cls
         self._socket_path = socket_path
-        self.serial = self.device['Properties']['SerialNumber']
-        self.device_id = self.device['Properties']['DeviceID']
-        self.connection_type = self.device['Properties']['ConnectionType']
+        self.serial = self.device["Properties"]["SerialNumber"]
+        self.device_id = self.device["Properties"]["DeviceID"]
+        self.connection_type = self.device["Properties"]["ConnectionType"]
 
     def __repr__(self):
-        return f'serial:{self.serial}, ConnectionType:{self.connection_type}'
+        return f"serial:{self.serial}, ConnectionType:{self.connection_type}"
 
     def connect(self, port):
         connector = MuxConnection(self._socket_path, self._proto_cls)
@@ -39,9 +41,9 @@ class MuxDevice:
 class MuxConnection:
     def __init__(self, socketpath, protoclass):
         self.socket_path = socketpath
-        if sys.platform in ('win32', 'cygwin'):
+        if sys.platform in ("win32", "cygwin"):
             family = socket.AF_INET
-            address = ('127.0.0.1', 27015)
+            address = ("127.0.0.1", 27015)
         else:
             family = socket.AF_UNIX
             address = self.socket_path
@@ -58,21 +60,15 @@ class MuxConnection:
 
         resp, tag, data = self.proto.get_packet()
         if resp == self.proto.TYPE_DEVICE_ADD:
-            self.devices.append(
-                MuxDevice(
-                    self.proto.__class__,
-                    self.socket_path,
-                    data
-                )
-            )
+            self.devices.append(MuxDevice(self.proto.__class__, self.socket_path, data))
         elif resp == self.proto.TYPE_DEVICE_REMOVE:
             for dev in self.devices:
-                if dev.device_id == data['DeviceID']:
+                if dev.device_id == data["DeviceID"]:
                     self.devices.remove(dev)
         elif resp == self.proto.TYPE_RESULT:
-            raise MuxError('Unexpected result: %d' % resp)
+            raise MuxError("Unexpected result: %d" % resp)
         else:
-            raise MuxError('Invalid packet type received: %d' % resp)
+            raise MuxError("Invalid packet type received: %d" % resp)
 
     def exchange(self, req, payload=None):
         my_tag = self.pkt_tag
@@ -80,30 +76,30 @@ class MuxConnection:
         self.proto.send_packet(req, my_tag, payload or {})
         recv_tag, data = self._getreply()
         if recv_tag != my_tag:
-            raise MuxError('Reply tag mismatch: expected %d, got %d' % (my_tag, recv_tag))
+            raise MuxError("Reply tag mismatch: expected %d, got %d" % (my_tag, recv_tag))
         return data
 
     def listen(self):
         ret = self.exchange(self.proto.TYPE_LISTEN)
-        if ret['Number'] != 0:
-            raise MuxError(f'Listen failed: error {ret}')
+        if ret["Number"] != 0:
+            raise MuxError(f"Listen failed: error {ret}")
 
     def process(self, timeout: Optional[float] = None):
         if self.proto.connected:
-            raise MuxError('Socket is connected, cannot process listener events')
+            raise MuxError("Socket is connected, cannot process listener events")
         rlo, wlo, xlo = select.select([self.socket.sock], [], [self.socket.sock], timeout)
         if xlo:
             self.socket.sock.close()
-            raise MuxError('Exception in listener socket')
+            raise MuxError("Exception in listener socket")
         if rlo:
             self._process_packet()
 
     def connect(self, device, port) -> socket.socket:
         ret = self.exchange(
-            self.proto.TYPE_CONNECT, {'DeviceID': device, 'PortNumber': ((port & 0xFF) << 8) | (port >> 8)}
+            self.proto.TYPE_CONNECT, {"DeviceID": device, "PortNumber": ((port & 0xFF) << 8) | (port >> 8)}
         )
-        if ret['Number'] != 0:
-            raise MuxError('Connect failed: error %d' % ret['Number'])
+        if ret["Number"] != 0:
+            raise MuxError("Connect failed: error %d" % ret["Number"])
         self.proto.connected = True
         return self.socket.sock
 
@@ -117,7 +113,7 @@ class MuxConnection:
 
 class USBMux:
     def __init__(self, socket_path=None):
-        socket_path = socket_path or '/var/run/usbmuxd'
+        socket_path = socket_path or "/var/run/usbmuxd"
         self.socketpath = socket_path
         self.listener = MuxConnection(socket_path, PlistProtocol)
         # self.listener.listen()
@@ -138,13 +134,13 @@ class USBMux:
         self.get_devices(network)
         for device in self.devices:
             if serial:
-                if device.device['Properties']['SerialNumber'] == serial:
+                if device.device["Properties"]["SerialNumber"] == serial:
                     return device
             else:
                 return device
         if serial:
-            raise NoMuxDeviceFound(f'Found {len(self.devices)} MuxDevice instances, but none with {serial}')
-        raise NoMuxDeviceFound('No MuxDevice instances were found')
+            raise NoMuxDeviceFound(f"Found {len(self.devices)} MuxDevice instances, but none with {serial}")
+        raise NoMuxDeviceFound("No MuxDevice instances were found")
 
     def get_devices(self, network=None):
         payload = {
@@ -152,9 +148,9 @@ class USBMux:
             "ClientVersionString": "libusbmuxd 1.1.0",
             "kLibUSBMuxVersion": 3,
         }
-        devices = self.listener.exchange('ListDevices', payload)
-        for device in devices.get('DeviceList'):
-            if not network and device['Properties']['ConnectionType'] == 'Network':
+        devices = self.listener.exchange("ListDevices", payload)
+        for device in devices.get("DeviceList"):
+            if not network and device["Properties"]["ConnectionType"] == "Network":
                 continue
             self.devices.append(
                 MuxDevice(
@@ -184,18 +180,17 @@ class UsbmuxdClient(MuxConnection):
         self.close()
 
     def __init__(self):
-        super().__init__('/var/run/usbmuxd', PlistProtocol)
+        super().__init__("/var/run/usbmuxd", PlistProtocol)
 
     def get_pair_record(self, udid):
         tag = self.pkt_tag
         self.pkt_tag += 1
-        payload = {'PairRecordID': udid,
-                   'kLibUSBMuxVersion': 3}
-        self.proto.send_packet('ReadPairRecord', tag, payload)
+        payload = {"PairRecordID": udid, "kLibUSBMuxVersion": 3}
+        self.proto.send_packet("ReadPairRecord", tag, payload)
         _, recvtag, data = self.proto.get_packet()
         if recvtag != tag:
-            raise MuxError('Reply tag mismatch: expected %d, got %d' % (tag, recvtag))
-        pair_record = data.get('PairRecordData')
+            raise MuxError("Reply tag mismatch: expected %d, got %d" % (tag, recvtag))
+        pair_record = data.get("PairRecordData")
         if not pair_record:
             return None
         pair_record = plistlib.loads(pair_record)
@@ -205,35 +200,36 @@ class UsbmuxdClient(MuxConnection):
 
         tag = self.pkt_tag
         self.pkt_tag += 1
-        payload = {'PairRecordID': udid}
-        self.proto.send_packet('DeletePairRecord', tag, payload)
+        payload = {"PairRecordID": udid}
+        self.proto.send_packet("DeletePairRecord", tag, payload)
         _, recvtag, data = self.proto.get_packet()
         if recvtag != tag:
-            raise MuxError('Reply tag mismatch: expected %d, got %d' % (tag, recvtag))
+            raise MuxError("Reply tag mismatch: expected %d, got %d" % (tag, recvtag))
         return data
 
     def save_pair_record(self, udid, pair_record, devid):
         tag = self.pkt_tag
         self.pkt_tag += 1
-        payload = {'PairRecordID': udid,
-                   "PairRecordData": plistlib.dumps(pair_record),
-                   "DeviceID": devid,
-                   }
-        self.proto.send_packet('SavePairRecord', tag, payload)
+        payload = {
+            "PairRecordID": udid,
+            "PairRecordData": plistlib.dumps(pair_record),
+            "DeviceID": devid,
+        }
+        self.proto.send_packet("SavePairRecord", tag, payload)
         _, recvtag, data = self.proto.get_packet()
         if recvtag != tag:
-            raise MuxError('Reply tag mismatch: expected %d, got %d' % (tag, recvtag))
+            raise MuxError("Reply tag mismatch: expected %d, got %d" % (tag, recvtag))
         return data
 
     def read_system_buid(self):
         tag = self.pkt_tag
         self.pkt_tag += 1
-        payload = {'kLibUSBMuxVersion': 3}
-        self.proto.send_packet('ReadBUID', tag, payload)
+        payload = {"kLibUSBMuxVersion": 3}
+        self.proto.send_packet("ReadBUID", tag, payload)
         _, recvtag, data = self.proto.get_packet()
         if recvtag != tag:
-            raise MuxError('Reply tag mismatch: expected %d, got %d' % (tag, recvtag))
-        return data['BUID']
+            raise MuxError("Reply tag mismatch: expected %d, got %d" % (tag, recvtag))
+        return data["BUID"]
 
 
 class BinaryProtocol:
@@ -251,62 +247,58 @@ class BinaryProtocol:
 
     def _pack(self, req: int, payload: Optional[Mapping[str, Any]]):
         if req == self.TYPE_CONNECT:
-            connect_data = b'\x00\x00'
-            return struct.pack('IH', payload['DeviceID'], payload['PortNumber']) + connect_data
+            connect_data = b"\x00\x00"
+            return struct.pack("IH", payload["DeviceID"], payload["PortNumber"]) + connect_data
         elif req == self.TYPE_LISTEN:
-            return b''
+            return b""
         else:
-            raise ValueError('Invalid outgoing request type %d' % req)
+            raise ValueError("Invalid outgoing request type %d" % req)
 
     def _unpack(self, resp: int, payload: bytes) -> Dict[str, Any]:
         if resp == self.TYPE_RESULT:
-            return {'Number': struct.unpack('I', payload)[0]}
+            return {"Number": struct.unpack("I", payload)[0]}
         elif resp == self.TYPE_DEVICE_ADD:
-            dev_id, usb_pid, serial, pad, location = struct.unpack('IH256sHI', payload)
-            serial = serial.split(b'\0')[0]
+            dev_id, usb_pid, serial, pad, location = struct.unpack("IH256sHI", payload)
+            serial = serial.split(b"\0")[0]
             return {
-                'DeviceID': dev_id,
-                'Properties': {
-                    'LocationID': location,
-                    'SerialNumber': serial,
-                    'ProductID': usb_pid
-                }
+                "DeviceID": dev_id,
+                "Properties": {"LocationID": location, "SerialNumber": serial, "ProductID": usb_pid},
             }
         elif resp == self.TYPE_DEVICE_REMOVE:
-            dev_id = struct.unpack('I', payload)[0]
-            return {'DeviceID': dev_id}
+            dev_id = struct.unpack("I", payload)[0]
+            return {"DeviceID": dev_id}
         else:
-            raise MuxError('Invalid incoming response type %d' % resp)
+            raise MuxError("Invalid incoming response type %d" % resp)
 
     def send_packet(self, req: int, tag: int, payload: Union[Mapping[str, Any], bytes, None] = None):
         payload = self._pack(req, payload or {})
         if self.connected:
-            raise MuxError('Mux is connected, cannot issue control packets')
+            raise MuxError("Mux is connected, cannot issue control packets")
         length = 16 + len(payload)
-        data = struct.pack('IIII', length, self.VERSION, req, tag) + payload
-        log.debug(f'发送 Plist byte: {data}')
+        data = struct.pack("IIII", length, self.VERSION, req, tag) + payload
+        log.debug(f"发送 Plist byte: {data}")
         self.socket.send(data)
 
     def get_packet(self) -> Tuple[int, int, Union[Dict[str, Any], bytes]]:
         if self.connected:
-            raise MuxError('Mux is connected, cannot issue control packets')
+            raise MuxError("Mux is connected, cannot issue control packets")
         dlen = self.socket.recv(4)
-        dlen = struct.unpack('I', dlen)[0]
+        dlen = struct.unpack("I", dlen)[0]
         body = self.socket.recv(dlen - 4)
-        version, resp, tag = struct.unpack('III', body[:0xc])
+        version, resp, tag = struct.unpack("III", body[:0xC])
         if version != self.VERSION:
-            raise MuxVersionError('Version mismatch: expected %d, got %d' % (self.VERSION, version))
-        payload = self._unpack(resp, body[0xc:])
+            raise MuxVersionError("Version mismatch: expected %d, got %d" % (self.VERSION, version))
+        payload = self._unpack(resp, body[0xC:])
         return resp, tag, payload
 
 
 class PlistProtocol(BinaryProtocol):
-    TYPE_RESULT = 'Result'
-    TYPE_CONNECT = 'Connect'
-    TYPE_LISTEN = 'Listen'
-    TYPE_DEVICE_ADD = 'Attached'
-    TYPE_DEVICE_REMOVE = 'Detached'  # ???
-    TYPE_DEVICE_LIST = 'ListDevices'
+    TYPE_RESULT = "Result"
+    TYPE_CONNECT = "Connect"
+    TYPE_LISTEN = "Listen"
+    TYPE_DEVICE_ADD = "Attached"
+    TYPE_DEVICE_REMOVE = "Detached"  # ???
+    TYPE_DEVICE_LIST = "ListDevices"
     TYPE_PLIST = 8
     VERSION = 1
 
@@ -318,23 +310,23 @@ class PlistProtocol(BinaryProtocol):
 
     def send_packet(self, req, tag, payload: Optional[Mapping[str, Any]] = None):
         payload = payload or {}
-        payload['ClientVersionString'] = 'qt4i-usbmuxd'
+        payload["ClientVersionString"] = "qt4i-usbmuxd"
         if isinstance(req, int):
             req = [self.TYPE_CONNECT, self.TYPE_LISTEN, self.TYPE_DEVICE_LIST][req - 2]
-        payload['MessageType'] = req
-        payload['ProgName'] = 'tcprelay'
-        log.debug(f'发送 Plist: {payload}')
+        payload["MessageType"] = req
+        payload["ProgName"] = "tcprelay"
+        log.debug(f"发送 Plist: {payload}")
         wrapped_payload = plistlib.dumps(payload)
         super().send_packet(self.TYPE_PLIST, tag, wrapped_payload)
 
     def get_packet(self):
         resp, tag, payload = super().get_packet()
-        log.debug(f'接收 Plist byte: {payload}')
+        log.debug(f"接收 Plist byte: {payload}")
         if resp != self.TYPE_PLIST:
-            raise MuxError('Received non-plist type %d' % resp)
+            raise MuxError("Received non-plist type %d" % resp)
         payload = plistlib.loads(payload)
-        log.debug(f'接收 Plist: {payload}')
-        return payload.get('MessageType', ''), tag, payload
+        log.debug(f"接收 Plist: {payload}")
+        return payload.get("MessageType", ""), tag, payload
 
 
 class SafeStreamSocket:
@@ -347,16 +339,16 @@ class SafeStreamSocket:
         while total_sent < len(msg):
             sent = self.sock.send(msg[total_sent:])
             if sent == 0:
-                raise MuxError('socket connection broken')
+                raise MuxError("socket connection broken")
             total_sent = total_sent + sent
 
     def recv(self, size):
-        msg = b''
+        msg = b""
         while len(msg) < size:
             chunk = self.sock.recv(size - len(msg))
-            empty_chunk = b''
+            empty_chunk = b""
             if chunk == empty_chunk:
-                raise MuxError('socket connection broken')
+                raise MuxError("socket connection broken")
             msg = msg + chunk
         return msg
 
@@ -365,7 +357,7 @@ def connect_tun_device(address, userspace_port):
     if userspace_port:
         sock = socket.create_connection(("localhost", userspace_port))
         sock.send(socket.inet_pton(socket.AF_INET6, address[0]))
-        sock.send(struct.pack('<I', address[1]))
+        sock.send(struct.pack("<I", address[1]))
     else:
         sock = socket.create_connection(address)
     return sock

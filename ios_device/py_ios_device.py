@@ -2,17 +2,17 @@
 @Date    : 2021-01-28
 @Author  : liyachao
 """
+
 import uuid
 from datetime import datetime
 
-
-from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util import api_util
 from ios_device.util.api_util import PyIOSDeviceException, RunXCUITest
+from ios_device.util.display_stats import FRAME_EVENT, DisplayStats
+from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.util.forward import ForwardPorts
-from ios_device.util.display_stats import DisplayStats, FRAME_EVENT
 from ios_device.util.kperf_data import kdbg_extract_all
 from ios_device.util.utils import kperf_data
 
@@ -112,8 +112,7 @@ class PyiOSDevice:
         """
         return get_applications(device_id=self.device_id, rpc_channel=self.rpc_channel)
 
-    def start_xcuitest(self, bundle_id, callback: callable, app_env: dict = None,
-                       pair_ports=None):
+    def start_xcuitest(self, bundle_id, callback: callable, app_env: dict = None, pair_ports=None):
         """
         启动 xcuittest
         :param pair_ports: 端口对的数组，每对端口中前一个代表远程端口，后一个代表本地端口，例如：["8100:8100", "8200:8200"]
@@ -237,8 +236,9 @@ def get_channel(device_id: str = None, rpc_channel: InstrumentServer = None):
     return device_channel
 
 
-def start_get_gpu(device_id: str = None, rpc_channel: InstrumentServer = None, callback: callable = None,
-                  ms_return: bool = False):
+def start_get_gpu(
+    device_id: str = None, rpc_channel: InstrumentServer = None, callback: callable = None, ms_return: bool = False
+):
     """
 
     :param device_id:
@@ -261,9 +261,12 @@ def start_get_gpu(device_id: str = None, rpc_channel: InstrumentServer = None, c
 
     if ms_return:
         _rpc_channel.call("com.apple.instruments.server.services.graphics.opengl", "setSamplingRate:", 0.0)
-    _rpc_channel.call("com.apple.instruments.server.services.graphics.opengl",
-                      "startSamplingAtTimeInterval:processIdentifier:",
-                      0.0, 0.0)
+    _rpc_channel.call(
+        "com.apple.instruments.server.services.graphics.opengl",
+        "startSamplingAtTimeInterval:processIdentifier:",
+        0.0,
+        0.0,
+    )
     _rpc_channel.register_channel_callback("com.apple.instruments.server.services.graphics.opengl", _callback)
 
     return _rpc_channel
@@ -294,15 +297,25 @@ def launch_app(bundle_id: str, device_id: str = None, rpc_channel: InstrumentSer
 
     channel_name = "com.apple.instruments.server.services.processcontrol"
     _rpc_channel.register_channel_callback(channel_name, lambda x: x)
-    pid = _rpc_channel.call(channel_name,
-                            "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:", "",
-                            bundle_id, {}, [], {"StartSuspendedKey": 0, "KillExisting": 1}).selector
+    pid = _rpc_channel.call(
+        channel_name,
+        "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:",
+        "",
+        bundle_id,
+        {},
+        [],
+        {"StartSuspendedKey": 0, "KillExisting": 1},
+    ).selector
     if not rpc_channel:
         _rpc_channel.stop()
     return pid
 
 
-def start_get_network(callback: callable, device_id: str = None, rpc_channel: InstrumentServer = None, ):
+def start_get_network(
+    callback: callable,
+    device_id: str = None,
+    rpc_channel: InstrumentServer = None,
+):
     """
     开始获取网络包内容
     :param device_id:
@@ -354,21 +367,71 @@ def start_get_system(device_id: str = None, rpc_channel: InstrumentServer = None
         api_util.system_caller(res, callback)
 
     _rpc_channel.register_undefined_callback(lambda x: x)
-    _rpc_channel.call("com.apple.instruments.server.services.sysmontap", "setConfig:", {
-        'ur': 1000,  # 输出频率 ms
-        'bm': 0,
-        'procAttrs': ['memVirtualSize', 'cpuUsage', 'procStatus', 'appSleep', 'uid', 'vmPageIns', 'memRShrd',
-                      'ctxSwitch', 'memCompressed', 'intWakeups', 'cpuTotalSystem', 'responsiblePID', 'physFootprint',
-                      'cpuTotalUser', 'sysCallsUnix', 'memResidentSize', 'sysCallsMach', 'memPurgeable',
-                      'diskBytesRead', 'machPortCount', '__suddenTerm', '__arch', 'memRPrvt', 'msgSent', 'ppid',
-                      'threadCount', 'memAnon', 'diskBytesWritten', 'pgid', 'faults', 'msgRecv', '__restricted', 'pid',
-                      '__sandbox'],  # 输出所有进程信息字段，字段顺序与自定义相同（全量自字段，按需使用）
-        'sysAttrs': ['diskWriteOps', 'diskBytesRead', 'diskBytesWritten', 'threadCount', 'vmCompressorPageCount',
-                     'vmExtPageCount', 'vmFreeCount', 'vmIntPageCount', 'vmPurgeableCount', 'netPacketsIn',
-                     'vmWireCount', 'netBytesIn', 'netPacketsOut', 'diskReadOps', 'vmUsedCount', '__vmSwapUsage',
-                     'netBytesOut'],  # 系统信息字段
-        'cpuUsage': True,
-        'sampleInterval': 1000000000})
+    _rpc_channel.call(
+        "com.apple.instruments.server.services.sysmontap",
+        "setConfig:",
+        {
+            "ur": 1000,  # 输出频率 ms
+            "bm": 0,
+            "procAttrs": [
+                "memVirtualSize",
+                "cpuUsage",
+                "procStatus",
+                "appSleep",
+                "uid",
+                "vmPageIns",
+                "memRShrd",
+                "ctxSwitch",
+                "memCompressed",
+                "intWakeups",
+                "cpuTotalSystem",
+                "responsiblePID",
+                "physFootprint",
+                "cpuTotalUser",
+                "sysCallsUnix",
+                "memResidentSize",
+                "sysCallsMach",
+                "memPurgeable",
+                "diskBytesRead",
+                "machPortCount",
+                "__suddenTerm",
+                "__arch",
+                "memRPrvt",
+                "msgSent",
+                "ppid",
+                "threadCount",
+                "memAnon",
+                "diskBytesWritten",
+                "pgid",
+                "faults",
+                "msgRecv",
+                "__restricted",
+                "pid",
+                "__sandbox",
+            ],  # 输出所有进程信息字段，字段顺序与自定义相同（全量自字段，按需使用）
+            "sysAttrs": [
+                "diskWriteOps",
+                "diskBytesRead",
+                "diskBytesWritten",
+                "threadCount",
+                "vmCompressorPageCount",
+                "vmExtPageCount",
+                "vmFreeCount",
+                "vmIntPageCount",
+                "vmPurgeableCount",
+                "netPacketsIn",
+                "vmWireCount",
+                "netBytesIn",
+                "netPacketsOut",
+                "diskReadOps",
+                "vmUsedCount",
+                "__vmSwapUsage",
+                "netBytesOut",
+            ],  # 系统信息字段
+            "cpuUsage": True,
+            "sampleInterval": 1000000000,
+        },
+    )
     _rpc_channel.register_channel_callback("com.apple.instruments.server.services.sysmontap", _callback)
     _rpc_channel.call("com.apple.instruments.server.services.sysmontap", "start")
     return _rpc_channel
@@ -410,14 +473,15 @@ def get_applications(device_id: str = None, rpc_channel: InstrumentServer = None
     application_list = _rpc_channel.call(
         "com.apple.instruments.server.services.device.applictionListing",
         "installedApplicationsMatching:registerUpdateToken:",
-        {}, "").selector
+        {},
+        "",
+    ).selector
     if not rpc_channel:
         _rpc_channel.stop()
     return application_list
 
 
-def start_xcuitest(bundle_id: str, callback: callable, device_id: str = None, app_env: dict = None,
-                   pair_ports=None):
+def start_xcuitest(bundle_id: str, callback: callable, device_id: str = None, app_env: dict = None, pair_ports=None):
     """
     启动 xcuittest
     :param pair_ports: 端口对的数组，每对端口中前一个代表远程端口，后一个代表本地端口，例如：["8100:8100", "8200:8200"]
@@ -442,8 +506,9 @@ def start_xcuitest(bundle_id: str, callback: callable, device_id: str = None, ap
 
     if pair_ports is None:
         pair_ports = ["8100:8100"]
-    xcuitest = RunXCUITest(bundle_id=bundle_id, callback=callback, device_id=device_id, app_env=app_env,
-                           pair_ports=pair_ports)
+    xcuitest = RunXCUITest(
+        bundle_id=bundle_id, callback=callback, device_id=device_id, app_env=app_env, pair_ports=pair_ports
+    )
 
     xcuitest.start()
     return xcuitest
@@ -480,8 +545,7 @@ def start_get_fps(device_id: str = None, rpc_channel: InstrumentServer = None, c
 
     _rpc_channel.register_undefined_callback(lambda x: x)
     # mach tick -> 纳秒 的比值随设备不同，不能用固定值
-    mach_time_info = _rpc_channel.call("com.apple.instruments.server.services.deviceinfo",
-                                       "machTimeInfo").selector
+    mach_time_info = _rpc_channel.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").selector
     stats = DisplayStats(mach_time_info[1] / mach_time_info[2])
 
     def _callback(res):
@@ -491,19 +555,27 @@ def start_get_fps(device_id: str = None, rpc_channel: InstrumentServer = None, c
             if kdbg_extract_all(args[7]) == FRAME_EVENT:
                 report = stats.add_frame(args[0])
                 if report:
-                    callback({"currentTime": str(datetime.now()), "FPS": report["fps"],
-                              "jank": report["jank"], "big_jank": report["big_jank"],
-                              "stutter": report["stutter"]})
+                    callback(
+                        {
+                            "currentTime": str(datetime.now()),
+                            "FPS": report["fps"],
+                            "jank": report["jank"],
+                            "big_jank": report["big_jank"],
+                            "stutter": report["stutter"],
+                        }
+                    )
 
-    _rpc_channel.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap",
-                                           _callback)
+    _rpc_channel.register_channel_callback("com.apple.instruments.server.services.coreprofilesessiontap", _callback)
 
-    _rpc_channel.call("com.apple.instruments.server.services.coreprofilesessiontap", "setConfig:",
-                      {'rp': 10,
-                       'tc': [{'kdf2': {630784000, 833617920, 830472456},
-                               'tk': 3,
-                               'uuid': str(uuid.uuid4()).upper()}],
-                       'ur': 500})
+    _rpc_channel.call(
+        "com.apple.instruments.server.services.coreprofilesessiontap",
+        "setConfig:",
+        {
+            "rp": 10,
+            "tc": [{"kdf2": {630784000, 833617920, 830472456}, "tk": 3, "uuid": str(uuid.uuid4()).upper()}],
+            "ur": 500,
+        },
+    )
 
     _rpc_channel.call("com.apple.instruments.server.services.coreprofilesessiontap", "start")
 
@@ -551,7 +623,7 @@ def start_get_graphics_fps(device_id: str = None, rpc_channel: InstrumentServer 
 
     def _callback(res):
         data = res.selector
-        callback({"currentTime": str(datetime.now()), "fps": data['CoreAnimationFramesPerSecond']})
+        callback({"currentTime": str(datetime.now()), "fps": data["CoreAnimationFramesPerSecond"]})
 
     _rpc_channel.register_undefined_callback(lambda x: x)
     _rpc_channel.register_channel_callback("com.apple.instruments.server.services.graphics.opengl", _callback)
@@ -570,8 +642,9 @@ def stop_get_graphics_fps(rpc_channel: InstrumentServer):
     rpc_channel.call("com.apple.instruments.server.services.graphics.opengl", "stopSampling")
 
 
-def start_get_mobile_notifications(device_id: str = None, rpc_channel: InstrumentServer = None,
-                                   callback: callable = None):
+def start_get_mobile_notifications(
+    device_id: str = None, rpc_channel: InstrumentServer = None, callback: callable = None
+):
     """
     监听事件，比如 app 唤醒，杀死，退出到后台等等
     :param device_id:
@@ -591,7 +664,9 @@ def start_get_mobile_notifications(device_id: str = None, rpc_channel: Instrumen
 
     _rpc_channel.call(
         "com.apple.instruments.server.services.mobilenotifications",
-        'setApplicationStateNotificationsEnabled:', str(True))
+        "setApplicationStateNotificationsEnabled:",
+        str(True),
+    )
     return _rpc_channel
 
 
@@ -603,7 +678,9 @@ def stop_get_mobile_notifications(rpc_channel: InstrumentServer):
     """
     rpc_channel.call(
         "com.apple.instruments.server.services.mobilenotifications",
-        'setApplicationStateNotificationsEnabled:', str(False))
+        "setApplicationStateNotificationsEnabled:",
+        str(False),
+    )
 
 
 def get_netstat(pid: int, device_id: str = None, rpc_channel: InstrumentServer = None):

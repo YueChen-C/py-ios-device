@@ -7,9 +7,10 @@ import select
 import time
 from threading import Thread
 
-from ios_device.util.usbmux import USBMux
 from six import PY3
 from six.moves import socketserver
+
+from ios_device.util.usbmux import USBMux
 
 
 class SocketRelay(object):
@@ -58,7 +59,6 @@ class SocketRelay(object):
 
 
 class TCPRelay(socketserver.BaseRequestHandler):
-
     def handle(self):
         mux = self.server.mux
         # print("Waiting for devices...")
@@ -132,7 +132,7 @@ class ForwardPorts(Thread):
             self._server.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     c = ForwardPorts(["8200:8200"])
     c.start()
     # c.stop()

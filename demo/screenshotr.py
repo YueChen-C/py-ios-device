@@ -27,6 +27,7 @@ import os
 import sys
 from optparse import OptionParser
 from time import gmtime, strftime
+
 sys.path.append(os.getcwd())
 
 from six import PY3
@@ -35,44 +36,45 @@ from ios_device.util.lockdown import LockdownClient
 
 
 class screenshotr(object):
-    def __init__(self, lockdown=None, serviceName='com.apple.mobile.screenshotr', udid=None, logger=None):
+    def __init__(self, lockdown=None, serviceName="com.apple.mobile.screenshotr", udid=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown or LockdownClient(udid=udid)
         self.service = self.lockdown.start_service(serviceName)
         DLMessageVersionExchange = self.service.recv_plist()
         version_major = DLMessageVersionExchange[1]
         self.service.send_plist(["DLMessageVersionExchange", "DLVersionsOk", version_major])
-        DLMessageDeviceReady = self.service.recv_plist()
+        self.service.recv_plist()
 
     def stop_session(self):
         self.service.close()
 
     def take_screenshot(self):
-        self.service.send_plist(['DLMessageProcessMessage', {'MessageType': 'ScreenShotRequest'}])
+        self.service.send_plist(["DLMessageProcessMessage", {"MessageType": "ScreenShotRequest"}])
         res = self.service.recv_plist()
 
         assert len(res) == 2
         assert res[0] == "DLMessageProcessMessage"
 
-        if res[1].get('MessageType') == 'ScreenShotReply':
+        if res[1].get("MessageType") == "ScreenShotReply":
             if PY3:
-                screen_data = res[1]['ScreenShotData']
+                screen_data = res[1]["ScreenShotData"]
             else:
-                screen_data = res[1]['ScreenShotData'].data
+                screen_data = res[1]["ScreenShotData"].data
             return screen_data
         return None
 
 
-if __name__ == '__main__':
-    parser = OptionParser(usage='%prog')
-    parser.add_option("-u", "--udid",
-                      default=False, action="store", dest="device_udid", metavar="DEVICE_UDID",
-                      help="Device udid")
-    parser.add_option('-p', '--path', dest='outDir', default=False,
-                      help='Output Directory (default: . )', type='string')
+if __name__ == "__main__":
+    parser = OptionParser(usage="%prog")
+    parser.add_option(
+        "-u", "--udid", default=False, action="store", dest="device_udid", metavar="DEVICE_UDID", help="Device udid"
+    )
+    parser.add_option(
+        "-p", "--path", dest="outDir", default=False, help="Output Directory (default: . )", type="string"
+    )
     (options, args) = parser.parse_args()
 
-    outPath = '.'
+    outPath = "."
     if options.outDir:
         outPath = options.outDir
 
@@ -81,8 +83,8 @@ if __name__ == '__main__':
     screenshotr = screenshotr(lockdown=lckdn)
     data = screenshotr.take_screenshot()
     if data:
-        filename = strftime('screenshot-%Y-%m-%d-%H-%M-%S.png', gmtime())
+        filename = strftime("screenshot-%Y-%m-%d-%H-%M-%S.png", gmtime())
         outPath = os.path.join(outPath, filename)
-        print('Saving Screenshot at %s' % outPath)
-        o = open(outPath, 'wb')
+        print("Saving Screenshot at %s" % outPath)
+        o = open(outPath, "wb")
         o.write(data)

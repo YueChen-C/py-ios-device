@@ -1,6 +1,7 @@
 """
 启动 app
 """
+
 import os
 import sys
 
@@ -17,12 +18,19 @@ def _launch_app(rpc, bundleid):
 
     channel = "com.apple.instruments.server.services.processcontrol"
     rpc.register_channel_callback(channel, on_channel_message)
-    pid = rpc.call(channel, "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:", "",
-                   bundleid, {}, [], {"StartSuspendedKey": 0, "KillExisting": 1}).selector
+    pid = rpc.call(
+        channel,
+        "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:",
+        "",
+        bundleid,
+        {},
+        [],
+        {"StartSuspendedKey": 0, "KillExisting": 1},
+    ).selector
     print("start", pid)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rpc = InstrumentServer().init()
-    _launch_app(rpc, 'cn.rongcloud.im')
+    _launch_app(rpc, "cn.rongcloud.im")
     rpc.stop()

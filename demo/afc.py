@@ -23,103 +23,100 @@
 #
 from __future__ import print_function
 
+import logging
 import os
-import struct
 import plistlib
 import posixpath
-import logging
+import struct
+import sys
+from cmd import Cmd
+from pprint import pprint
 
+from construct import Const, Int64ul
 from construct.core import Struct
 from construct.lib.containers import Container
-from construct import Const, Int64ul
-
-
-from cmd import Cmd
 from six import PY3
-from pprint import pprint
-import sys
+
 sys.path.append(os.getcwd())
 
 from ios_device.util import hexdump
-
 from ios_device.util.lockdown import LockdownClient
 
+MODEMASK = 0o0000777
 
-MODEMASK =  0o0000777
+AFC_OP_STATUS = 0x00000001
+AFC_OP_DATA = 0x00000002  # Data */
+AFC_OP_READ_DIR = 0x00000003  # ReadDir */
+AFC_OP_READ_FILE = 0x00000004  # ReadFile */
+AFC_OP_WRITE_FILE = 0x00000005  # WriteFile */
+AFC_OP_WRITE_PART = 0x00000006  # WritePart */
+AFC_OP_TRUNCATE = 0x00000007  # TruncateFile */
+AFC_OP_REMOVE_PATH = 0x00000008  # RemovePath */
+AFC_OP_MAKE_DIR = 0x00000009  # MakeDir */
+AFC_OP_GET_FILE_INFO = 0x0000000A  # GetFileInfo */
+AFC_OP_GET_DEVINFO = 0x0000000B  # GetDeviceInfo */
+AFC_OP_WRITE_FILE_ATOM = 0x0000000C  # WriteFileAtomic (tmp file+rename) */
+AFC_OP_FILE_OPEN = 0x0000000D  # FileRefOpen */
+AFC_OP_FILE_OPEN_RES = 0x0000000E  # FileRefOpenResult */
+AFC_OP_READ = 0x0000000F  # FileRefRead */
+AFC_OP_WRITE = 0x00000010  # FileRefWrite */
+AFC_OP_FILE_SEEK = 0x00000011  # FileRefSeek */
+AFC_OP_FILE_TELL = 0x00000012  # FileRefTell */
+AFC_OP_FILE_TELL_RES = 0x00000013  # FileRefTellResult */
+AFC_OP_FILE_CLOSE = 0x00000014  # FileRefClose */
+AFC_OP_FILE_SET_SIZE = 0x00000015  # FileRefSetFileSize (ftruncate) */
+AFC_OP_GET_CON_INFO = 0x00000016  # GetConnectionInfo */
+AFC_OP_SET_CON_OPTIONS = 0x00000017  # SetConnectionOptions */
+AFC_OP_RENAME_PATH = 0x00000018  # RenamePath */
+AFC_OP_SET_FS_BS = 0x00000019  # SetFSBlockSize (0x800000) */
+AFC_OP_SET_SOCKET_BS = 0x0000001A  # SetSocketBlockSize (0x800000) */
+AFC_OP_FILE_LOCK = 0x0000001B  # FileRefLock */
+AFC_OP_MAKE_LINK = 0x0000001C  # MakeLink */
+AFC_OP_SET_FILE_TIME = 0x0000001E  # set st_mtime */
 
-AFC_OP_STATUS          = 0x00000001
-AFC_OP_DATA            = 0x00000002    #Data */
-AFC_OP_READ_DIR        = 0x00000003    #ReadDir */
-AFC_OP_READ_FILE       = 0x00000004    #ReadFile */
-AFC_OP_WRITE_FILE      = 0x00000005    #WriteFile */
-AFC_OP_WRITE_PART      = 0x00000006    #WritePart */
-AFC_OP_TRUNCATE        = 0x00000007    #TruncateFile */
-AFC_OP_REMOVE_PATH     = 0x00000008    #RemovePath */
-AFC_OP_MAKE_DIR        = 0x00000009    #MakeDir */
-AFC_OP_GET_FILE_INFO   = 0x0000000a    #GetFileInfo */
-AFC_OP_GET_DEVINFO     = 0x0000000b    #GetDeviceInfo */
-AFC_OP_WRITE_FILE_ATOM = 0x0000000c    #WriteFileAtomic (tmp file+rename) */
-AFC_OP_FILE_OPEN       = 0x0000000d    #FileRefOpen */
-AFC_OP_FILE_OPEN_RES   = 0x0000000e    #FileRefOpenResult */
-AFC_OP_READ            = 0x0000000f    #FileRefRead */
-AFC_OP_WRITE           = 0x00000010    #FileRefWrite */
-AFC_OP_FILE_SEEK       = 0x00000011    #FileRefSeek */
-AFC_OP_FILE_TELL       = 0x00000012    #FileRefTell */
-AFC_OP_FILE_TELL_RES   = 0x00000013    #FileRefTellResult */
-AFC_OP_FILE_CLOSE      = 0x00000014    #FileRefClose */
-AFC_OP_FILE_SET_SIZE   = 0x00000015    #FileRefSetFileSize (ftruncate) */
-AFC_OP_GET_CON_INFO    = 0x00000016    #GetConnectionInfo */
-AFC_OP_SET_CON_OPTIONS = 0x00000017    #SetConnectionOptions */
-AFC_OP_RENAME_PATH     = 0x00000018    #RenamePath */
-AFC_OP_SET_FS_BS       = 0x00000019    #SetFSBlockSize (0x800000) */
-AFC_OP_SET_SOCKET_BS   = 0x0000001A    #SetSocketBlockSize (0x800000) */
-AFC_OP_FILE_LOCK       = 0x0000001B    #FileRefLock */
-AFC_OP_MAKE_LINK       = 0x0000001C    #MakeLink */
-AFC_OP_SET_FILE_TIME   = 0x0000001E    #set st_mtime */
+AFC_E_SUCCESS = 0
+AFC_E_UNKNOWN_ERROR = 1
+AFC_E_OP_HEADER_INVALID = 2
+AFC_E_NO_RESOURCES = 3
+AFC_E_READ_ERROR = 4
+AFC_E_WRITE_ERROR = 5
+AFC_E_UNKNOWN_PACKET_TYPE = 6
+AFC_E_INVALID_ARG = 7
+AFC_E_OBJECT_NOT_FOUND = 8
+AFC_E_OBJECT_IS_DIR = 9
+AFC_E_PERM_DENIED = 10
+AFC_E_SERVICE_NOT_CONNECTED = 11
+AFC_E_OP_TIMEOUT = 12
+AFC_E_TOO_MUCH_DATA = 13
+AFC_E_END_OF_DATA = 14
+AFC_E_OP_NOT_SUPPORTED = 15
+AFC_E_OBJECT_EXISTS = 16
+AFC_E_OBJECT_BUSY = 17
+AFC_E_NO_SPACE_LEFT = 18
+AFC_E_OP_WOULD_BLOCK = 19
+AFC_E_IO_ERROR = 20
+AFC_E_OP_INTERRUPTED = 21
+AFC_E_OP_IN_PROGRESS = 22
+AFC_E_INTERNAL_ERROR = 23
 
-AFC_E_SUCCESS                = 0
-AFC_E_UNKNOWN_ERROR          = 1
-AFC_E_OP_HEADER_INVALID      = 2
-AFC_E_NO_RESOURCES           = 3
-AFC_E_READ_ERROR             = 4
-AFC_E_WRITE_ERROR            = 5
-AFC_E_UNKNOWN_PACKET_TYPE    = 6
-AFC_E_INVALID_ARG            = 7
-AFC_E_OBJECT_NOT_FOUND       = 8
-AFC_E_OBJECT_IS_DIR          = 9
-AFC_E_PERM_DENIED            =10
-AFC_E_SERVICE_NOT_CONNECTED  =11
-AFC_E_OP_TIMEOUT             =12
-AFC_E_TOO_MUCH_DATA          =13
-AFC_E_END_OF_DATA            =14
-AFC_E_OP_NOT_SUPPORTED       =15
-AFC_E_OBJECT_EXISTS          =16
-AFC_E_OBJECT_BUSY            =17
-AFC_E_NO_SPACE_LEFT          =18
-AFC_E_OP_WOULD_BLOCK         =19
-AFC_E_IO_ERROR               =20
-AFC_E_OP_INTERRUPTED         =21
-AFC_E_OP_IN_PROGRESS         =22
-AFC_E_INTERNAL_ERROR         =23
+AFC_E_MUX_ERROR = 30
+AFC_E_NO_MEM = 31
+AFC_E_NOT_ENOUGH_DATA = 32
+AFC_E_DIR_NOT_EMPTY = 33
 
-AFC_E_MUX_ERROR              =30
-AFC_E_NO_MEM                 =31
-AFC_E_NOT_ENOUGH_DATA        =32
-AFC_E_DIR_NOT_EMPTY          =33
-
-AFC_FOPEN_RDONLY   = 0x00000001 #/**< r   O_RDONLY */
-AFC_FOPEN_RW       = 0x00000002 #/**< r+  O_RDWR   | O_CREAT */
-AFC_FOPEN_WRONLY   = 0x00000003 #/**< w   O_WRONLY | O_CREAT  | O_TRUNC */
-AFC_FOPEN_WR       = 0x00000004 #/**< w+  O_RDWR   | O_CREAT  | O_TRUNC */
-AFC_FOPEN_APPEND   = 0x00000005 #/**< a   O_WRONLY | O_APPEND | O_CREAT */
-AFC_FOPEN_RDAPPEND = 0x00000006 #/**< a+  O_RDWR   | O_APPEND | O_CREAT */
+AFC_FOPEN_RDONLY = 0x00000001  # /**< r   O_RDONLY */
+AFC_FOPEN_RW = 0x00000002  # /**< r+  O_RDWR   | O_CREAT */
+AFC_FOPEN_WRONLY = 0x00000003  # /**< w   O_WRONLY | O_CREAT  | O_TRUNC */
+AFC_FOPEN_WR = 0x00000004  # /**< w+  O_RDWR   | O_CREAT  | O_TRUNC */
+AFC_FOPEN_APPEND = 0x00000005  # /**< a   O_WRONLY | O_APPEND | O_CREAT */
+AFC_FOPEN_RDAPPEND = 0x00000006  # /**< a+  O_RDWR   | O_APPEND | O_CREAT */
 
 AFC_HARDLINK = 1
 AFC_SYMLINK = 2
 
-AFC_LOCK_SH = 1 | 4  #/**< shared lock */
-AFC_LOCK_EX = 2 | 4  #/**< exclusive lock */
-AFC_LOCK_UN = 8 | 4  #/**< unlock */
+AFC_LOCK_SH = 1 | 4  # /**< shared lock */
+AFC_LOCK_EX = 2 | 4  # /**< exclusive lock */
+AFC_LOCK_UN = 8 | 4  # /**< unlock */
 
 
 if PY3:
@@ -149,17 +146,19 @@ class AFCClient(object):
         self.service.close()
 
     def dispatch_packet(self, operation, data, this_length=0):
-        afcpack = Container(magic=AFCMAGIC,
-                            entire_length=40 + len(data),
-                            this_length=40 + len(data),
-                            packet_num=self.packet_num,
-                            operation=operation)
+        afcpack = Container(
+            magic=AFCMAGIC,
+            entire_length=40 + len(data),
+            this_length=40 + len(data),
+            packet_num=self.packet_num,
+            operation=operation,
+        )
         if this_length:
             afcpack.this_length = this_length
         header = AFCPacket.build(afcpack)
         self.packet_num += 1
         if PY3 and isinstance(data, str):
-            data = data.encode('utf-8')
+            data = data.encode("utf-8")
         self.service.sock.send(header + data)
 
     def receive_data(self):
@@ -191,7 +190,7 @@ class AFCClient(object):
 
     def list_to_dict(self, d):
         if PY3:
-            d = d.decode('utf-8')
+            d = d.decode("utf-8")
         t = d.split("\x00")
         t = t[:-1]
 
@@ -210,7 +209,7 @@ class AFCClient(object):
         status, data = self.do_operation(AFC_OP_READ_DIR, dirname)
         if status == AFC_E_SUCCESS:
             if PY3:
-                data = data.decode('utf-8')
+                data = data.decode("utf-8")
             return [x for x in data.split("\x00") if x != ""]
         return []
 
@@ -244,18 +243,19 @@ class AFCClient(object):
 
     def make_link(self, target, linkname, type=AFC_SYMLINK):
         if PY3:
-            linkname = linkname.encode('utf-8')
+            linkname = linkname.encode("utf-8")
             separator = b"\x00"
         else:
             separator = "\x00"
-        status, data = self.do_operation(AFC_OP_MAKE_LINK,
-                                         struct.pack("<Q", type) + target + separator + linkname + separator)
+        status, data = self.do_operation(
+            AFC_OP_MAKE_LINK, struct.pack("<Q", type) + target + separator + linkname + separator
+        )
         self.logger.info("make_link: %s", status)
         return status
 
     def file_open(self, filename, mode=AFC_FOPEN_RDONLY):
         if PY3:
-            filename = filename.encode('utf-8')
+            filename = filename.encode("utf-8")
             separator = b"\x00"
         else:
             separator = "\x00"
@@ -268,7 +268,7 @@ class AFCClient(object):
 
     def file_remove(self, filename):
         if PY3:
-            filename = filename.encode('utf-8')
+            filename = filename.encode("utf-8")
             separator = b"\x00"
         else:
             separator = "\x00"
@@ -277,8 +277,8 @@ class AFCClient(object):
 
     def file_rename(self, old, new):
         if PY3:
-            old = old.encode('utf-8')
-            new = new.encode('utf-8')
+            old = old.encode("utf-8")
+            new = new.encode("utf-8")
             separator = b"\x00"
         else:
             separator = "\x00"
@@ -300,6 +300,7 @@ class AFCClient(object):
                 s, d = self.receive_data()
             except:
                 import traceback
+
                 traceback.print_exc()
                 self.lockdown = LockdownClient()
                 self.service = self.lockdown.start_service("com.apple.afc")
@@ -317,17 +318,15 @@ class AFCClient(object):
         segments = int(len(data) / MAXIMUM_WRITE_SIZE)
         try:
             for i in range(segments):
-                self.dispatch_packet(AFC_OP_WRITE,
-                                     hh + data[i * MAXIMUM_WRITE_SIZE:(i + 1) * MAXIMUM_WRITE_SIZE],
-                                     this_length=48)
+                self.dispatch_packet(
+                    AFC_OP_WRITE, hh + data[i * MAXIMUM_WRITE_SIZE : (i + 1) * MAXIMUM_WRITE_SIZE], this_length=48
+                )
                 s, d = self.receive_data()
                 if s != AFC_E_SUCCESS:
                     self.logger.error("file_write error: %d", s)
                     break
             if len(data) % MAXIMUM_WRITE_SIZE:
-                self.dispatch_packet(AFC_OP_WRITE,
-                                     hh + data[segments * MAXIMUM_WRITE_SIZE:],
-                                     this_length=48)
+                self.dispatch_packet(AFC_OP_WRITE, hh + data[segments * MAXIMUM_WRITE_SIZE :], this_length=48)
                 s, d = self.receive_data()
         except:
             self.lockdown = LockdownClient()
@@ -338,10 +337,10 @@ class AFCClient(object):
     def get_file_contents(self, filename):
         info = self.get_file_info(filename)
         if info:
-            if info['st_ifmt'] == 'S_IFLNK':
-                filename = info['LinkTarget']
+            if info["st_ifmt"] == "S_IFLNK":
+                filename = info["LinkTarget"]
 
-            if info['st_ifmt'] == 'S_IFDIR':
+            if info["st_ifmt"] == "S_IFDIR":
                 self.logger.info("%s is directory...", filename)
                 return
 
@@ -358,7 +357,7 @@ class AFCClient(object):
         h = self.file_open(filename, AFC_FOPEN_WR)
         if not h:
             return
-        d = self.file_write(h, data)
+        self.file_write(h, data)
         self.file_close(h)
 
     def dir_walk(self, dirname):
@@ -366,11 +365,11 @@ class AFCClient(object):
         files = []
         for fd in self.read_directory(dirname):
             if PY3 and isinstance(fd, bytes):
-                fd = fd.decode('utf-8')
-            if fd in ('.', '..', ''):
+                fd = fd.decode("utf-8")
+            if fd in (".", "..", ""):
                 continue
             infos = self.get_file_info(posixpath.join(dirname, fd))
-            if infos and infos.get('st_ifmt') == 'S_IFDIR':
+            if infos and infos.get("st_ifmt") == "S_IFDIR":
                 dirs.append(fd)
             else:
                 files.append(fd)
@@ -384,15 +383,15 @@ class AFCClient(object):
 
 
 class AFCShell(Cmd):
-
-    def __init__(self, afcname='com.apple.afc', completekey='tab', stdin=None, stdout=None, client=None, udid=None,
-                 logger=None):
+    def __init__(
+        self, afcname="com.apple.afc", completekey="tab", stdin=None, stdout=None, client=None, udid=None, logger=None
+    ):
         Cmd.__init__(self, completekey=completekey, stdin=stdin, stdout=stdout)
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = LockdownClient()
         self.afc = client if client else AFCClient(self.lockdown, serviceName=afcname, udid=udid)
-        self.curdir = '/'
-        self.prompt = 'AFC$ ' + self.curdir + ' '
+        self.curdir = "/"
+        self.prompt = "AFC$ " + self.curdir + " "
         self.complete_cat = self._complete
         self.complete_ls = self._complete
 
@@ -425,8 +424,9 @@ class AFCShell(Cmd):
     def _complete(self, text, line, begidx, endidx):
         filename = text.split("/")[-1]
         dirname = "/".join(text.split("/")[:-1])
-        return [dirname + "/" + x for x in self.afc.read_directory(self.curdir + "/" + dirname) if
-                x.startswith(filename)]
+        return [
+            dirname + "/" + x for x in self.afc.read_directory(self.curdir + "/" + dirname) if x.startswith(filename)
+        ]
 
     def do_ls(self, p):
         dirname = self.curdir + "/" + p
@@ -446,10 +446,10 @@ class AFCShell(Cmd):
 
     def do_rm(self, p):
         f = self.afc.get_file_info(self.curdir + "/" + p)
-        if f['st_ifmt'] == 'S_IFDIR':
-            d = self.afc.remove_directory(self.curdir + "/" + p)
+        if f["st_ifmt"] == "S_IFDIR":
+            self.afc.remove_directory(self.curdir + "/" + p)
         else:
-            d = self.afc.file_remove(self.curdir + "/" + p)
+            self.afc.file_remove(self.curdir + "/" + p)
 
     def do_pull(self, user_args):
         args = user_args.split()
@@ -466,8 +466,7 @@ class AFCShell(Cmd):
             return
 
         out_path = out + "/" + path
-        if f['st_ifmt'] == 'S_IFDIR':
-
+        if f["st_ifmt"] == "S_IFDIR":
             if not os.path.isdir(out_path):
                 os.makedirs(out_path, MODEMASK)
 
@@ -485,7 +484,7 @@ class AFCShell(Cmd):
                     out_dir = os.path.dirname(out_path)
                     if not os.path.exists(out_dir):
                         os.makedirs(out_dir, MODEMASK)
-                    with open(out_path, 'wb+') as f:
+                    with open(out_path, "wb+") as f:
                         f.write(data)
 
     def do_push(self, p):
@@ -530,7 +529,7 @@ class AFCShell(Cmd):
 
     def do_infos(self, p):
         for k, v in self.afc.get_device_infos().items():
-            print(k, '\t:\t', v)
+            print(k, "\t:\t", v)
 
     def do_mv(self, p):
         t = p.split()

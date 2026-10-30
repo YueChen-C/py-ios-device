@@ -1,7 +1,6 @@
 import logging
-import struct
 
-from construct import Struct, PascalString, Int, Optional
+from construct import Int, Optional, PascalString, Struct
 
 from ios_device.servers.Instrument import InstrumentServer
 from ios_device.util.lockdown import LockdownClient
@@ -14,7 +13,7 @@ LOCATION_STRUCT = Struct(
 
 
 class SimulateLocation(object):
-    SERVICE_NAME = 'com.apple.dt.simulatelocation'
+    SERVICE_NAME = "com.apple.dt.simulatelocation"
 
     def __init__(self, lockdown=None, udid=None, network=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
@@ -22,30 +21,26 @@ class SimulateLocation(object):
         self.service = self.lockdown.start_service(self.SERVICE_NAME)
 
     def clear(self):
-        """ stop simulation """
-        self.service.sock.sendall(LOCATION_STRUCT.build({'status': 1}))
+        """stop simulation"""
+        self.service.sock.sendall(LOCATION_STRUCT.build({"status": 1}))
 
     def set(self, latitude: float, longitude: float):
-        """ set simulation """
-        location_byte = LOCATION_STRUCT.build({
-            'status': 0,
-            'latitude': str(latitude),
-            'longitude': str(longitude)
-        })
+        """set simulation"""
+        location_byte = LOCATION_STRUCT.build({"status": 0, "latitude": str(latitude), "longitude": str(longitude)})
         self.service.sock.sendall(location_byte)
 
 
 class DvtSimulateLocation(InstrumentServer):
-    LocationSimulation = 'com.apple.instruments.server.services.LocationSimulation'
+    LocationSimulation = "com.apple.instruments.server.services.LocationSimulation"
 
     def __init__(self):
         super().__init__()
         self.init()
 
     def set(self, latitude: float, longitude: float):
-        data = self.call(self.LocationSimulation, 'simulateLocationWithLatitude:longitude:', latitude, longitude)
+        data = self.call(self.LocationSimulation, "simulateLocationWithLatitude:longitude:", latitude, longitude)
         return data
 
     def clear(self):
-        data = self.call(self.LocationSimulation, 'stopLocationSimulation')
+        data = self.call(self.LocationSimulation, "stopLocationSimulation")
         return data

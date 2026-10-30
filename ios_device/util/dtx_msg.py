@@ -8,6 +8,7 @@ dtx msg 分为几层，按顺序
 3.DTXMessageAux Aux数据
 4.CFStringRef 类型数据类型 method 请求的方法声明
 """
+
 import io
 import plistlib
 from abc import ABC
@@ -15,12 +16,30 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List
 
-from construct import Struct, Int32ul, Int16ul, Int64ul, Const, Prefixed, GreedyBytes, this, Adapter, Select, \
-    GreedyRange, Switch, Default, Int64sl, Int32sl, CString, Array
+from construct import (
+    Adapter,
+    Array,
+    Const,
+    CString,
+    Default,
+    GreedyBytes,
+    GreedyRange,
+    Int16ul,
+    Int32sl,
+    Int32ul,
+    Int64sl,
+    Int64ul,
+    Prefixed,
+    Select,
+    Struct,
+    Switch,
+    this,
+)
+
 from ios_device.util.variables import LOG
 
 from . import Log
-from .bpylist2 import unarchive, archive
+from .bpylist2 import archive, unarchive
 from .exceptions import InstrumentRPCParseError
 
 log = Log.getLogger(LOG.Instrument.value)
@@ -31,8 +50,7 @@ class Raw:
 
 
 class RawObj(Raw):
-    """ 某些情况 int 类型需要转成 obj
-    """
+    """某些情况 int 类型需要转成 obj"""
 
     def __init__(self, *data):
         self.data = data
@@ -60,7 +78,7 @@ class RawInt32(Raw):
 
 @dataclass
 class InfoRequest:
-    magic = 'infoRequest'
+    magic = "infoRequest"
     items: List[str]
 
 
@@ -73,11 +91,7 @@ class PlistAdapter(Adapter, ABC):
 
 
 info_request_struct = Struct(
-    "magic" / CString("utf8"),
-    "count" / Int32ul,
-    "items" / Array(this.count,
-                    Prefixed(Int32ul, CString("utf8"))
-                    )
+    "magic" / CString("utf8"), "count" / Int32ul, "items" / Array(this.count, Prefixed(Int32ul, CString("utf8")))
 )
 
 
@@ -86,57 +100,81 @@ class InfoReqAdapter(Adapter):
         return info_request_struct.parse(obj)
 
     def _encode(self, obj: InfoRequest, ctx, path):
-        return info_request_struct.build({'magic': obj.magic, 'count': len(obj.items), 'items': obj.items})
+        return info_request_struct.build({"magic": obj.magic, "count": len(obj.items), "items": obj.items})
 
 
 dtx_message_header = Struct(
-    'magic' / Const(0x1F3D5B79, Int32ul),
-    'header_length' / Int32ul,
-    'fragment_id' / Default(Int16ul, 0),
-    'fragment_count' / Default(Int16ul, 1),
-    'payload_length' / Int32ul,
-    'identifier' / Int32ul,
-    'conversation_index' / Int32ul,
-    'channel' / Int32ul,
-    'expects_reply' / Int32ul,
+    "magic" / Const(0x1F3D5B79, Int32ul),
+    "header_length" / Int32ul,
+    "fragment_id" / Default(Int16ul, 0),
+    "fragment_count" / Default(Int16ul, 1),
+    "payload_length" / Int32ul,
+    "identifier" / Int32ul,
+    "conversation_index" / Int32ul,
+    "channel" / Int32ul,
+    "expects_reply" / Int32ul,
 )
 
 dtx_message_payload_header = Struct(
-    'flags' / Int32ul,
-    'aux_length' / Int32ul,
-    'total_length' / Int64ul,
+    "flags" / Int32ul,
+    "aux_length" / Int32ul,
+    "total_length" / Int64ul,
 )
 
 dtx_message_aux = Struct(
-    'magic' / Default(Int64ul, 0x1f0),
-    'data' / Prefixed(Int64ul, GreedyRange(Struct(
-        'magic' / Select(Const(0xa, Int32ul), Int32ul),
-        'type' / Int32ul,
-        'value' / Switch(this.type,
-                         {1: Prefixed(Int32ul, GreedyBytes),
-                          2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)),
-                          3: Int32sl,
-                          4: Int64ul, 5: Int32ul,
-                          6: Int64sl,
-                          12: InfoReqAdapter(GreedyBytes)},
-                         default=GreedyBytes),
-    )))
+    "magic" / Default(Int64ul, 0x1F0),
+    "data"
+    / Prefixed(
+        Int64ul,
+        GreedyRange(
+            Struct(
+                "magic" / Select(Const(0xA, Int32ul), Int32ul),
+                "type" / Int32ul,
+                "value"
+                / Switch(
+                    this.type,
+                    {
+                        1: Prefixed(Int32ul, GreedyBytes),
+                        2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)),
+                        3: Int32sl,
+                        4: Int64ul,
+                        5: Int32ul,
+                        6: Int64sl,
+                        12: InfoReqAdapter(GreedyBytes),
+                    },
+                    default=GreedyBytes,
+                ),
+            )
+        ),
+    ),
 )
 
 server_push_dtx_message_aux = Struct(
-    'magic' / Default(Int64ul, 0x1f0),
-    'data' / Prefixed(Int64ul, GreedyRange(Struct(
-        'magic' / Select(Const(0xa, Int32ul), Int32ul),
-        'type' / Int32ul,
-        'value' / Switch(this.type,
-                         {1: Prefixed(Int32ul, GreedyBytes),
-                          2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)),
-                          3: Int32sl,
-                          4: Int64ul, 5: Int32ul,
-                          6: Int64sl,
-                          12: InfoReqAdapter(GreedyBytes)},
-                         default=GreedyBytes),
-    )))
+    "magic" / Default(Int64ul, 0x1F0),
+    "data"
+    / Prefixed(
+        Int64ul,
+        GreedyRange(
+            Struct(
+                "magic" / Select(Const(0xA, Int32ul), Int32ul),
+                "type" / Int32ul,
+                "value"
+                / Switch(
+                    this.type,
+                    {
+                        1: Prefixed(Int32ul, GreedyBytes),
+                        2: PlistAdapter(Prefixed(Int32ul, GreedyBytes)),
+                        3: Int32sl,
+                        4: Int64ul,
+                        5: Int32ul,
+                        6: Int64sl,
+                        12: InfoReqAdapter(GreedyBytes),
+                    },
+                    default=GreedyBytes,
+                ),
+            )
+        ),
+    ),
 )
 
 
@@ -145,29 +183,29 @@ class MessageAux:
         self.values = []
 
     def append_int(self, value: int):
-        self.values.append({'type': 3, 'value': value})
+        self.values.append({"type": 3, "value": value})
         return self
 
     def append_long(self, value: int):
-        self.values.append({'type': 4, 'value': value})
+        self.values.append({"type": 4, "value": value})
         return self
 
     def append_signed_int(self, value: int):
-        """ 有符号 int """
-        self.values.append({'type': 3, 'value': value})
+        """有符号 int"""
+        self.values.append({"type": 3, "value": value})
         return self
 
     def append_signed_long(self, value: int):
-        """ 有符号 long """
-        self.values.append({'type': 6, 'value': value})
+        """有符号 long"""
+        self.values.append({"type": 6, "value": value})
         return self
 
     def append_obj(self, value):
-        self.values.append({'type': 2, 'value': value})
+        self.values.append({"type": 2, "value": value})
         return self
 
     def append_info(self, value):
-        self.values.append({'type': 12, 'value': value, 'magic':1})
+        self.values.append({"type": 12, "value": value, "magic": 1})
         return self
 
     def __bytes__(self):
@@ -178,7 +216,7 @@ class DTXMessage:
     _FLAGS_TYPE = 2
 
     def __init__(self):
-        self._buf = b''
+        self._buf = b""
         self._message_header = None
         self._payload_header = None
         self._identifier = None
@@ -224,25 +262,28 @@ class DTXMessage:
                     break
         # ret._expects_reply = ret._message_header.expects_reply
         payload_io.close()
-        log.debug(f'DTX msg decode: {ret.selector} :{ret.auxiliaries}')
+        log.debug(f"DTX msg decode: {ret.selector} :{ret.auxiliaries}")
         return ret
 
     def __bytes__(self) -> bytes:
-        aux = bytes(self.auxiliaries) if self.auxiliaries is not None else b''
+        aux = bytes(self.auxiliaries) if self.auxiliaries is not None else b""
         if isinstance(self._selector, bytes):
             sel = self._selector
         else:
-            sel = archive(self._selector) if self._selector is not None else b''
+            sel = archive(self._selector) if self._selector is not None else b""
         payload_header = dtx_message_payload_header.build(
-            dict(flags=self._flags, aux_length=len(aux), total_length=len(aux) + len(sel)))
-        message_header = dtx_message_header.build(dict(
-            header_length=dtx_message_header.sizeof(),
-            payload_length=dtx_message_payload_header.sizeof() + len(aux) + len(sel),
-            identifier=self._identifier,
-            conversation_index=self._conversation_index,
-            channel=self._channel_code,
-            expects_reply=1 if self._expects_reply else 0
-        ))
+            dict(flags=self._flags, aux_length=len(aux), total_length=len(aux) + len(sel))
+        )
+        message_header = dtx_message_header.build(
+            dict(
+                header_length=dtx_message_header.sizeof(),
+                payload_length=dtx_message_payload_header.sizeof() + len(aux) + len(sel),
+                identifier=self._identifier,
+                conversation_index=self._conversation_index,
+                channel=self._channel_code,
+                expects_reply=1 if self._expects_reply else 0,
+            )
+        )
         payload_buf = message_header + payload_header + aux + sel
         return payload_buf
 
@@ -269,9 +310,9 @@ class DTXMessage:
 
 def object_to_aux(arg, aux: MessageAux):
     if isinstance(arg, int) and not isinstance(arg, RawObj):
-        if abs(arg) < (2 ** 32):
+        if abs(arg) < (2**32):
             aux.append_int(arg)
-        elif abs(arg) < (2 ** 64):
+        elif abs(arg) < (2**64):
             aux.append_long(arg)
         else:
             raise ValueError("num too large")

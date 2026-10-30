@@ -22,25 +22,20 @@
 #
 #
 
-import os
 import logging
+import os
 import sys
 
 from ios_device.servers.afc import AFCClient
+
 sys.path.append(os.getcwd())
 
 from ios_device.util.lockdown import LockdownClient
 
-client_options = {
-    "SkipUninstall": False,
-    "ApplicationSINF": False,
-    "iTunesMetadata": False,
-    "ReturnAttributes": False
-}
+client_options = {"SkipUninstall": False, "ApplicationSINF": False, "iTunesMetadata": False, "ReturnAttributes": False}
 
 
 class installation_proxy(object):
-
     def __init__(self, lockdown=None, udid=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.lockdown = lockdown or LockdownClient(udid=udid)
@@ -66,17 +61,15 @@ class installation_proxy(object):
                 self.logger.info("%s %% Complete", z.get("PercentComplete"))
             if z.get("Status") == "Complete":
                 self.logger.info("Success")
-                return z.get("Status"),True
-            if z.get('Error'):
-                self.logger.info(z.get('ErrorDescription'))
-                return z.get("Error"),False
+                return z.get("Status"), True
+            if z.get("Error"):
+                self.logger.info(z.get("ErrorDescription"))
+                return z.get("Error"), False
 
         return Exception("Install Error")
 
     def send_cmd_for_bid(self, bid, cmd="Archive", options=None, handler=None, *args):
-        cmd = {"Command": cmd,
-
-               "ApplicationIdentifier": bid}
+        cmd = {"Command": cmd, "ApplicationIdentifier": bid}
         if options:
             cmd.update({"ClientOptions": options})
         self.service.send_plist(cmd)
@@ -88,9 +81,7 @@ class installation_proxy(object):
     def install_or_upgrade(self, ipaPath, cmd="Install", options={}, handler=None, *args):
         afc = AFCClient(self.lockdown)
         afc.set_file_contents("/" + os.path.basename(ipaPath), open(ipaPath, "rb").read())
-        cmd = {"Command": cmd,
-               "ClientOptions": options,
-               "PackagePath": os.path.basename(ipaPath)}
+        cmd = {"Command": cmd, "ClientOptions": options, "PackagePath": os.path.basename(ipaPath)}
 
         self.service.send_plist(cmd)
         self.watch_completion(handler, args)
@@ -102,8 +93,7 @@ class installation_proxy(object):
         return self.install_or_upgrade(ipaPath, "Upgrade", options, handler, args)
 
     def check_capabilities_match(self, capabilities, options={}):
-        cmd = {"Command": "CheckCapabilitiesMatch",
-               "ClientOptions": options}
+        cmd = {"Command": "CheckCapabilitiesMatch", "ClientOptions": options}
 
         if capabilities:
             cmd["Capabilities"] = capabilities
@@ -116,8 +106,7 @@ class installation_proxy(object):
         if attributes:
             options["ReturnAttributes"] = attributes
 
-        cmd = {"Command": "Browse",
-               "ClientOptions": options}
+        cmd = {"Command": "Browse", "ClientOptions": options}
 
         self.service.send_plist(cmd)
 
@@ -137,11 +126,10 @@ class installation_proxy(object):
         return result
 
     def apps_info(self, options={}):
-        cmd = {"Command": "Lookup",
-               "ClientOptions": options}
+        cmd = {"Command": "Lookup", "ClientOptions": options}
 
         self.service.send_plist(cmd)
-        return self.service.recv_plist().get('LookupResult')
+        return self.service.recv_plist().get("LookupResult")
 
     def archive(self, bid, options={}, handler=None, *args):
         self.send_cmd_for_bid(bid, "Archive", options, handler, args)
@@ -153,8 +141,7 @@ class installation_proxy(object):
         self.send_cmd_for_bid(bid, "RemoveArchive", options, handler, args)
 
     def archives_info(self, options={}):
-        cmd = {"Command": "LookupArchive",
-               "ClientOptions": options}
+        cmd = {"Command": "LookupArchive", "ClientOptions": options}
         return self.service.send_plist(cmd).get("LookupResult")
 
     def search_path_for_bid(self, bid):
@@ -165,20 +152,23 @@ class installation_proxy(object):
         return path
 
     def get_apps(self, appTypes=["User"]):
-        return [app for app in self.apps_info().values()
-                if app.get("ApplicationType") in appTypes]
+        return [app for app in self.apps_info().values() if app.get("ApplicationType") in appTypes]
 
     def print_apps(self, appType=["User"]):
         for app in self.get_apps(appType):
-            print(("%s : %s => %s" % (app.get("CFBundleDisplayName"),
-                                      app.get("CFBundleIdentifier"),
-                                      app.get("Path") if app.get("Path")
-                                      else app.get("Container"))).encode('utf-8'))
+            print(
+                (
+                    "%s : %s => %s"
+                    % (
+                        app.get("CFBundleDisplayName"),
+                        app.get("CFBundleIdentifier"),
+                        app.get("Path") if app.get("Path") else app.get("Container"),
+                    )
+                ).encode("utf-8")
+            )
 
     def get_apps_bid(self, appTypes=["User"]):
-        return [app["CFBundleIdentifier"]
-                for app in self.get_apps()
-                if app.get("ApplicationType") in appTypes]
+        return [app["CFBundleIdentifier"] for app in self.get_apps() if app.get("ApplicationType") in appTypes]
 
     def close(self):
         self.service.close()

@@ -21,14 +21,12 @@ class SBServiceClient(object):
         return res
 
     def set_icon_state(self, newstate={}):
-        cmd = {"command": "setIconState",
-               "iconState": newstate}
+        cmd = {"command": "setIconState", "iconState": newstate}
 
         self.service.send_plist(cmd)
 
     def get_icon_pngdata(self, bid):
-        cmd = {"command": "getIconPNGData",
-               "bundleId": bid}
+        cmd = {"command": "getIconPNGData", "bundleId": bid}
 
         self.service.send_plist(cmd)
         res = self.service.recv_plist()
@@ -41,7 +39,7 @@ class SBServiceClient(object):
         cmd = {"command": "getInterfaceOrientation"}
         self.service.send_plist(cmd)
         res = self.service.recv_plist()
-        return res.get('interfaceOrientation')
+        return res.get("interfaceOrientation")
 
     def get_wallpaper_pngdata(self):
         cmd = {"command": "getHomeScreenWallpaperPNGData"}

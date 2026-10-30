@@ -17,20 +17,20 @@ class crashLog(object):
         self.crash_server = AFCCrashLog(lockdown=self.lockdown)
 
     def get_list(self):
-        crash_list = self.crash_server.read_directory('/')
+        crash_list = self.crash_server.read_directory("/")
         print(crash_list)
 
     def delete_crash(self, name):
-        status = self.crash_server.file_remove('//' + name)
-        print(f'delete {name} status {status}')
+        status = self.crash_server.file_remove("//" + name)
+        print(f"delete {name} status {status}")
 
     def export_crash(self, name):
-        data = self.crash_server.get_file_contents('//' + name)
+        data = self.crash_server.get_file_contents("//" + name)
         local_crash_file = os.path.join(os.getcwd(), name)
-        with open(local_crash_file, 'wb') as (fp):
+        with open(local_crash_file, "wb") as (fp):
             fp.write(data)
-        print(f'export path {local_crash_file}')
+        print(f"export path {local_crash_file}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     TestManagerdLockdown().init()
