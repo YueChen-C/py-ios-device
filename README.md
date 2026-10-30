@@ -55,7 +55,7 @@ sudo python3 -m pymobiledevice3 remote start-tunnel
 
 # Recommended to use go-ios, which has better transmission performance
 npm install -g go-ios  
-sudo ios tunnel start && ios tunnel start --userspace
+sudo ios tunnel start || ios tunnel start --userspace
 curl http://127.0.0.1:60105/tunnels
 ```
 

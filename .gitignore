@@ -10,3 +10,6 @@ build
 htmlcov/*
 tests/__out__/*
 .tox
+venv/
+.ruff_cache/
+__pycache__/

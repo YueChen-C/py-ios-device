@@ -63,12 +63,14 @@ def uninstall(ctx):
 
 @task
 def style_check(ctx):
-    ctx.run("black . --check --diff")
+    ctx.run("ruff check .")
+    ctx.run("ruff format --check .")
 
 
 @task
 def reformat_code(ctx):
-    ctx.run("black .")
+    ctx.run("ruff check . --fix")
+    ctx.run("ruff format .")
 
 
 @task

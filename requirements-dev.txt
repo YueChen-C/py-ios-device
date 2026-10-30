@@ -3,7 +3,8 @@ pytest
 pytest-mock
 pytest-cov
 pytest-xdist
-black
+ruff
+pre-commit
 twine
 wheel
 tox
