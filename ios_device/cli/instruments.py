@@ -6,19 +6,18 @@ import uuid
 from copy import deepcopy
 from datetime import datetime
 from packaging.version import Version
-from statistics import mean
 
 import click
 
 from ios_device.cli.base import InstrumentsBase
 from ios_device.cli.cli import Command, print_json
 from ios_device.util import Log, api_util
+from ios_device.util.display_stats import DisplayStats, FRAME_EVENT
 from ios_device.util.exceptions import InstrumentRPCParseError
 from ios_device.util.gpu_decode import JSEvn, TraceData, GRCDecodeOrder, GRCDisplayOrder
 from ios_device.util.kc_data import kc_data_parse
 from ios_device.util.kperf_data import kdbg_extract_all
-from ios_device.util.utils import DumpDisk, DumpNetwork, DumpMemory, convertBytes, \
-    MOVIE_FRAME_COST, NANO_SECOND, kperf_data
+from ios_device.util.utils import DumpDisk, DumpNetwork, DumpMemory, convertBytes, kperf_data
 from ios_device.util.variables import LOG, InstrumentsService
 
 log = Log.getLogger(LOG.Instrument.value)
@@ -367,56 +366,21 @@ def cmd_graphics(udid, network, format, time):
 
 @instruments.command('display', cls=Command)
 def cmd_display(udid, network, format):
-    """ Get more advanced fps.
-    """
-    last_frame = None
-    last_1_frame_cost, last_2_frame_cost, last_3_frame_cost = 0, 0, 0
-    jank_count = 0
-    big_jank_count = 0
-    jank_time_count = 0
-    mach_time_factor = 125 / 3
-    frame_count = 0
-    time_count = 0
-    last_time = datetime.now().timestamp()
-    _list = []
-
-    def on_graphics_message(res):
-        nonlocal frame_count, last_frame, last_1_frame_cost, last_2_frame_cost, last_3_frame_cost, time_count, mach_time_factor, last_time, \
-            jank_count, big_jank_count, jank_time_count, _list
-        if type(res.selector) is InstrumentRPCParseError:
-            for args in kperf_data(res.selector.data):
-                _time, code = args[0], args[7]
-                if kdbg_extract_all(code) == (0x31, 0x80, 0xc6):
-                    if not last_frame:
-                        last_frame = _time
-                    else:
-                        this_frame_cost = (_time - last_frame) * mach_time_factor
-                        if all([last_3_frame_cost != 0, last_2_frame_cost != 0, last_1_frame_cost != 0]):
-                            if this_frame_cost > mean([last_3_frame_cost, last_2_frame_cost, last_1_frame_cost]) * 2 \
-                                    and this_frame_cost > MOVIE_FRAME_COST * NANO_SECOND * 2:
-                                jank_count += 1
-                                jank_time_count += this_frame_cost
-                                if this_frame_cost > mean(
-                                        [last_3_frame_cost, last_2_frame_cost, last_1_frame_cost]) * 3 \
-                                        and this_frame_cost > MOVIE_FRAME_COST * NANO_SECOND * 3:
-                                    big_jank_count += 1
-
-                        last_3_frame_cost, last_2_frame_cost, last_1_frame_cost = last_2_frame_cost, last_1_frame_cost, this_frame_cost
-                        time_count += this_frame_cost
-                        last_frame = _time
-                        frame_count += 1
-
-                if time_count > NANO_SECOND:
-                    print(
-                        {"time": datetime.now().timestamp() - last_time, "fps": frame_count / time_count * NANO_SECOND,
-                         "jank": jank_count, "big_jank": big_jank_count, "stutter": jank_time_count / time_count})
-                    jank_count = 0
-                    big_jank_count = 0
-                    jank_time_count = 0
-                    frame_count = 0
-                    time_count = 0
-
+    """ Get fps / jank / stutter statistics. """
     with InstrumentsBase(udid=udid, network=network) as rpc:
+        # mach tick -> 纳秒 的比值随设备不同，不能用固定值
+        mach_time_info = rpc.device_info.machTimeInfo()
+        stats = DisplayStats(mach_time_info[1] / mach_time_info[2])
+
+        def on_graphics_message(res):
+            if type(res.selector) is not InstrumentRPCParseError:
+                return
+            for args in kperf_data(res.selector.data):
+                if kdbg_extract_all(args[7]) == FRAME_EVENT:
+                    report = stats.add_frame(args[0])
+                    if report:
+                        print_json(report, format)
+
         rpc.core_profile_session(on_graphics_message)
 
 

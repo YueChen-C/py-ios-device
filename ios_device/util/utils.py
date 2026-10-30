@@ -14,11 +14,13 @@ from functools import wraps
 
 from typing import Callable
 
+from ios_device.util import Log
+from ios_device.util.display_stats import MOVIE_FRAME_COST, NANO_SECOND  # noqa: F401 保留旧导入路径
+
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+log = Log.getLogger(__name__)
 
 _NotSet = object()
-NANO_SECOND = 1e9  # ns
-MOVIE_FRAME_COST = 1 / 24
 
 DEFAULT_AFTER_IDLE_SEC = 3
 DEFAULT_INTERVAL_SEC = 3
@@ -123,14 +125,19 @@ class DictAttrFieldNotFoundError(Exception):
 
 
 def kperf_data(messages):
+    """把 coreprofilesessiontap 的数据解成 64 字节 kd_buf 记录的元组列表。
+
+    ``[0]`` 是 mach 时间戳，``[7]`` 是 debug_id。尾部不足一条完整记录时只丢
+    尾巴——整块丢弃会把这一包里的帧全部扔掉，fps/jank 会跟着算错。
+    """
     _list = []
-    p_record = 0
     m_len = len(messages)
-    if m_len % 64 != 0:
-        return _list
-    while p_record < m_len:
+    p_record = 0
+    while p_record + 64 <= m_len:
         _list.append(struct.unpack('<QLLQQQQLLQ', messages[p_record:p_record + 64]))
         p_record += 64
+    if m_len % 64:
+        log.warning(f'kd_buf truncated record: {m_len % 64} of 64 bytes, dropped')
     return _list
 
 
