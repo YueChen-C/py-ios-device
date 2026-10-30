@@ -1,0 +1,6 @@
+[tool.ruff]
+line-length = 120 # 与 PyCharm 保持一致
+target-version = "py37" # 对应 setup.py 中的 python_requires=">=3.7"
+force-exclude = true # pre-commit 显式传文件时仍遵守 exclude 规则（官方推荐配合 pre-commit 使用）
+lint.select = ["F", "I"]  # F = Pyflakes, I = isort
+lint.ignore = ["F405", "F403"]  # 忽略特定错误
