@@ -11,7 +11,7 @@ def cmd_graphics(rpc):
     last_timestamp = 0
 
     def dropped_message(res):
-        print("[DROP]", res.selector, res.raw.channel_code)
+        print("[DROP]", res.selector, res.channel_code)
 
     def on_graphics_message(res):
         data = res.selector

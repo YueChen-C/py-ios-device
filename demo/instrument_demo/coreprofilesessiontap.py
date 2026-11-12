@@ -14,7 +14,7 @@ sys.path.append(os.getcwd())
 
 def graphics_display(rpc):
     def dropped_message(res):
-        print("[DROP]", res.selector, res.raw.channel_code)
+        print("[DROP]", res.selector, res.channel_code)
 
     # mach tick -> 纳秒 的比值随设备不同，不能用固定值
     mach_time_info = rpc.call("com.apple.instruments.server.services.deviceinfo", "machTimeInfo").selector

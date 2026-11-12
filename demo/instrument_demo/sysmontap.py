@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 def sysmontap(rpc):
     def dropped_message(res):
-        print("[DROP]", res.selector, res.raw.channel_code)
+        print("[DROP]", res.selector, res.channel_code)
 
     def on_sysmontap_message(res):
         if isinstance(res.selector, list):
