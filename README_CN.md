@@ -34,6 +34,7 @@ python 版本: 3.7 +
 - [x] 获取 iOS GPU Counters 
 - [x] 设置虚拟位置信息 
 - [x] 获取 APP 启动时间
+- [x] 获取内存泄漏地址与内存图（Instruments Leaks）
 - [x] pull && push 文件
 
 
@@ -109,7 +110,7 @@ Memory  >> {'App Memory': '699.69 MiB', 'Cached Files': '1.48 GiB', 'Compressed'
 
 #### 获取单个应用性能数据
 ```bash
-$ pyidevice instruments appmonitor  -b cn.rongcloud.im
+$ pyidevice instruments appmonitor  -b com.example.demo
 {'Pid': 30897, 'Name': 'SealTalk', 'CPU': '0 %', 'Memory': '35.72 MiB', 'DiskReads': '24.12 MiB', 'DiskWrites': '2.28 MiB', 'Threads': 13}
 {'Pid': 30897, 'Name': 'SealTalk', 'CPU': '3.4 %', 'Memory': '35.72 MiB', 'DiskReads': '24.12 MiB', 'DiskWrites': '2.30 MiB', 'Threads': 13}
 
@@ -218,7 +219,7 @@ $ pyidevice instruments gup_counters
 
 #### 获取 App 启动时间以及生命周期
 ```bash
-$ pyidevice instruments app_lifecycle -b cn.rongcloud.im
+$ pyidevice instruments app_lifecycle -b com.example.demo
   31.20 ms   Initializing-System Interface Initialization (Dyld init)
   14.33 ms   Initializing-Static Runtime Initialization
   35.68 ms   Launching-UIKit Initialization
@@ -227,6 +228,38 @@ $ pyidevice instruments app_lifecycle -b cn.rongcloud.im
    2.91 ms   Launching-UIKit Scene Creation
   21.85 ms   Launching-Initial Frame Rendering
 App Thread Process ID:6506076, Total Time:207.41 ms
+```
+
+#### 获取内存泄漏（Instruments Leaks）
+目标 App 必须可调试（开发签名 / `get-task-allow`）。如果它没在运行，传了 `--bundle_id`
+时 `memgraph` 会自动用 `MallocStackLogging=1` 启动，并等待 `--wait` 秒（默认 3）再抓图
+（`--no-launch` 可关闭）。没有栈日志时报告里只有地址、没有调用栈。
+
+```bash
+$ pyidevice instruments memgraph -b com.example.demo --out leaks.memgraph \
+    --dsym ~/Library/Developer/Xcode/DerivedData/Demo-xxxx/Build/Products/Debug-iphoneos/Demo.app.dSYM
+{
+    "pid": 1234,
+    "leaked_count": 3,
+    "leaked_addresses": [4626874368, 4626877952, 4630641168],
+    "graph": "leaks.memgraph"
+}
+
+6   LeakDemo                              0x104428c24 thunk for @escaping @callee_guaranteed () -> () + 48   <-- /<compiler-generated>:0
+5   LeakDemo                              0x104428a5c closure #1 in ViewController.viewDidLoad() + 152   <-- ViewController.swift:35
+4   LeakDemo                              0x104428ab4 ViewController.createLeaks() + 52   <-- ViewController.swift:41
+3   LeakDemo                              0x104428f8c ViewController.leakOrphanedObject() + 44   <-- ViewController.swift:56
+2   LeakDemo                              0x1044274ec LeakDemoObject.__allocating_init() + 16   <-- ViewController.swift:0
+1   libobjc.A.dylib                       0x1e64e43a0 _objc_rootAllocWithZone + 40
+0   libsystem_malloc.dylib                0x1dfa97ecc _malloc_zone_calloc + 204 
+```
+
+`--leaked-only` 只保留泄漏节点：图小很多，但调用栈仍然完整；设备这时不会返回
+`leaked_addresses`（JSON 里会带 `"addresses_omitted": true`）。保存下来的图是标准
+`.memgraph`（macOS 的 `leaks`、`heap`、`vmmap` 都能读），之后可以脱离设备再分析：
+
+```bash
+$ pyidevice instruments leaks leaks.memgraph --dsym /path/Demo.app.dSYM
 ```
 
 ### 其他功能示例

@@ -5,10 +5,11 @@ import uuid
 
 from packaging.version import Version
 
-from ios_device.servers.dvt import DTXEnum
+from ios_device.servers.dvt import REPLY_TIMEOUT, DTXEnum
 from ios_device.servers.house_arrest import HouseArrestService
 from ios_device.servers.Installation import InstallationProxyService
 from ios_device.servers.Instrument import InstrumentServer
+from ios_device.servers.remote_leaks import MemoryGraph, RemoteLeaks
 from ios_device.servers.testmanagerd import TestManagerdLockdown
 from ios_device.util import Log
 from ios_device.util.bpylist2 import NSURL, NSUUID, XCTestConfiguration, archive
@@ -238,6 +239,20 @@ class InstrumentsBase:
         """
         parsed = self.instruments.call(InstrumentsService.ProcessControl, "killPid:", str(pid)).selector
         return parsed
+
+    def memgraph(self, pid: int, leaked_only: bool = False, timeout: float = REPLY_TIMEOUT) -> MemoryGraph:
+        """
+        Capture a process's memory graph and its leak addresses.
+
+        The target must be debuggable (development-signed, get-task-allow) and already
+        running. Launch it with ``MallocStackLogging=1`` if you need allocation stacks.
+
+        @param pid: target process id
+        @param leaked_only: keep only leaked allocations; the device then omits addresses
+        @param timeout: seconds to wait for the device to build and send the graph
+        @return: MemoryGraph with .data (bytes), .leaked_count and .leaked_addresses
+        """
+        return RemoteLeaks(self.instruments).memory_graph(pid, leaked_only=leaked_only, timeout=timeout)
 
     def signal_app(self, sig: str, pid: str):
         """

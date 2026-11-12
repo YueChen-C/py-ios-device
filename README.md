@@ -31,6 +31,7 @@ python version: 3.7 +
 - [x] Analyze the core profile data stream
 - [x] Get Metal GPU Counters
 - [x] Get App Launch Lifecycle
+- [x] Get memory leak addresses and memory graph (Instruments Leaks)
 - [x] pull && push form the device
 
 
@@ -110,7 +111,7 @@ Memory  >> {'App Memory': '699.69 MiB', 'Cached Files': '1.48 GiB', 'Compressed'
 #### Get application performance data
 
 ```bash
-$ pyidevice instruments appmonitor  -b cn.rongcloud.im
+$ pyidevice instruments appmonitor  -b com.example.demo
 {'Pid': 30897, 'Name': 'SealTalk', 'CPU': '0 %', 'Memory': '35.72 MiB', 'DiskReads': '24.12 MiB', 'DiskWrites': '2.28 MiB', 'Threads': 13}
 {'Pid': 30897, 'Name': 'SealTalk', 'CPU': '3.4 %', 'Memory': '35.72 MiB', 'DiskReads': '24.12 MiB', 'DiskWrites': '2.30 MiB', 'Threads': 13}
 ```
@@ -214,7 +215,7 @@ $ pyidevice instruments gpu_counters
 
 #### Get App Launch Lifecycle
 ```bash
-$ pyidevice instruments app_lifecycle -b cn.rongcloud.im
+$ pyidevice instruments app_lifecycle -b com.example.demo
   31.20 ms   Initializing-System Interface Initialization (Dyld init)
   14.33 ms   Initializing-Static Runtime Initialization
   35.68 ms   Launching-UIKit Initialization
@@ -223,6 +224,40 @@ $ pyidevice instruments app_lifecycle -b cn.rongcloud.im
    2.91 ms   Launching-UIKit Scene Creation
   21.85 ms   Launching-Initial Frame Rendering
 App Thread Process ID:6506076, Total Time:207.41 ms
+```
+
+#### Get memory leaks (Instruments Leaks)
+The target must be development-signed (`get-task-allow`). If it is not running and you pass
+`--bundle_id`, `memgraph` launches it with `MallocStackLogging=1` and waits `--wait` seconds
+(default 3) before capturing (`--no-launch` disables this). Without the stack logging the
+report contains addresses but no backtraces.
+
+```bash
+$ pyidevice instruments memgraph -b com.example.demo --out leaks.memgraph \
+    --dsym ~/Library/Developer/Xcode/DerivedData/Demo-xxxx/Build/Products/Debug-iphoneos/Demo.app.dSYM
+{
+    "pid": 1234,
+    "leaked_count": 3,
+    "leaked_addresses": [4626874368, 4626877952, 4630641168],
+    "graph": "leaks.memgraph"
+}
+
+6   LeakDemo                              0x104428c24 thunk for @escaping @callee_guaranteed () -> () + 48   <-- /<compiler-generated>:0
+5   LeakDemo                              0x104428a5c closure #1 in ViewController.viewDidLoad() + 152   <-- ViewController.swift:35
+4   LeakDemo                              0x104428ab4 ViewController.createLeaks() + 52   <-- ViewController.swift:41
+3   LeakDemo                              0x104428f8c ViewController.leakOrphanedObject() + 44   <-- ViewController.swift:56
+2   LeakDemo                              0x1044274ec LeakDemoObject.__allocating_init() + 16   <-- ViewController.swift:0
+1   libobjc.A.dylib                       0x1e64e43a0 _objc_rootAllocWithZone + 40
+0   libsystem_malloc.dylib                0x1dfa97ecc _malloc_zone_calloc + 204 
+```
+
+`--leaked-only` keeps just the leaked nodes: the graph is much smaller and still carries the
+full stacks, but the device omits `leaked_addresses` (the JSON summary sets
+`"addresses_omitted": true`). The saved graph is a regular `.memgraph` file (readable by
+macOS `leaks`, `heap` and `vmmap`) and can be re-analyzed later without the device:
+
+```bash
+$ pyidevice instruments leaks leaks.memgraph --dsym /path/Demo.app.dSYM
 ```
 
 ### Other

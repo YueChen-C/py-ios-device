@@ -108,6 +108,10 @@ class iDeviceFileClosed(iOSError):
     pass
 
 
+class LeaksError(PyiOSDeviceException):
+    """Leaks 通道不可用或返回了无法解析的内存图。"""
+
+
 class InstrumentRPCParseError:
     def __init__(self, data=None):
         self.data = data

@@ -2,6 +2,7 @@ import dataclasses
 import json
 import signal
 import threading
+import time
 import uuid
 from copy import deepcopy
 from datetime import datetime
@@ -13,10 +14,11 @@ from ios_device.cli.base import InstrumentsBase
 from ios_device.cli.cli import Command, print_json
 from ios_device.util import Log, api_util
 from ios_device.util.display_stats import FRAME_EVENT, DisplayStats
-from ios_device.util.exceptions import InstrumentRPCParseError
+from ios_device.util.exceptions import InstrumentRPCParseError, LeaksError
 from ios_device.util.gpu_decode import GRCDecodeOrder, GRCDisplayOrder, JSEvn, TraceData
 from ios_device.util.kc_data import kc_data_parse
 from ios_device.util.kperf_data import kdbg_extract_all
+from ios_device.util.leaks_report import analyze_memgraph
 from ios_device.util.utils import DumpDisk, DumpMemory, DumpNetwork, convertBytes, kperf_data
 from ios_device.util.variables import LOG, InstrumentsService
 
@@ -68,7 +70,7 @@ def cmd_kill(udid, network, format, pid, name, bundle_id):
         if bundle_id or name:
             pid = rpc.get_pid(bundle_id, name)
         if not pid:
-            log.error(f'The pid: {pid} did not start. Try "-h or --help" for help')
+            log.error("no running process found; launch the app with MallocStackLogging=1 first")
             return
         rpc.kill_app(pid)
         print(f"Kill {pid} ...")
@@ -82,8 +84,13 @@ def cmd_launch(udid, network, format, bundle_id: str, app_env: dict):
     Launch an application.
 
     :param bundle_id: Arguments of process to launch, the first argument is the bundle id.
-    :param app_env: App launch environment variable
+    :param app_env: App launch environment as a JSON object, e.g. '{"MallocStackLogging":"1"}'
     """
+    if isinstance(app_env, str):
+        try:
+            app_env = json.loads(app_env) if app_env else None
+        except ValueError as e:
+            raise click.BadParameter(f"app_env must be a JSON object: {e}")
     with InstrumentsBase(udid=udid, network=network) as rpc:
         pid = rpc.launch_app(bundle_id=bundle_id, app_env=app_env)
         print(f"Process launched with pid {pid}")
@@ -484,3 +491,109 @@ def cmd_app_lifecycle(udid, network, format, bundle_id):
     """App startup lifecycle."""
     with InstrumentsBase(udid=udid, network=network) as rpc:
         rpc.app_launch_lifecycle(bundle_id)
+
+
+@instruments.command("memgraph", cls=Command)
+@click.option("-p", "--pid", type=click.INT, default=None, help="Process ID to inspect")
+@click.option("-n", "--name", default=None, help="Process app name to filter")
+@click.option("-b", "--bundle_id", default=None, help="Process app bundleId to filter")
+@click.option("-o", "--out", type=click.Path(dir_okay=False), default=None, help="Where to write the .memgraph file")
+@click.option("--leaked-only", is_flag=True, help="Keep only leaked allocations (the device then omits addresses)")
+@click.option(
+    "--dsym",
+    type=click.Path(exists=True),
+    default=None,
+    help="dSYM (or .app) used to append source file:line to the leak stacks",
+)
+@click.option(
+    "--timeout",
+    type=click.FLOAT,
+    default=120.0,
+    show_default=True,
+    help="Seconds to wait for the device to build and send the graph",
+)
+@click.option(
+    "--launch/--no-launch",
+    default=True,
+    show_default=True,
+    help="Launch the app with MallocStackLogging=1 when it is not running",
+)
+@click.option(
+    "--wait",
+    "wait_seconds",
+    type=click.FLOAT,
+    default=3.0,
+    show_default=True,
+    help="Seconds to wait after launching before capturing",
+)
+def cmd_memgraph(udid, network, format, pid, name, bundle_id, out, leaked_only, dsym, timeout, launch, wait_seconds):
+    """
+    Capture a process's memory graph and leak addresses.
+
+    Prints a JSON summary by default. The app must be development-signed
+    (get-task-allow) and already running. Launch it with MallocStackLogging=1
+    if you need allocation stacks in the report.
+    """
+    with InstrumentsBase(udid=udid, network=network) as rpc:
+        if not pid and (bundle_id or name):
+            pid = rpc.get_pid(bundle_id, name)
+        if not pid and launch and bundle_id:
+            log.info(f"{bundle_id} is not running, launching with MallocStackLogging=1")
+            pid = rpc.launch_app(bundle_id=bundle_id, app_env={"MallocStackLogging": "1"})
+            if pid and wait_seconds > 0:
+                time.sleep(wait_seconds)
+        if not pid:
+            if bundle_id and launch:
+                log.error(f"failed to launch {bundle_id}")
+            elif bundle_id:
+                log.error("no running process found and --no-launch was given; start the app first")
+            else:
+                log.error("no running process found; pass --bundle_id to launch it or start the app manually")
+            return
+
+        try:
+            graph = rpc.memgraph(pid, leaked_only=leaked_only, timeout=timeout)
+        except LeaksError as e:
+            log.error(str(e))
+            return
+        out = out or f"memgraph_{pid}.memgraph"
+        path = graph.save(out) if graph.data else None
+        summary = {
+            "pid": pid,
+            "leaked_count": graph.leaked_count,
+            "leaked_addresses": graph.leaked_addresses,
+            "graph": str(path) if path else None,
+        }
+        if leaked_only:
+            # 设备在 leaked-only 图里不回地址, 但图本身仍带完整调用栈。
+            summary["addresses_omitted"] = True
+            log.warning("leaked-only graph: leaked_addresses is omitted by the device; use `leaks` on the graph")
+        print_json(summary, format or "json")
+        if path is None:
+            log.info("no leaks were found, so the device returned no graph")
+            return
+        if dsym is None:
+            return
+        try:
+            report = analyze_memgraph(path, dsym)
+        except LeaksError as e:
+            log.error(str(e))
+            return
+        # JSON output must stay valid, so send the human-readable report to stderr.
+        click.echo(report, err=(format == "json"))
+
+
+@instruments.command("leaks", cls=Command)
+@click.argument("graph", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "--dsym",
+    type=click.Path(exists=True),
+    default=None,
+    help="dSYM (or .app) used to append source file:line to the leak stacks",
+)
+def cmd_leaks(udid, network, format, graph, dsym):
+    """Print the leak report of a saved .memgraph, optionally annotated with source lines."""
+    try:
+        click.echo(analyze_memgraph(graph, dsym))
+    except LeaksError as e:
+        log.error(str(e))

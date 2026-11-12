@@ -187,10 +187,13 @@ class DTXServer:
         self._channels[channel] = channel_id
         return channel_id
 
-    def call(self, channel: str, selector: str, *auxiliaries) -> DTXMessage:
-        """RPC 调用: 在通道上发送 selector 请求并同步等待应答。"""
+    def call(self, channel: str, selector: str, *auxiliaries, timeout: float = REPLY_TIMEOUT) -> DTXMessage:
+        """RPC 调用: 在通道上发送 selector 请求并同步等待应答。
+
+        :param timeout: 等待应答的超时时间 (秒)。内存图等大响应可以调大。
+        """
         channel_id = self.make_channel(channel)
-        return self._call(True, channel_id, selector, *auxiliaries)
+        return self._call(True, channel_id, selector, *auxiliaries, timeout=timeout)
 
     def _reply_ack(self, data: DTXMessage):
         """回复对端的 expects_reply 消息 (空应答)。"""
@@ -216,7 +219,9 @@ class DTXServer:
             raise MuxError("connection closed")
         return ret
 
-    def _call(self, sync: bool, channel_id: int, selector: str, *auxiliaries) -> typing.Optional[DTXMessage]:
+    def _call(
+        self, sync: bool, channel_id: int, selector: str, *auxiliaries, timeout: float = REPLY_TIMEOUT
+    ) -> typing.Optional[DTXMessage]:
         """发送一条 DTX 请求。
 
         :param sync: True 时同步等待应答; False 时只发送 (触发对端回调)
@@ -241,7 +246,7 @@ class DTXServer:
             dtx._flags = 0
         self._client.send_dtx(self._cli, dtx)
         if sync:
-            return self.wait_reply(identifier)
+            return self.wait_reply(identifier, timeout=timeout)
         return None
 
     def _dispatch(self, dtx: DTXMessage):

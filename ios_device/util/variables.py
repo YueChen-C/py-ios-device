@@ -115,6 +115,9 @@ class InstrumentsService(str, enum.Enum):
     # - enableConditionWithIdentifier: profileIdentifier:
     XcodeEnergy = "com.apple.xcode.debug-gauge-data-providers.Energy"
     GPU = "com.apple.instruments.server.services.gpu"
+    RemoteLeaks = "com.apple.instruments.server.services.remoteleaks"  # 内存泄漏图 (Instruments Leaks)
+    # _selector
+    # - requestGraph:options:  {'LeakedCount','LeakedAddresses','LeakedGraphOnly','DeferAsGraphToken'}
 
 
 class TunnelProtocol(enum.Enum):
